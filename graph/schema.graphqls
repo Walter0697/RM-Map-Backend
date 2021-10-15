@@ -1,0 +1,65 @@
+input UserFilter {
+  username: String
+  role: String
+}
+
+type User {
+  id: Int!
+  username: String!
+  role: String!
+  created_at: String!
+}
+
+type Marker {
+  id: Int!
+  label: String!
+  latitude: String!
+  longitude: String!
+  address: String!
+  image_link: String
+  link: String
+  type: String!
+  description: String
+  to_time: String
+  from_time: String
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
+type Query {
+  users(filter: UserFilter): [User]!
+  markers: [Marker]!
+}
+
+input NewUser {
+  username: String!
+  password: String!
+  role: String!
+}
+
+input NewMarker {
+  label: String!
+  latitude: String!
+  longitude: String!
+  address: String!
+  image_link: String
+  link: String
+  type: String!
+  description: String
+  to_time: String
+  from_time: String
+  user_id: Int!
+}
+
+input Login {
+  username: String!
+  password: String!
+}
+
+type Mutation {
+  createUser(input: NewUser!): String!
+  createMarker(input: NewMarker!): String!
+  login(input: Login!): String!
+}
