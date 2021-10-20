@@ -10,6 +10,7 @@ import (
 	"mapmarker/backend/graph/generated"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
+	"mapmarker/backend/middleware"
 	"mapmarker/backend/service"
 	"mapmarker/backend/utils"
 )
@@ -18,7 +19,13 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	if config.Data.LDAP.Enable {
 		return "", &helper.LDAPLoginEnabledError{}
 	}
-	if err := helper.IsAuthorize(ctx, helper.Admin); err != nil {
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
 		return "", err
 	}
 
@@ -26,9 +33,9 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 		return "", &helper.RoleInvalidError{}
 	}
 
-	var user dbmodel.User
-	user.Username = input.Username
-	if user.CheckUsernameExist() {
+	var newuser dbmodel.User
+	newuser.Username = input.Username
+	if newuser.CheckUsernameExist() {
 		return "", &helper.SameUserNameExistError{}
 	}
 
@@ -40,17 +47,22 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 }
 
 func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (string, error) {
-	if err := helper.IsAuthorize(ctx, helper.User); err != nil {
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
 		return "", err
 	}
 
-	var user dbmodel.User
-	user.ID = uint(input.UserID)
-	if err := user.GetUserById(); err != nil {
-		return "", helper.GetDatabaseError(err)
-	}
+	// var user dbmodel.User
+	// user.ID = uint(input.UserID)
+	// if err := user.GetUserById(); err != nil {
+	// 	return "", helper.GetDatabaseError(err)
+	// }
 
-	_, err := service.CreateMarker(input, user)
+	_, err := service.CreateMarker(input, *user)
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +79,13 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string
 
 func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error) {
 	var result []*model.User
-	if err := helper.IsAuthorize(ctx, helper.Admin); err != nil {
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
 		return result, err
 	}
 
@@ -86,7 +104,12 @@ func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]
 
 func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 	var result []*model.Marker
-	if err := helper.IsAuthorize(ctx, helper.User); err != nil {
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
 		return result, err
 	}
 

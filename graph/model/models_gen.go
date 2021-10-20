@@ -36,7 +36,6 @@ type NewMarker struct {
 	Description *string `json:"description"`
 	ToTime      *string `json:"to_time"`
 	FromTime    *string `json:"from_time"`
-	UserID      int     `json:"user_id"`
 }
 
 type NewUser struct {

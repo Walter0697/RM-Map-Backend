@@ -50,7 +50,6 @@ input NewMarker {
   description: String
   to_time: String
   from_time: String
-  user_id: Int!
 }
 
 input Login {

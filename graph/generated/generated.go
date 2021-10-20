@@ -409,7 +409,6 @@ input NewMarker {
   description: String
   to_time: String
   from_time: String
-  user_id: Int!
 }
 
 input Login {
@@ -2705,14 +2704,6 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from_time"))
 			it.FromTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "user_id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("user_id"))
-			it.UserID, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}

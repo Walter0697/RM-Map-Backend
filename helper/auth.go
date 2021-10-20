@@ -1,8 +1,7 @@
 package helper
 
 import (
-	"context"
-	"mapmarker/backend/middleware"
+	"mapmarker/backend/database/dbmodel"
 )
 
 type UserRole string
@@ -26,12 +25,7 @@ func IsValidRoles(input string) bool {
 	return false
 }
 
-func IsAuthorize(ctx context.Context, required_role UserRole) error {
-	user := middleware.ForContext(ctx)
-	if user == nil {
-		return &PermissionDeniedError{}
-	}
-
+func IsAuthorize(user dbmodel.User, required_role UserRole) error {
 	if required_role == UserRole(user.Role) {
 		return nil
 	}
