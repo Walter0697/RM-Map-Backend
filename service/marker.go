@@ -8,6 +8,7 @@ import (
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
 	"mapmarker/backend/utils"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -31,6 +32,20 @@ func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, er
 
 	imageFileName := ""
 
+	if input.ImageLink != nil {
+		extension := filepath.Ext(*input.ImageLink)
+		// TODO: for now we use frontend to validate if it is an image
+		// maybe add that to backend in the future
+
+		filename := constant.GetImageName(constant.MarkerPreviewPath, extension)
+		filepath := constant.BasePath + filename
+		if err := utils.SaveImageFromURL(filepath, *input.ImageLink); err != nil {
+			return nil, err
+		}
+
+		imageFileName = filename
+	}
+
 	if input.ImageUpload != nil {
 		typeInfo := strings.Split(input.ImageUpload.ContentType, "/")
 		if typeInfo[0] != "image" {
@@ -38,7 +53,8 @@ func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, er
 		}
 
 		filename := constant.GetImageName(constant.MarkerPreviewPath, typeInfo[1])
-		if err := utils.UploadImage(filename, input.ImageUpload.File); err != nil {
+		filepath := constant.BasePath + filename
+		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
 			return nil, err
 		}
 
