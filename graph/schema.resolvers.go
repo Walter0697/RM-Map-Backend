@@ -56,12 +56,6 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 		return "", err
 	}
 
-	// var user dbmodel.User
-	// user.ID = uint(input.UserID)
-	// if err := user.GetUserById(); err != nil {
-	// 	return "", helper.GetDatabaseError(err)
-	// }
-
 	_, err := service.CreateMarker(input, *user)
 	if err != nil {
 		return "", err

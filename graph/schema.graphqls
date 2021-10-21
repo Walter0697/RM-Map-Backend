@@ -1,3 +1,5 @@
+scalar Upload
+
 input UserFilter {
   username: String
   role: String
@@ -45,6 +47,7 @@ input NewMarker {
   longitude: String!
   address: String!
   image_link: String
+  image_upload: Upload
   link: String
   type: String!
   description: String

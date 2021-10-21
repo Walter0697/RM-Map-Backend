@@ -48,3 +48,9 @@ type LDAPLoginEnabledError struct{}
 func (m *LDAPLoginEnabledError) Error() string {
 	return "ldap login enabled, cannot create user"
 }
+
+type UploadFileNotImageError struct{}
+
+func (n *UploadFileNotImageError) Error() string {
+	return "upload file is not an image"
+}

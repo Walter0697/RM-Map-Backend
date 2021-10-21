@@ -2,6 +2,10 @@
 
 package model
 
+import (
+	"github.com/99designs/gqlgen/graphql"
+)
+
 type Login struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -26,16 +30,17 @@ type Marker struct {
 }
 
 type NewMarker struct {
-	Label       string  `json:"label"`
-	Latitude    string  `json:"latitude"`
-	Longitude   string  `json:"longitude"`
-	Address     string  `json:"address"`
-	ImageLink   *string `json:"image_link"`
-	Link        *string `json:"link"`
-	Type        string  `json:"type"`
-	Description *string `json:"description"`
-	ToTime      *string `json:"to_time"`
-	FromTime    *string `json:"from_time"`
+	Label       string          `json:"label"`
+	Latitude    string          `json:"latitude"`
+	Longitude   string          `json:"longitude"`
+	Address     string          `json:"address"`
+	ImageLink   *string         `json:"image_link"`
+	ImageUpload *graphql.Upload `json:"image_upload"`
+	Link        *string         `json:"link"`
+	Type        string          `json:"type"`
+	Description *string         `json:"description"`
+	ToTime      *string         `json:"to_time"`
+	FromTime    *string         `json:"from_time"`
 }
 
 type NewUser struct {

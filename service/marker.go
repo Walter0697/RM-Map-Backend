@@ -1,10 +1,14 @@
 package service
 
 import (
+	"fmt"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
+	"mapmarker/backend/helper"
 	"mapmarker/backend/utils"
+	"strings"
 	"time"
 )
 
@@ -25,14 +29,32 @@ func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, er
 		}
 	}
 
+	imageFileName := ""
+
+	if input.ImageUpload != nil {
+		typeInfo := strings.Split(input.ImageUpload.ContentType, "/")
+		if typeInfo[0] != "image" {
+			return nil, &helper.UploadFileNotImageError{}
+		}
+
+		filename := constant.GetImageName(constant.MarkerPreviewPath, typeInfo[1])
+		if err := utils.UploadImage(filename, input.ImageUpload.File); err != nil {
+			return nil, err
+		}
+
+		imageFileName = filename
+	}
+
+	fmt.Println(imageFileName)
+
 	var marker dbmodel.Marker
 
 	marker.Label = input.Label
 	marker.Latitude = input.Latitude
 	marker.Longitude = input.Longitude
 	marker.Address = input.Address
-	if input.ImageLink != nil {
-		marker.ImageLink = *input.ImageLink
+	if input.ImageUpload != nil {
+		marker.ImageLink = imageFileName
 	}
 	if input.Link != nil {
 		marker.Link = *input.Link
