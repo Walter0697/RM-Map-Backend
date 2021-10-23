@@ -1,8 +1,11 @@
 package utils
 
 import (
+	"errors"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func ConvertFieldsToDBColumns(fields []string) string {
@@ -20,4 +23,11 @@ func StringInSlice(a string, list []string) bool {
 
 func ConvertToOutputTime(t time.Time) string {
 	return t.Format("2006-01-02T15:04:05Z")
+}
+
+func RecordNotFound(err error) bool {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return true
+	}
+	return false
 }

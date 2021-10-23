@@ -62,14 +62,17 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateMarker func(childComplexity int, input model.NewMarker) int
-		CreateUser   func(childComplexity int, input model.NewUser) int
-		Login        func(childComplexity int, input model.Login) int
+		CreateMarker   func(childComplexity int, input model.NewMarker) int
+		CreateUser     func(childComplexity int, input model.NewUser) int
+		Login          func(childComplexity int, input model.Login) int
+		UpdateRelation func(childComplexity int, input model.UpdateRelation) int
 	}
 
 	Query struct {
-		Markers func(childComplexity int) int
-		Users   func(childComplexity int, filter *model.UserFilter) int
+		Markers    func(childComplexity int) int
+		Preference func(childComplexity int) int
+		Users      func(childComplexity int, filter *model.UserFilter) int
+		Usersearch func(childComplexity int, filter model.UserSearch) int
 	}
 
 	User struct {
@@ -78,15 +81,24 @@ type ComplexityRoot struct {
 		Role      func(childComplexity int) int
 		Username  func(childComplexity int) int
 	}
+
+	UserPreference struct {
+		ID       func(childComplexity int) int
+		Relation func(childComplexity int) int
+		User     func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (string, error)
 	CreateMarker(ctx context.Context, input model.NewMarker) (string, error)
+	UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error)
 	Login(ctx context.Context, input model.Login) (string, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error)
+	Usersearch(ctx context.Context, filter model.UserSearch) (*model.User, error)
+	Preference(ctx context.Context) (*model.UserPreference, error)
 	Markers(ctx context.Context) ([]*model.Marker, error)
 }
 
@@ -246,12 +258,31 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
 
+	case "Mutation.updateRelation":
+		if e.complexity.Mutation.UpdateRelation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRelation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
+
 	case "Query.markers":
 		if e.complexity.Query.Markers == nil {
 			break
 		}
 
 		return e.complexity.Query.Markers(childComplexity), true
+
+	case "Query.preference":
+		if e.complexity.Query.Preference == nil {
+			break
+		}
+
+		return e.complexity.Query.Preference(childComplexity), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -264,6 +295,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Users(childComplexity, args["filter"].(*model.UserFilter)), true
+
+	case "Query.usersearch":
+		if e.complexity.Query.Usersearch == nil {
+			break
+		}
+
+		args, err := ec.field_Query_usersearch_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Usersearch(childComplexity, args["filter"].(model.UserSearch)), true
 
 	case "User.created_at":
 		if e.complexity.User.CreatedAt == nil {
@@ -292,6 +335,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Username(childComplexity), true
+
+	case "UserPreference.id":
+		if e.complexity.UserPreference.ID == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.ID(childComplexity), true
+
+	case "UserPreference.relation":
+		if e.complexity.UserPreference.Relation == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.Relation(childComplexity), true
+
+	case "UserPreference.user":
+		if e.complexity.UserPreference.User == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.User(childComplexity), true
 
 	}
 	return 0, false
@@ -364,11 +428,21 @@ input UserFilter {
   role: String
 }
 
+input UserSearch {
+  username: String!
+}
+
 type User {
   id: Int!
   username: String!
   role: String!
   created_at: String!
+}
+
+type UserPreference {
+  id: Int!
+  user: User
+  relation: User
 }
 
 type Marker {
@@ -391,6 +465,8 @@ type Marker {
 
 type Query {
   users(filter: UserFilter): [User]!
+  usersearch(filter: UserSearch!): User
+  preference: UserPreference
   markers: [Marker]!
 }
 
@@ -414,6 +490,10 @@ input NewMarker {
   from_time: String
 }
 
+input UpdateRelation {
+  username: String!
+}
+
 input Login {
   username: String!
   password: String!
@@ -422,6 +502,7 @@ input Login {
 type Mutation {
   createUser(input: NewUser!): String!
   createMarker(input: NewMarker!): String!
+  updateRelation(input: UpdateRelation!): String!
   login(input: Login!): String!
 }`, BuiltIn: false},
 }
@@ -476,6 +557,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateRelation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateRelation
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -498,6 +594,21 @@ func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs 
 	if tmp, ok := rawArgs["filter"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
 		arg0, err = ec.unmarshalOUserFilter2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_usersearch_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UserSearch
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalNUserSearch2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserSearch(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1138,6 +1249,48 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateRelation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateRelation(rctx, args["input"].(model.UpdateRelation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1220,6 +1373,77 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	res := resTmp.([]*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_usersearch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_usersearch_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Usersearch(rctx, args["filter"].(model.UserSearch))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_preference(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Preference(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.UserPreference)
+	fc.Result = res
+	return ec.marshalOUserPreference2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_markers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1466,6 +1690,105 @@ func (ec *executionContext) _User_created_at(ctx context.Context, field graphql.
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_id(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_user(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_relation(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Relation, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2763,6 +3086,29 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, obj interface{}) (model.UpdateRelation, error) {
+	var it model.UpdateRelation
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj interface{}) (model.UserFilter, error) {
 	var it model.UserFilter
 	asMap := map[string]interface{}{}
@@ -2785,6 +3131,29 @@ func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj in
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
 			it.Role, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj interface{}) (model.UserSearch, error) {
+	var it model.UserSearch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2909,6 +3278,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updateRelation":
+			out.Values[i] = ec._Mutation_updateRelation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -2952,6 +3326,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
+				return res
+			})
+		case "usersearch":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_usersearch(ctx, field)
+				return res
+			})
+		case "preference":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_preference(ctx, field)
 				return res
 			})
 		case "markers":
@@ -3014,6 +3410,37 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var userPreferenceImplementors = []string{"UserPreference"}
+
+func (ec *executionContext) _UserPreference(ctx context.Context, sel ast.SelectionSet, obj *model.UserPreference) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, userPreferenceImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("UserPreference")
+		case "id":
+			out.Values[i] = ec._UserPreference_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "user":
+			out.Values[i] = ec._UserPreference_user(ctx, field, obj)
+		case "relation":
+			out.Values[i] = ec._UserPreference_relation(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3373,6 +3800,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx context.Context, v interface{}) (model.UpdateRelation, error) {
+	res, err := ec.unmarshalInputUpdateRelation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNUser2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx context.Context, sel ast.SelectionSet, v []*model.User) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -3419,6 +3851,11 @@ func (ec *executionContext) marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodel�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNUserSearch2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserSearch(ctx context.Context, v interface{}) (model.UserSearch, error) {
+	res, err := ec.unmarshalInputUserSearch(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -3761,6 +4198,13 @@ func (ec *executionContext) unmarshalOUserFilter2ᚖmapmarkerᚋbackendᚋgraph�
 	}
 	res, err := ec.unmarshalInputUserFilter(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOUserPreference2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx context.Context, sel ast.SelectionSet, v *model.UserPreference) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._UserPreference(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

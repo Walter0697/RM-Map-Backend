@@ -38,7 +38,7 @@ func (marker *Marker) Update() error {
 }
 
 func (marker *Marker) GetMarkerById() error {
-	if err := database.Connection.Where("id = ?", marker.ID).Find(marker).Error; err != nil {
+	if err := database.Connection.Where("id = ?", marker.ID).First(marker).Error; err != nil {
 		return err
 	}
 

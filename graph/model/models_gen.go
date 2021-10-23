@@ -49,6 +49,10 @@ type NewUser struct {
 	Role     string `json:"role"`
 }
 
+type UpdateRelation struct {
+	Username string `json:"username"`
+}
+
 type User struct {
 	ID        int    `json:"id"`
 	Username  string `json:"username"`
@@ -59,4 +63,14 @@ type User struct {
 type UserFilter struct {
 	Username *string `json:"username"`
 	Role     *string `json:"role"`
+}
+
+type UserPreference struct {
+	ID       int   `json:"id"`
+	User     *User `json:"user"`
+	Relation *User `json:"relation"`
+}
+
+type UserSearch struct {
+	Username string `json:"username"`
 }

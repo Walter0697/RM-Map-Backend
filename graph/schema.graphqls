@@ -5,11 +5,21 @@ input UserFilter {
   role: String
 }
 
+input UserSearch {
+  username: String!
+}
+
 type User {
   id: Int!
   username: String!
   role: String!
   created_at: String!
+}
+
+type UserPreference {
+  id: Int!
+  user: User
+  relation: User
 }
 
 type Marker {
@@ -32,6 +42,8 @@ type Marker {
 
 type Query {
   users(filter: UserFilter): [User]!
+  usersearch(filter: UserSearch!): User
+  preference: UserPreference
   markers: [Marker]!
 }
 
@@ -55,6 +67,10 @@ input NewMarker {
   from_time: String
 }
 
+input UpdateRelation {
+  username: String!
+}
+
 input Login {
   username: String!
   password: String!
@@ -63,5 +79,6 @@ input Login {
 type Mutation {
   createUser(input: NewUser!): String!
   createMarker(input: NewMarker!): String!
+  updateRelation(input: UpdateRelation!): String!
   login(input: Login!): String!
 }

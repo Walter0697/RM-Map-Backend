@@ -65,6 +65,9 @@ func normalLogin(username string, password string) (string, error) {
 	user.Username = username
 
 	if err := user.GetUserByUsername(); err != nil {
+		if utils.RecordNotFound(err) {
+			return "", &UnauthorizationError{}
+		}
 		return "", err
 	}
 

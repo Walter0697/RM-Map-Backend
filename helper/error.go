@@ -1,13 +1,11 @@
 package helper
 
 import (
-	"errors"
-
-	"gorm.io/gorm"
+	"mapmarker/backend/utils"
 )
 
 func GetDatabaseError(err error) error {
-	if errors.Is(err, gorm.ErrRecordNotFound) {
+	if utils.RecordNotFound(err) {
 		return &RecordNotFoundError{}
 	}
 	return err
@@ -53,4 +51,10 @@ type UploadFileNotImageError struct{}
 
 func (n *UploadFileNotImageError) Error() string {
 	return "upload file is not an image"
+}
+
+type RelationWithYourselfError struct{}
+
+func (n *RelationWithYourselfError) Error() string {
+	return "cannot setup relation with yourself"
 }

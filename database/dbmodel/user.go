@@ -30,7 +30,7 @@ func (user *User) Update() error {
 }
 
 func (user *User) GetUserByUsername() error {
-	if err := database.Connection.Where("username = ?", user.Username).Find(user).Error; err != nil {
+	if err := database.Connection.Where("username = ?", user.Username).First(user).Error; err != nil {
 		return err
 	}
 
@@ -38,7 +38,7 @@ func (user *User) GetUserByUsername() error {
 }
 
 func (user *User) GetUserById() error {
-	if err := database.Connection.Where("id = ?", user.ID).Find(user).Error; err != nil {
+	if err := database.Connection.Where("id = ?", user.ID).First(user).Error; err != nil {
 		return err
 	}
 

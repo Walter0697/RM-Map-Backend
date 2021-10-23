@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -60,8 +59,6 @@ func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, er
 
 		imageFileName = filename
 	}
-
-	fmt.Println(imageFileName)
 
 	var marker dbmodel.Marker
 

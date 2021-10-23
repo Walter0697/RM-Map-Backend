@@ -37,6 +37,7 @@ func GetAllUser(filter *model.UserFilter) ([]dbmodel.User, error) {
 	query := database.Connection
 	if filter != nil {
 		if filter.Username != nil {
+			// TODO: set it to contains
 			query = query.Where("username = ?", filter.Username)
 		}
 		if filter.Role != nil {
@@ -47,4 +48,16 @@ func GetAllUser(filter *model.UserFilter) ([]dbmodel.User, error) {
 		return users, err
 	}
 	return users, nil
+}
+
+func GetUserByExactUsername(filter model.UserSearch) (*dbmodel.User, error) {
+	var user *dbmodel.User
+	user.Username = filter.Username
+	if err := user.GetUserByUsername(); err != nil {
+		if utils.RecordNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return user, nil
 }

@@ -26,6 +26,8 @@ type ObjectBase struct {
 // note: we don't really need to put json tag in dbmodel but I did it anyway
 func AutoMigration() {
 	database.Connection.AutoMigrate(&User{})
+	database.Connection.AutoMigrate(&UserRelation{})
+	database.Connection.AutoMigrate(&UserPreference{})
 	database.Connection.AutoMigrate(&Marker{})
 
 	log.Println("auto migration completed")
