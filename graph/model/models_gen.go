@@ -17,35 +17,39 @@ type LoginResult struct {
 }
 
 type Marker struct {
-	ID          int     `json:"id"`
-	Label       string  `json:"label"`
-	Latitude    string  `json:"latitude"`
-	Longitude   string  `json:"longitude"`
-	Address     string  `json:"address"`
-	ImageLink   *string `json:"image_link"`
-	Link        *string `json:"link"`
-	Type        string  `json:"type"`
-	Description *string `json:"description"`
-	ToTime      *string `json:"to_time"`
-	FromTime    *string `json:"from_time"`
-	CreatedAt   string  `json:"created_at"`
-	CreatedBy   *User   `json:"created_by"`
-	UpdatedAt   string  `json:"updated_at"`
-	UpdatedBy   *User   `json:"updated_by"`
+	ID           int     `json:"id"`
+	Label        string  `json:"label"`
+	Latitude     float64 `json:"latitude"`
+	Longitude    float64 `json:"longitude"`
+	Address      string  `json:"address"`
+	ImageLink    *string `json:"image_link"`
+	Link         *string `json:"link"`
+	Type         string  `json:"type"`
+	Description  *string `json:"description"`
+	EstimateTime *string `json:"estimate_time"`
+	Price        *string `json:"price"`
+	ToTime       *string `json:"to_time"`
+	FromTime     *string `json:"from_time"`
+	CreatedAt    string  `json:"created_at"`
+	CreatedBy    *User   `json:"created_by"`
+	UpdatedAt    string  `json:"updated_at"`
+	UpdatedBy    *User   `json:"updated_by"`
 }
 
 type NewMarker struct {
-	Label       string          `json:"label"`
-	Latitude    string          `json:"latitude"`
-	Longitude   string          `json:"longitude"`
-	Address     string          `json:"address"`
-	ImageLink   *string         `json:"image_link"`
-	ImageUpload *graphql.Upload `json:"image_upload"`
-	Link        *string         `json:"link"`
-	Type        string          `json:"type"`
-	Description *string         `json:"description"`
-	ToTime      *string         `json:"to_time"`
-	FromTime    *string         `json:"from_time"`
+	Label        string          `json:"label"`
+	Latitude     float64         `json:"latitude"`
+	Longitude    float64         `json:"longitude"`
+	Address      string          `json:"address"`
+	ImageLink    *string         `json:"image_link"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
+	Link         *string         `json:"link"`
+	Type         string          `json:"type"`
+	Description  *string         `json:"description"`
+	ToTime       *string         `json:"to_time"`
+	FromTime     *string         `json:"from_time"`
+	EstimateTime *string         `json:"estimate_time"`
+	Price        *string         `json:"price"`
 }
 
 type NewUser struct {

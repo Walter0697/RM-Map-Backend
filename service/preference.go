@@ -54,3 +54,29 @@ func UpdateRelation(input model.UpdateRelation, user dbmodel.User) (*dbmodel.Use
 
 	return &relation, nil
 }
+
+func GetCurrentRelation(user dbmodel.User) (*dbmodel.UserRelation, error) {
+	var preference dbmodel.UserPreference
+	preference.UserId = user.ID
+	if err := preference.GetPreferenceByUserId(); err != nil {
+		if utils.RecordNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if preference.RelationId == nil {
+		return nil, nil
+	}
+
+	var relation dbmodel.UserRelation
+	relation.ID = *preference.RelationId
+	if err := relation.GetRelationById(); err != nil {
+		if utils.RecordNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &relation, nil
+}

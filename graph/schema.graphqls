@@ -25,13 +25,16 @@ type UserPreference {
 type Marker {
   id: Int!
   label: String!
-  latitude: String!
-  longitude: String!
+  latitude: Float!
+  longitude: Float!
   address: String!
   image_link: String
   link: String
   type: String!
   description: String
+  estimate_time: String
+  price: String
+  status: String
   to_time: String
   from_time: String
   created_at: String!
@@ -55,8 +58,8 @@ input NewUser {
 
 input NewMarker {
   label: String!
-  latitude: String!
-  longitude: String!
+  latitude: Float!
+  longitude: Float!
   address: String!
   image_link: String
   image_upload: Upload
@@ -65,6 +68,8 @@ input NewMarker {
   description: String
   to_time: String
   from_time: String
+  estimate_time: String
+  price: String
 }
 
 input UpdateRelation {

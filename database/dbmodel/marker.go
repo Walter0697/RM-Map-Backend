@@ -7,16 +7,21 @@ import (
 
 type Marker struct {
 	ObjectBase
-	Label       string     `json:"label"`
-	Latitude    string     `json:"latitude"`
-	Longitude   string     `json:"longitude"`
-	Address     string     `json:"address"`
-	ImageLink   string     `json:"imageLink"`
-	Link        string     `json:"link"`
-	Type        string     `json:"type"`
-	Description string     `json:"description"`
-	FromTime    *time.Time `json:"fromTime"`
-	ToTime      *time.Time `json:"toTime"`
+	Label        string       `json:"label"` // required fields
+	Latitude     float64      `json:"latitude"`
+	Longitude    float64      `json:"longitude"`
+	Type         string       `json:"type"`
+	Address      string       `json:"address"`
+	ImageLink    string       `json:"imageLink"` // preview or link
+	Link         string       `json:"link"`
+	Description  string       `json:"description"` // optional fields
+	EstimateTime string       `json:"estimate"`
+	Price        string       `json:"price"`
+	Status       string       `json:"status"`   // visited / cancelled / ???
+	FromTime     *time.Time   `json:"fromTime"` // time related
+	ToTime       *time.Time   `json:"toTime"`
+	Relation     UserRelation `gorm:"foreignKey:relation_id;reference:id"`
+	RelationId   uint
 }
 
 //TODO: add icon table to add icon

@@ -52,7 +52,6 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (string, error) {
 	// USER
 	// Create marker by user
-	// TODO: add relation
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
@@ -63,7 +62,12 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 		return "", err
 	}
 
-	_, err := service.CreateMarker(input, *user)
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		return "", &helper.RelationNotFoundError{}
+	}
+
+	_, err = service.CreateMarker(input, *user, *relation)
 	if err != nil {
 		return "", err
 	}
@@ -194,7 +198,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		if preference.RelationId != nil {
 			var relation dbmodel.UserRelation
 			relation.ID = *preference.RelationId
-			if err := relation.GetRelationById(); err == nil {
+			if err := relation.GetRelationWithUserById(); err == nil {
 				user1 := helper.ConvertUser(relation.UserOne)
 				user2 := helper.ConvertUser(relation.UserTwo)
 				if user.Username == relation.UserOne.Username {

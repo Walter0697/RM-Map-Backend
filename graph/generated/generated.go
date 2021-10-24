@@ -49,21 +49,23 @@ type ComplexityRoot struct {
 	}
 
 	Marker struct {
-		Address     func(childComplexity int) int
-		CreatedAt   func(childComplexity int) int
-		CreatedBy   func(childComplexity int) int
-		Description func(childComplexity int) int
-		FromTime    func(childComplexity int) int
-		ID          func(childComplexity int) int
-		ImageLink   func(childComplexity int) int
-		Label       func(childComplexity int) int
-		Latitude    func(childComplexity int) int
-		Link        func(childComplexity int) int
-		Longitude   func(childComplexity int) int
-		ToTime      func(childComplexity int) int
-		Type        func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
-		UpdatedBy   func(childComplexity int) int
+		Address      func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		CreatedBy    func(childComplexity int) int
+		Description  func(childComplexity int) int
+		EstimateTime func(childComplexity int) int
+		FromTime     func(childComplexity int) int
+		ID           func(childComplexity int) int
+		ImageLink    func(childComplexity int) int
+		Label        func(childComplexity int) int
+		Latitude     func(childComplexity int) int
+		Link         func(childComplexity int) int
+		Longitude    func(childComplexity int) int
+		Price        func(childComplexity int) int
+		ToTime       func(childComplexity int) int
+		Type         func(childComplexity int) int
+		UpdatedAt    func(childComplexity int) int
+		UpdatedBy    func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -164,6 +166,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Marker.Description(childComplexity), true
 
+	case "Marker.estimate_time":
+		if e.complexity.Marker.EstimateTime == nil {
+			break
+		}
+
+		return e.complexity.Marker.EstimateTime(childComplexity), true
+
 	case "Marker.from_time":
 		if e.complexity.Marker.FromTime == nil {
 			break
@@ -212,6 +221,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Longitude(childComplexity), true
+
+	case "Marker.price":
+		if e.complexity.Marker.Price == nil {
+			break
+		}
+
+		return e.complexity.Marker.Price(childComplexity), true
 
 	case "Marker.to_time":
 		if e.complexity.Marker.ToTime == nil {
@@ -467,13 +483,15 @@ type UserPreference {
 type Marker {
   id: Int!
   label: String!
-  latitude: String!
-  longitude: String!
+  latitude: Float!
+  longitude: Float!
   address: String!
   image_link: String
   link: String
   type: String!
   description: String
+  estimate_time: String
+  price: String
   to_time: String
   from_time: String
   created_at: String!
@@ -497,8 +515,8 @@ input NewUser {
 
 input NewMarker {
   label: String!
-  latitude: String!
-  longitude: String!
+  latitude: Float!
+  longitude: Float!
   address: String!
   image_link: String
   image_upload: Upload
@@ -507,6 +525,8 @@ input NewMarker {
   description: String
   to_time: String
   from_time: String
+  estimate_time: String
+  price: String
 }
 
 input UpdateRelation {
@@ -849,9 +869,9 @@ func (ec *executionContext) _Marker_latitude(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(float64)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Marker_longitude(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
@@ -884,9 +904,9 @@ func (ec *executionContext) _Marker_longitude(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(float64)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Marker_address(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
@@ -1042,6 +1062,70 @@ func (ec *executionContext) _Marker_description(ctx context.Context, field graph
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Description, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_estimate_time(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.EstimateTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_price(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Price, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3059,7 +3143,7 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("latitude"))
-			it.Latitude, err = ec.unmarshalNString2string(ctx, v)
+			it.Latitude, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3067,7 +3151,7 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 			var err error
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("longitude"))
-			it.Longitude, err = ec.unmarshalNString2string(ctx, v)
+			it.Longitude, err = ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3132,6 +3216,22 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from_time"))
 			it.FromTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "estimate_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("estimate_time"))
+			it.EstimateTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -3344,6 +3444,10 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "description":
 			out.Values[i] = ec._Marker_description(ctx, field, obj)
+		case "estimate_time":
+			out.Values[i] = ec._Marker_estimate_time(ctx, field, obj)
+		case "price":
+			out.Values[i] = ec._Marker_price(ctx, field, obj)
 		case "to_time":
 			out.Values[i] = ec._Marker_to_time(ctx, field, obj)
 		case "from_time":
@@ -3835,6 +3939,21 @@ func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interf
 
 func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
 	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	res, err := graphql.UnmarshalFloat(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
 	if res == graphql.Null {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")

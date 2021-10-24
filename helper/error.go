@@ -58,3 +58,9 @@ type RelationWithYourselfError struct{}
 func (n *RelationWithYourselfError) Error() string {
 	return "cannot setup relation with yourself"
 }
+
+type RelationNotFoundError struct{}
+
+func (n *RelationNotFoundError) Error() string {
+	return "cannot perform this without relation"
+}

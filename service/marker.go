@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, error) {
+func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Marker, error) {
 	var fromTime time.Time
 	var toTime time.Time
 	var err error
@@ -74,12 +74,18 @@ func CreateMarker(input model.NewMarker, user dbmodel.User) (*dbmodel.Marker, er
 	}
 	marker.Type = input.Type
 	marker.Description = *input.Description
+	marker.EstimateTime = *input.EstimateTime
+	marker.Price = *input.Price
 	if input.FromTime != nil {
 		marker.FromTime = &fromTime
 	}
 	if input.ToTime != nil {
 		marker.ToTime = &toTime
 	}
+
+	marker.Relation = relation
+
+	marker.Status = ""
 
 	marker.CreatedBy = &user
 	marker.UpdatedBy = &user

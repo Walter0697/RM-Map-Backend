@@ -26,6 +26,8 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.Link = &marker.Link
 	item.Type = marker.Type
 	item.Description = &marker.Description
+	item.EstimateTime = &marker.EstimateTime
+	item.Price = &marker.Price
 
 	item.CreatedAt = utils.ConvertToOutputTime(marker.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(marker.UpdatedAt)

@@ -36,8 +36,16 @@ func (relation *UserRelation) GetRelationByUsers() error {
 	return nil
 }
 
-func (relation *UserRelation) GetRelationById() error {
+func (relation *UserRelation) GetRelationWithUserById() error {
 	if err := database.Connection.Where("id = ?", relation.ID).Preload("UserOne").Preload("UserTwo").First(relation).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (relation *UserRelation) GetRelationById() error {
+	if err := database.Connection.Where("id = ?", relation.ID).First(relation).Error; err != nil {
 		return err
 	}
 
