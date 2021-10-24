@@ -97,7 +97,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	return &dbmodel.Marker{}, nil
 }
 
-func GetAllActiveMarker(requested []string) ([]dbmodel.Marker, error) {
+func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
 	var markers []dbmodel.Marker
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -106,6 +106,8 @@ func GetAllActiveMarker(requested []string) ([]dbmodel.Marker, error) {
 	if utils.StringInSlice("updated_by", requested) {
 		query = query.Preload("UpdatedBy")
 	}
+
+	query = query.Where("relation_id = ?", relation.ID)
 
 	if err := query.Find(&markers).Error; err != nil {
 		return markers, err

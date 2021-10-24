@@ -1,7 +1,6 @@
 package service
 
 import (
-	"fmt"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -13,7 +12,6 @@ func CreateRelation(input *dbmodel.UserRelation, user1 dbmodel.User, user2 dbmod
 	relation.UserOne = user1
 	relation.UserTwo = user2
 
-	fmt.Println("creating relation")
 	if err := relation.Create(); err != nil {
 		return err
 	}

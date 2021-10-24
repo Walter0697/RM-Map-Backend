@@ -62,6 +62,7 @@ type ComplexityRoot struct {
 		Link         func(childComplexity int) int
 		Longitude    func(childComplexity int) int
 		Price        func(childComplexity int) int
+		Status       func(childComplexity int) int
 		ToTime       func(childComplexity int) int
 		Type         func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
@@ -228,6 +229,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Price(childComplexity), true
+
+	case "Marker.status":
+		if e.complexity.Marker.Status == nil {
+			break
+		}
+
+		return e.complexity.Marker.Status(childComplexity), true
 
 	case "Marker.to_time":
 		if e.complexity.Marker.ToTime == nil {
@@ -492,6 +500,7 @@ type Marker {
   description: String
   estimate_time: String
   price: String
+  status: String
   to_time: String
   from_time: String
   created_at: String!
@@ -1126,6 +1135,38 @@ func (ec *executionContext) _Marker_price(ctx context.Context, field graphql.Col
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Price, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_status(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3448,6 +3489,8 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_estimate_time(ctx, field, obj)
 		case "price":
 			out.Values[i] = ec._Marker_price(ctx, field, obj)
+		case "status":
+			out.Values[i] = ec._Marker_status(ctx, field, obj)
 		case "to_time":
 			out.Values[i] = ec._Marker_to_time(ctx, field, obj)
 		case "from_time":

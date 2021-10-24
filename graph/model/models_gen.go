@@ -28,6 +28,7 @@ type Marker struct {
 	Description  *string `json:"description"`
 	EstimateTime *string `json:"estimate_time"`
 	Price        *string `json:"price"`
+	Status       *string `json:"status"`
 	ToTime       *string `json:"to_time"`
 	FromTime     *string `json:"from_time"`
 	CreatedAt    string  `json:"created_at"`

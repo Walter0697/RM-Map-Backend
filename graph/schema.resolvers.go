@@ -219,7 +219,6 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 	// USER
 	// get markers
-	// TODO: make it by relation
 
 	var result []*model.Marker
 	user := middleware.ForContext(ctx)
@@ -231,9 +230,14 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 		return result, err
 	}
 
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		return result, &helper.RelationNotFoundError{}
+	}
+
 	requested_field := utils.GetTopPreloads(ctx)
 
-	markers, err := service.GetAllActiveMarker(requested_field)
+	markers, err := service.GetAllActiveMarker(requested_field, *relation)
 	if err != nil {
 		return result, err
 	}
