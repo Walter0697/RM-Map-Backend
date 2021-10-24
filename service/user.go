@@ -51,7 +51,7 @@ func GetAllUser(filter *model.UserFilter) ([]dbmodel.User, error) {
 }
 
 func GetUserByExactUsername(filter model.UserSearch) (*dbmodel.User, error) {
-	var user *dbmodel.User
+	var user dbmodel.User
 	user.Username = filter.Username
 	if err := user.GetUserByUsername(); err != nil {
 		if utils.RecordNotFound(err) {
@@ -59,5 +59,5 @@ func GetUserByExactUsername(filter model.UserSearch) (*dbmodel.User, error) {
 		}
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }

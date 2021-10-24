@@ -94,13 +94,18 @@ func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.Updat
 	return "ok", nil
 }
 
-func (r *mutationResolver) Login(ctx context.Context, input model.Login) (string, error) {
+func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
+
 	token, err := service.Login(input.Username, input.Password)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return token, nil
+
+	return &model.LoginResult{
+		Jwt:      token,
+		Username: input.Username,
+	}, nil
 }
 
 func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error) {
@@ -189,7 +194,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		if preference.RelationId != nil {
 			var relation dbmodel.UserRelation
 			relation.ID = *preference.RelationId
-			if err := relation.GetRelationById(); err != nil {
+			if err := relation.GetRelationById(); err == nil {
 				user1 := helper.ConvertUser(relation.UserOne)
 				user2 := helper.ConvertUser(relation.UserTwo)
 				if user.Username == relation.UserOne.Username {

@@ -76,9 +76,14 @@ input Login {
   password: String!
 }
 
+type LoginResult {
+  jwt: String!
+  username: String!
+}
+
 type Mutation {
   createUser(input: NewUser!): String!
   createMarker(input: NewMarker!): String!
   updateRelation(input: UpdateRelation!): String!
-  login(input: Login!): String!
+  login(input: Login!): LoginResult!
 }

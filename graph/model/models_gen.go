@@ -11,6 +11,11 @@ type Login struct {
 	Password string `json:"password"`
 }
 
+type LoginResult struct {
+	Jwt      string `json:"jwt"`
+	Username string `json:"username"`
+}
+
 type Marker struct {
 	ID          int     `json:"id"`
 	Label       string  `json:"label"`

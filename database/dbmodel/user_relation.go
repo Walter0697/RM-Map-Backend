@@ -1,6 +1,8 @@
 package dbmodel
 
-import "mapmarker/backend/database"
+import (
+	"mapmarker/backend/database"
+)
 
 type UserRelation struct {
 	BaseModel
@@ -35,7 +37,7 @@ func (relation *UserRelation) GetRelationByUsers() error {
 }
 
 func (relation *UserRelation) GetRelationById() error {
-	if err := database.Connection.Where("id = ?", relation.ID).First(relation).Error; err != nil {
+	if err := database.Connection.Where("id = ?", relation.ID).Preload("UserOne").Preload("UserTwo").First(relation).Error; err != nil {
 		return err
 	}
 
