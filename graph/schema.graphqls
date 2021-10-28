@@ -37,6 +37,7 @@ type Marker {
   status: String
   to_time: String
   from_time: String
+  is_fav: Boolean!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -72,6 +73,11 @@ input NewMarker {
   price: String
 }
 
+input UpdateMarkerFavourite {
+  id: Int!
+  is_fav: Boolean!
+}
+
 input UpdateRelation {
   username: String!
 }
@@ -88,7 +94,8 @@ type LoginResult {
 
 type Mutation {
   createUser(input: NewUser!): String!
-  createMarker(input: NewMarker!): String!
+  createMarker(input: NewMarker!): Marker!
+  updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   updateRelation(input: UpdateRelation!): String!
   login(input: Login!): LoginResult!
 }

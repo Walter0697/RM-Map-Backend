@@ -40,5 +40,7 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 		updatedBy := ConvertUser(*marker.UpdatedBy)
 		item.UpdatedBy = &updatedBy
 	}
+
+	item.IsFav = marker.IsFavourite
 	return item
 }

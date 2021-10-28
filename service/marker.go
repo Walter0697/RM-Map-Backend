@@ -90,11 +90,31 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	marker.CreatedBy = &user
 	marker.UpdatedBy = &user
 
+	marker.IsFavourite = false
+
 	if err := marker.Create(); err != nil {
 		return nil, err
 	}
 
-	return &dbmodel.Marker{}, nil
+	return &marker, nil
+}
+
+func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User) (*dbmodel.Marker, error) {
+	var marker dbmodel.Marker
+	marker.ID = uint(input.ID)
+	if err := marker.GetMarkerById(); err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	marker.IsFavourite = input.IsFav
+	marker.UpdatedBy = &user
+	marker.UpdatedAt = time.Now()
+
+	if err := marker.Update(); err != nil {
+		return nil, err
+	}
+
+	return &marker, nil
 }
 
 func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {

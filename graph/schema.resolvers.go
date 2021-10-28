@@ -49,29 +49,54 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	return "ok", nil
 }
 
-func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (string, error) {
+func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error) {
 	// USER
 	// Create marker by user
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
-		return "", &helper.PermissionDeniedError{}
+		return nil, &helper.PermissionDeniedError{}
 	}
 
 	if err := helper.IsAuthorize(*user, helper.User); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	relation, err := service.GetCurrentRelation(*user)
 	if relation == nil {
-		return "", &helper.RelationNotFoundError{}
+		return nil, &helper.RelationNotFoundError{}
 	}
 
-	_, err = service.CreateMarker(input, *user, *relation)
+	marker, err := service.CreateMarker(input, *user, *relation)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return "ok", nil
+
+	output := helper.ConvertMarker(*marker)
+	return &output, nil
+}
+
+func (r *mutationResolver) UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error) {
+	// UESR
+	// update marker favourite
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	marker, err := service.UpdateMarkerFavourite(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertMarker(*marker)
+
+	return &output, nil
 }
 
 func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error) {

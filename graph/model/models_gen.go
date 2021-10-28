@@ -31,6 +31,7 @@ type Marker struct {
 	Status       *string `json:"status"`
 	ToTime       *string `json:"to_time"`
 	FromTime     *string `json:"from_time"`
+	IsFav        bool    `json:"is_fav"`
 	CreatedAt    string  `json:"created_at"`
 	CreatedBy    *User   `json:"created_by"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -57,6 +58,11 @@ type NewUser struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	Role     string `json:"role"`
+}
+
+type UpdateMarkerFavourite struct {
+	ID    int  `json:"id"`
+	IsFav bool `json:"is_fav"`
 }
 
 type UpdateRelation struct {

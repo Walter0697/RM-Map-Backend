@@ -57,6 +57,7 @@ type ComplexityRoot struct {
 		FromTime     func(childComplexity int) int
 		ID           func(childComplexity int) int
 		ImageLink    func(childComplexity int) int
+		IsFav        func(childComplexity int) int
 		Label        func(childComplexity int) int
 		Latitude     func(childComplexity int) int
 		Link         func(childComplexity int) int
@@ -70,10 +71,11 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateMarker   func(childComplexity int, input model.NewMarker) int
-		CreateUser     func(childComplexity int, input model.NewUser) int
-		Login          func(childComplexity int, input model.Login) int
-		UpdateRelation func(childComplexity int, input model.UpdateRelation) int
+		CreateMarker    func(childComplexity int, input model.NewMarker) int
+		CreateUser      func(childComplexity int, input model.NewUser) int
+		Login           func(childComplexity int, input model.Login) int
+		UpdateMarkerFav func(childComplexity int, input model.UpdateMarkerFavourite) int
+		UpdateRelation  func(childComplexity int, input model.UpdateRelation) int
 	}
 
 	Query struct {
@@ -99,7 +101,8 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (string, error)
-	CreateMarker(ctx context.Context, input model.NewMarker) (string, error)
+	CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error)
+	UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error)
 	UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 }
@@ -194,6 +197,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.ImageLink(childComplexity), true
+
+	case "Marker.is_fav":
+		if e.complexity.Marker.IsFav == nil {
+			break
+		}
+
+		return e.complexity.Marker.IsFav(childComplexity), true
 
 	case "Marker.label":
 		if e.complexity.Marker.Label == nil {
@@ -300,6 +310,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
+
+	case "Mutation.updateMarkerFav":
+		if e.complexity.Mutation.UpdateMarkerFav == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateMarkerFav_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateMarkerFav(childComplexity, args["input"].(model.UpdateMarkerFavourite)), true
 
 	case "Mutation.updateRelation":
 		if e.complexity.Mutation.UpdateRelation == nil {
@@ -503,6 +525,7 @@ type Marker {
   status: String
   to_time: String
   from_time: String
+  is_fav: Boolean!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -538,6 +561,11 @@ input NewMarker {
   price: String
 }
 
+input UpdateMarkerFavourite {
+  id: Int!
+  is_fav: Boolean!
+}
+
 input UpdateRelation {
   username: String!
 }
@@ -554,7 +582,8 @@ type LoginResult {
 
 type Mutation {
   createUser(input: NewUser!): String!
-  createMarker(input: NewMarker!): String!
+  createMarker(input: NewMarker!): Marker!
+  updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   updateRelation(input: UpdateRelation!): String!
   login(input: Login!): LoginResult!
 }`, BuiltIn: false},
@@ -602,6 +631,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLogin2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateMarkerFav_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateMarkerFavourite
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1244,6 +1288,41 @@ func (ec *executionContext) _Marker_from_time(ctx context.Context, field graphql
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Marker_is_fav(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IsFav, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Marker_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1463,9 +1542,51 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Marker)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_updateMarkerFav(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateMarkerFav_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateMarkerFav(rctx, args["input"].(model.UpdateMarkerFavourite))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -3321,6 +3442,37 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Context, obj interface{}) (model.UpdateMarkerFavourite, error) {
+	var it model.UpdateMarkerFavourite
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "is_fav":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_fav"))
+			it.IsFav, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, obj interface{}) (model.UpdateRelation, error) {
 	var it model.UpdateRelation
 	asMap := map[string]interface{}{}
@@ -3495,6 +3647,11 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_to_time(ctx, field, obj)
 		case "from_time":
 			out.Values[i] = ec._Marker_from_time(ctx, field, obj)
+		case "is_fav":
+			out.Values[i] = ec._Marker_is_fav(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "created_at":
 			out.Values[i] = ec._Marker_created_at(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -3548,6 +3705,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "createMarker":
 			out.Values[i] = ec._Mutation_createMarker(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateMarkerFav":
+			out.Values[i] = ec._Mutation_updateMarkerFav(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -4039,6 +4201,10 @@ func (ec *executionContext) marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraph�
 	return ec._LoginResult(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v model.Marker) graphql.Marshaler {
+	return ec._Marker(ctx, sel, &v)
+}
+
 func (ec *executionContext) marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v []*model.Marker) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -4077,6 +4243,16 @@ func (ec *executionContext) marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋm
 	return ret
 }
 
+func (ec *executionContext) marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v *model.Marker) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Marker(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarker(ctx context.Context, v interface{}) (model.NewMarker, error) {
 	res, err := ec.unmarshalInputNewMarker(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -4100,6 +4276,11 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx context.Context, v interface{}) (model.UpdateMarkerFavourite, error) {
+	res, err := ec.unmarshalInputUpdateMarkerFavourite(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx context.Context, v interface{}) (model.UpdateRelation, error) {
