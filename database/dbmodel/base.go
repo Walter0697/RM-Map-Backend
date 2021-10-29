@@ -29,6 +29,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&UserRelation{})
 	database.Connection.AutoMigrate(&UserPreference{})
 	database.Connection.AutoMigrate(&Marker{})
+	database.Connection.AutoMigrate(&MarkerType{})
 
 	log.Println("auto migration completed")
 }

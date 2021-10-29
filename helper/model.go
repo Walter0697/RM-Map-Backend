@@ -44,3 +44,25 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.IsFav = marker.IsFavourite
 	return item
 }
+
+func ConvertMarkerType(markertype dbmodel.MarkerType) model.MarkerType {
+	var item model.MarkerType
+	item.ID = int(markertype.ID)
+	item.Label = markertype.Label
+	item.Value = markertype.Value
+	item.Priority = markertype.Priority
+	item.IconPath = markertype.IconPath
+
+	item.CreatedAt = utils.ConvertToOutputTime(markertype.CreatedAt)
+	item.UpdatedAt = utils.ConvertToOutputTime(markertype.UpdatedAt)
+	if markertype.CreatedBy != nil {
+		createdBy := ConvertUser(*markertype.CreatedBy)
+		item.CreatedBy = &createdBy
+	}
+	if markertype.UpdatedBy != nil {
+		updatedBy := ConvertUser(*markertype.UpdatedBy)
+		item.UpdatedBy = &updatedBy
+	}
+
+	return item
+}

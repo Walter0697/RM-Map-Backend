@@ -49,6 +49,30 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 	return "ok", nil
 }
 
+func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error) {
+	// USER
+	// update your current preference
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return "", err
+	}
+
+	if user.Username == input.Username {
+		return "", &helper.RelationWithYourselfError{}
+	}
+
+	if _, err := service.UpdateRelation(input, *user); err != nil {
+		return "", err
+	}
+
+	return "ok", nil
+}
+
 func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error) {
 	// USER
 	// Create marker by user
@@ -99,28 +123,27 @@ func (r *mutationResolver) UpdateMarkerFav(ctx context.Context, input model.Upda
 	return &output, nil
 }
 
-func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error) {
-	// USER
-	// update your current preference
+func (r *mutationResolver) CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error) {
+	// ADMIN
+	// Create marker type
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
-		return "", &helper.PermissionDeniedError{}
+		return nil, &helper.PermissionDeniedError{}
 	}
 
-	if err := helper.IsAuthorize(*user, helper.User); err != nil {
-		return "", err
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return nil, err
 	}
 
-	if user.Username == input.Username {
-		return "", &helper.RelationWithYourselfError{}
+	markertype, err := service.CreateMarkerType(input, *user)
+	if err != nil {
+		return nil, err
 	}
 
-	if _, err := service.UpdateRelation(input, *user); err != nil {
-		return "", err
-	}
+	output := helper.ConvertMarkerType(*markertype)
 
-	return "ok", nil
+	return &output, nil
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
@@ -269,6 +292,35 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 
 	for _, marker := range markers {
 		item := helper.ConvertMarker(marker)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Markertypes(ctx context.Context) ([]*model.MarkerType, error) {
+	// USER
+	// get all marker types for selection
+
+	var result []*model.MarkerType
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return result, err
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	types, err := service.GetAllMarkerType(requested_field)
+	if err != nil {
+		return result, err
+	}
+
+	for _, markertype := range types {
+		item := helper.ConvertMarkerType(markertype)
 		result = append(result, &item)
 	}
 

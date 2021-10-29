@@ -38,6 +38,18 @@ type Marker struct {
 	UpdatedBy    *User   `json:"updated_by"`
 }
 
+type MarkerType struct {
+	ID        int    `json:"id"`
+	Label     string `json:"label"`
+	Value     string `json:"value"`
+	Priority  int    `json:"priority"`
+	IconPath  string `json:"icon_path"`
+	CreatedAt string `json:"created_at"`
+	CreatedBy *User  `json:"created_by"`
+	UpdatedAt string `json:"updated_at"`
+	UpdatedBy *User  `json:"updated_by"`
+}
+
 type NewMarker struct {
 	Label        string          `json:"label"`
 	Latitude     float64         `json:"latitude"`
@@ -89,4 +101,11 @@ type UserPreference struct {
 
 type UserSearch struct {
 	Username string `json:"username"`
+}
+
+type NewMarkerType struct {
+	Label      string          `json:"label"`
+	Value      string          `json:"value"`
+	Priority   int             `json:"priority"`
+	IconUpload *graphql.Upload `json:"icon_upload"`
 }

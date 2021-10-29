@@ -20,7 +20,7 @@ type Marker struct {
 	Status       string       `json:"status"`   // visited / cancelled / ???
 	FromTime     *time.Time   `json:"fromTime"` // time related
 	ToTime       *time.Time   `json:"toTime"`
-	IsFavourite  bool         `json:"isFavourite"`
+	IsFavourite  bool         `json:"isFavourite"` // pre defined value
 	Relation     UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId   uint
 }

@@ -3,8 +3,9 @@ package constant
 import "time"
 
 const (
-	BasePath          string = "./uploads/"
-	MarkerPreviewPath string = "markers"
+	BasePath          string = "./uploads"
+	MarkerPreviewPath string = "/markers/"
+	TypeIconPath      string = "/types/"
 )
 
 func GetImageName(filetype string, extension string) string {

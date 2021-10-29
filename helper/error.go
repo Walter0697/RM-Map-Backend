@@ -64,3 +64,9 @@ type RelationNotFoundError struct{}
 func (n *RelationNotFoundError) Error() string {
 	return "cannot perform this without relation"
 }
+
+type ImageNotFoundError struct{}
+
+func (n *ImageNotFoundError) Error() string {
+	return "image is required for this request"
+}

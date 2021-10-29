@@ -44,17 +44,34 @@ type Marker {
   updated_by: User!
 }
 
+type MarkerType {
+  id: Int!
+  label: String!
+  value: String!
+  priority: Int!
+  icon_path: String!
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
   preference: UserPreference
   markers: [Marker]!
+  markertypes: [MarkerType]!
 }
 
 input NewUser {
   username: String!
   password: String!
   role: String!
+}
+
+input UpdateRelation {
+  username: String!
 }
 
 input NewMarker {
@@ -78,8 +95,11 @@ input UpdateMarkerFavourite {
   is_fav: Boolean!
 }
 
-input UpdateRelation {
-  username: String!
+input newMarkerType {
+  label: String!
+  value: String!
+  priority: Int!
+  icon_upload: Upload
 }
 
 input Login {
@@ -94,8 +114,9 @@ type LoginResult {
 
 type Mutation {
   createUser(input: NewUser!): String!
+  updateRelation(input: UpdateRelation!): String!
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
-  updateRelation(input: UpdateRelation!): String!
+  createMarkerType(input: newMarkerType!): MarkerType!
   login(input: Login!): LoginResult!
 }
