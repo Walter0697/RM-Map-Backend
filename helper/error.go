@@ -70,3 +70,9 @@ type ImageNotFoundError struct{}
 func (n *ImageNotFoundError) Error() string {
 	return "image is required for this request"
 }
+
+type FavouriteMarkerNotDeletableError struct{}
+
+func (n *FavouriteMarkerNotDeletableError) Error() string {
+	return "favourite marker cannot be deleted"
+}

@@ -30,6 +30,16 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.Price = &marker.Price
 	item.Status = &marker.Status
 
+	if marker.FromTime != nil {
+		fromTime := utils.ConvertToOutputTime(*marker.FromTime)
+		item.FromTime = &fromTime
+	}
+
+	if marker.ToTime != nil {
+		toTime := utils.ConvertToOutputTime(*marker.ToTime)
+		item.ToTime = &toTime
+	}
+
 	item.CreatedAt = utils.ConvertToOutputTime(marker.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(marker.UpdatedAt)
 	if marker.CreatedBy != nil {
