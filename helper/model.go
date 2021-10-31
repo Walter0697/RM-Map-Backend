@@ -66,3 +66,13 @@ func ConvertMarkerType(markertype dbmodel.MarkerType) model.MarkerType {
 
 	return item
 }
+
+func ConvertMarkerTypeToEventType(markertype dbmodel.MarkerType) model.EventType {
+	var item model.EventType
+	item.Label = markertype.Label
+	item.Value = markertype.Value
+	item.Priority = markertype.Priority
+	item.IconPath = markertype.IconPath
+
+	return item
+}

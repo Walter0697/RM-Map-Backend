@@ -717,7 +717,7 @@ type MarkerType {
 type EventType {
   label: String!
   value: String!
-  priority: String!
+  priority: Int!
   icon_path: String!
 }
 
@@ -1110,9 +1110,9 @@ func (ec *executionContext) _EventType_priority(ctx context.Context, field graph
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(int)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _EventType_icon_path(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {

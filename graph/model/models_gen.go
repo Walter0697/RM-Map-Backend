@@ -9,7 +9,7 @@ import (
 type EventType struct {
 	Label    string `json:"label"`
 	Value    string `json:"value"`
-	Priority string `json:"priority"`
+	Priority int    `json:"priority"`
 	IconPath string `json:"icon_path"`
 }
 

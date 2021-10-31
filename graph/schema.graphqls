@@ -59,7 +59,7 @@ type MarkerType {
 type EventType {
   label: String!
   value: String!
-  priority: String!
+  priority: Int!
   icon_path: String!
 }
 

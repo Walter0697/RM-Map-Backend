@@ -381,11 +381,21 @@ func (r *queryResolver) Eventtypes(ctx context.Context) ([]*model.EventType, err
 		return result, &helper.PermissionDeniedError{}
 	}
 
-	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
 		return result, err
 	}
 
-	return nil, nil
+	types, err := service.GetAllEventType()
+	if err != nil {
+		return result, err
+	}
+
+	for _, markertype := range types {
+		item := helper.ConvertMarkerTypeToEventType(markertype)
+		result = append(result, &item)
+	}
+
+	return result, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

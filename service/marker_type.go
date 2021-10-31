@@ -116,3 +116,12 @@ func GetAllMarkerType(requested []string) ([]dbmodel.MarkerType, error) {
 
 	return types, nil
 }
+
+func GetAllEventType() ([]dbmodel.MarkerType, error) {
+	var types []dbmodel.MarkerType
+	if err := database.Connection.Find(&types).Error; err != nil {
+		return types, err
+	}
+
+	return types, nil
+}
