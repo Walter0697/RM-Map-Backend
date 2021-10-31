@@ -43,6 +43,13 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	EventType struct {
+		IconPath func(childComplexity int) int
+		Label    func(childComplexity int) int
+		Priority func(childComplexity int) int
+		Value    func(childComplexity int) int
+	}
+
 	LoginResult struct {
 		Jwt      func(childComplexity int) int
 		Username func(childComplexity int) int
@@ -86,12 +93,15 @@ type ComplexityRoot struct {
 		CreateMarker     func(childComplexity int, input model.NewMarker) int
 		CreateMarkerType func(childComplexity int, input model.NewMarkerType) int
 		CreateUser       func(childComplexity int, input model.NewUser) int
+		EditMarkerType   func(childComplexity int, input model.UpdatedMarkerType) int
 		Login            func(childComplexity int, input model.Login) int
+		RemoveMarkerType func(childComplexity int, input model.RemoveModel) int
 		UpdateMarkerFav  func(childComplexity int, input model.UpdateMarkerFavourite) int
 		UpdateRelation   func(childComplexity int, input model.UpdateRelation) int
 	}
 
 	Query struct {
+		Eventtypes  func(childComplexity int) int
 		Markers     func(childComplexity int) int
 		Markertypes func(childComplexity int) int
 		Preference  func(childComplexity int) int
@@ -119,6 +129,8 @@ type MutationResolver interface {
 	CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error)
 	UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error)
 	CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error)
+	EditMarkerType(ctx context.Context, input model.UpdatedMarkerType) (*model.MarkerType, error)
+	RemoveMarkerType(ctx context.Context, input model.RemoveModel) (string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 }
 type QueryResolver interface {
@@ -127,6 +139,7 @@ type QueryResolver interface {
 	Preference(ctx context.Context) (*model.UserPreference, error)
 	Markers(ctx context.Context) ([]*model.Marker, error)
 	Markertypes(ctx context.Context) ([]*model.MarkerType, error)
+	Eventtypes(ctx context.Context) ([]*model.EventType, error)
 }
 
 type executableSchema struct {
@@ -143,6 +156,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "EventType.icon_path":
+		if e.complexity.EventType.IconPath == nil {
+			break
+		}
+
+		return e.complexity.EventType.IconPath(childComplexity), true
+
+	case "EventType.label":
+		if e.complexity.EventType.Label == nil {
+			break
+		}
+
+		return e.complexity.EventType.Label(childComplexity), true
+
+	case "EventType.priority":
+		if e.complexity.EventType.Priority == nil {
+			break
+		}
+
+		return e.complexity.EventType.Priority(childComplexity), true
+
+	case "EventType.value":
+		if e.complexity.EventType.Value == nil {
+			break
+		}
+
+		return e.complexity.EventType.Value(childComplexity), true
 
 	case "LoginResult.jwt":
 		if e.complexity.LoginResult.Jwt == nil {
@@ -390,6 +431,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
 
+	case "Mutation.editMarkerType":
+		if e.complexity.Mutation.EditMarkerType == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editMarkerType_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditMarkerType(childComplexity, args["input"].(model.UpdatedMarkerType)), true
+
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -401,6 +454,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
+
+	case "Mutation.removeMarkerType":
+		if e.complexity.Mutation.RemoveMarkerType == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeMarkerType_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveMarkerType(childComplexity, args["input"].(model.RemoveModel)), true
 
 	case "Mutation.updateMarkerFav":
 		if e.complexity.Mutation.UpdateMarkerFav == nil {
@@ -425,6 +490,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
+
+	case "Query.eventtypes":
+		if e.complexity.Query.Eventtypes == nil {
+			break
+		}
+
+		return e.complexity.Query.Eventtypes(childComplexity), true
 
 	case "Query.markers":
 		if e.complexity.Query.Markers == nil {
@@ -642,12 +714,20 @@ type MarkerType {
   updated_by: User!
 }
 
+type EventType {
+  label: String!
+  value: String!
+  priority: String!
+  icon_path: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
   preference: UserPreference
   markers: [Marker]!
   markertypes: [MarkerType]!
+  eventtypes: [EventType]!
 }
 
 input NewUser {
@@ -688,6 +768,18 @@ input newMarkerType {
   icon_upload: Upload
 }
 
+input updatedMarkerType {
+  id: Int!
+  label: String
+  value: String
+  priority: Int
+  icon_upload: Upload
+}
+
+input removeModel {
+  id: Int!
+}
+
 input Login {
   username: String!
   password: String!
@@ -704,6 +796,8 @@ type Mutation {
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   createMarkerType(input: newMarkerType!): MarkerType!
+  editMarkerType(input: updatedMarkerType!): MarkerType!
+  removeMarkerType(input: removeModel!): String!
   login(input: Login!): LoginResult!
 }`, BuiltIn: false},
 }
@@ -758,6 +852,21 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_editMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdatedMarkerType
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNupdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -765,6 +874,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLogin2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removeMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.RemoveModel
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -885,6 +1009,146 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _EventType_label(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _EventType_value(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Value, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _EventType_priority(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Priority, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _EventType_icon_path(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.IconPath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _LoginResult_jwt(ctx context.Context, field graphql.CollectedField, obj *model.LoginResult) (ret graphql.Marshaler) {
 	defer func() {
@@ -2122,6 +2386,90 @@ func (ec *executionContext) _Mutation_createMarkerType(ctx context.Context, fiel
 	return ec.marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_editMarkerType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editMarkerType_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditMarkerType(rctx, args["input"].(model.UpdatedMarkerType))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.MarkerType)
+	fc.Result = res
+	return ec.marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeMarkerType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeMarkerType_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveMarkerType(rctx, args["input"].(model.RemoveModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2345,6 +2693,41 @@ func (ec *executionContext) _Query_markertypes(ctx context.Context, field graphq
 	res := resTmp.([]*model.MarkerType)
 	fc.Result = res
 	return ec.marshalNMarkerType2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_eventtypes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Eventtypes(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.EventType)
+	fc.Result = res
+	return ec.marshalNEventType2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4123,6 +4506,84 @@ func (ec *executionContext) unmarshalInputnewMarkerType(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputremoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
+	var it model.RemoveModel
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputupdatedMarkerType(ctx context.Context, obj interface{}) (model.UpdatedMarkerType, error) {
+	var it model.UpdatedMarkerType
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "value":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("value"))
+			it.Value, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "priority":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("priority"))
+			it.Priority, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "icon_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("icon_upload"))
+			it.IconUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -4130,6 +4591,48 @@ func (ec *executionContext) unmarshalInputnewMarkerType(ctx context.Context, obj
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var eventTypeImplementors = []string{"EventType"}
+
+func (ec *executionContext) _EventType(ctx context.Context, sel ast.SelectionSet, obj *model.EventType) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, eventTypeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("EventType")
+		case "label":
+			out.Values[i] = ec._EventType_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "value":
+			out.Values[i] = ec._EventType_value(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "priority":
+			out.Values[i] = ec._EventType_priority(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "icon_path":
+			out.Values[i] = ec._EventType_icon_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var loginResultImplementors = []string{"LoginResult"}
 
@@ -4363,6 +4866,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "editMarkerType":
+			out.Values[i] = ec._Mutation_editMarkerType(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removeMarkerType":
+			out.Values[i] = ec._Mutation_removeMarkerType(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -4453,6 +4966,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_markertypes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "eventtypes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_eventtypes(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -4809,6 +5336,44 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNEventType2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx context.Context, sel ast.SelectionSet, v []*model.EventType) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOEventType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
@@ -5314,6 +5879,16 @@ func (ec *executionContext) unmarshalNnewMarkerType2mapmarkerᚋbackendᚋgraph�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
+	res, err := ec.unmarshalInputremoveModel(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNupdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx context.Context, v interface{}) (model.UpdatedMarkerType, error) {
+	res, err := ec.unmarshalInputupdatedMarkerType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5336,6 +5911,28 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) marshalOEventType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx context.Context, sel ast.SelectionSet, v *model.EventType) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._EventType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalInt(*v)
 }
 
 func (ec *executionContext) marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v *model.Marker) graphql.Marshaler {

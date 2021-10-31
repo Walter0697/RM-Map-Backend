@@ -26,8 +26,16 @@ func (marker_type *MarkerType) Update() error {
 	return nil
 }
 
-func (marker_type *MarkerType) GetTypeById() error {
+func (marker_type *MarkerType) GetById() error {
 	if err := database.Connection.Where("id = ?", marker_type.ID).First(marker_type).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (marker_type *MarkerType) RemoveById() error {
+	if err := database.Connection.Where("id = ?", marker_type.ID).Delete(marker_type).Error; err != nil {
 		return err
 	}
 

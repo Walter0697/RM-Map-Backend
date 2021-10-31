@@ -146,6 +146,50 @@ func (r *mutationResolver) CreateMarkerType(ctx context.Context, input model.New
 	return &output, nil
 }
 
+func (r *mutationResolver) EditMarkerType(ctx context.Context, input model.UpdatedMarkerType) (*model.MarkerType, error) {
+	// ADMIN
+	// Create marker type
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return nil, err
+	}
+
+	markertype, err := service.EditMarkerType(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertMarkerType(*markertype)
+
+	return &output, nil
+}
+
+func (r *mutationResolver) RemoveMarkerType(ctx context.Context, input model.RemoveModel) (string, error) {
+	// ADMIN
+	// Create marker type
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return "", err
+	}
+
+	err := service.RemoveMarkerType(input)
+	if err != nil {
+		return "", err
+	}
+
+	return "ok", nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -234,7 +278,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 
 	preferencePtr := &preference
 
-	if err := preferencePtr.GetPreferenceByUserId(); err != nil {
+	if err := preferencePtr.GetByUserId(); err != nil {
 		if !utils.RecordNotFound(err) {
 			return nil, err
 		}
@@ -246,7 +290,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		if preference.RelationId != nil {
 			var relation dbmodel.UserRelation
 			relation.ID = *preference.RelationId
-			if err := relation.GetRelationWithUserById(); err == nil {
+			if err := relation.GetWithUserById(); err == nil {
 				user1 := helper.ConvertUser(relation.UserOne)
 				user2 := helper.ConvertUser(relation.UserTwo)
 				if user.Username == relation.UserOne.Username {
@@ -299,7 +343,7 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 }
 
 func (r *queryResolver) Markertypes(ctx context.Context) ([]*model.MarkerType, error) {
-	// USER
+	// ADMIN
 	// get all marker types for selection
 
 	var result []*model.MarkerType
@@ -308,7 +352,7 @@ func (r *queryResolver) Markertypes(ctx context.Context) ([]*model.MarkerType, e
 		return result, &helper.PermissionDeniedError{}
 	}
 
-	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
 		return result, err
 	}
 
@@ -325,6 +369,23 @@ func (r *queryResolver) Markertypes(ctx context.Context) ([]*model.MarkerType, e
 	}
 
 	return result, nil
+}
+
+func (r *queryResolver) Eventtypes(ctx context.Context) ([]*model.EventType, error) {
+	// USER
+	// get all marker types for selection
+
+	var result []*model.EventType
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return result, err
+	}
+
+	return nil, nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

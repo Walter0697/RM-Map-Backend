@@ -36,7 +36,7 @@ func (preference *UserPreference) GetOrCreateByUserId() error {
 	return nil
 }
 
-func (preference *UserPreference) GetPreferenceByUserId() error {
+func (preference *UserPreference) GetByUserId() error {
 	if err := database.Connection.Where("user_id = ?", preference.UserId).First(preference).Error; err != nil {
 		return err
 	}

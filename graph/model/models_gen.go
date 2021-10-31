@@ -6,6 +6,13 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type EventType struct {
+	Label    string `json:"label"`
+	Value    string `json:"value"`
+	Priority string `json:"priority"`
+	IconPath string `json:"icon_path"`
+}
+
 type Login struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -107,5 +114,17 @@ type NewMarkerType struct {
 	Label      string          `json:"label"`
 	Value      string          `json:"value"`
 	Priority   int             `json:"priority"`
+	IconUpload *graphql.Upload `json:"icon_upload"`
+}
+
+type RemoveModel struct {
+	ID int `json:"id"`
+}
+
+type UpdatedMarkerType struct {
+	ID         int             `json:"id"`
+	Label      *string         `json:"label"`
+	Value      *string         `json:"value"`
+	Priority   *int            `json:"priority"`
 	IconUpload *graphql.Upload `json:"icon_upload"`
 }

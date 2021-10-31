@@ -102,7 +102,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 	marker.ID = uint(input.ID)
-	if err := marker.GetMarkerById(); err != nil {
+	if err := marker.GetById(); err != nil {
 		return nil, helper.GetDatabaseError(err)
 	}
 

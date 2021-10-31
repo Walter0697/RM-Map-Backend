@@ -43,8 +43,10 @@ func main() {
 	server := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 
 	workDir, _ := os.Getwd()
-	filesDir := http.Dir(filepath.Join(workDir, "uploads"))
-	FileServer(router, "/image", filesDir)
+	markersDir := http.Dir(filepath.Join(workDir, "uploads/markers"))
+	FileServer(router, "/image/markers", markersDir)
+	typesDir := http.Dir(filepath.Join(workDir, "uploads/types"))
+	FileServer(router, "/image/types", typesDir)
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)
