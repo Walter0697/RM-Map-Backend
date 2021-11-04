@@ -79,6 +79,20 @@ type NewUser struct {
 	Role     string `json:"role"`
 }
 
+type Pin struct {
+	ID           int    `json:"id"`
+	Label        string `json:"label"`
+	ImagePath    string `json:"image_path"`
+	TopLeftX     int    `json:"top_left_x"`
+	TopLeftY     int    `json:"top_left_y"`
+	BottomRightX int    `json:"bottom_right_x"`
+	BottomRightY int    `json:"bottom_right_y"`
+	CreatedAt    string `json:"created_at"`
+	CreatedBy    *User  `json:"created_by"`
+	UpdatedAt    string `json:"updated_at"`
+	UpdatedBy    *User  `json:"updated_by"`
+}
+
 type UpdateMarkerFavourite struct {
 	ID    int  `json:"id"`
 	IsFav bool `json:"is_fav"`
@@ -117,6 +131,24 @@ type NewMarkerType struct {
 	IconUpload *graphql.Upload `json:"icon_upload"`
 }
 
+type NewPin struct {
+	Label        string          `json:"label"`
+	TopLeftX     int             `json:"top_left_x"`
+	TopLeftY     int             `json:"top_left_y"`
+	BottomRightX int             `json:"bottom_right_x"`
+	BottomRightY int             `json:"bottom_right_y"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
+}
+
+type PreviewPinInput struct {
+	TopLeftX     int             `json:"top_left_x"`
+	TopLeftY     int             `json:"top_left_y"`
+	BottomRightX int             `json:"bottom_right_x"`
+	BottomRightY int             `json:"bottom_right_y"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
+	TypeID       int             `json:"type_id"`
+}
+
 type RemoveModel struct {
 	ID int `json:"id"`
 }
@@ -127,4 +159,14 @@ type UpdatedMarkerType struct {
 	Value      *string         `json:"value"`
 	Priority   *int            `json:"priority"`
 	IconUpload *graphql.Upload `json:"icon_upload"`
+}
+
+type UpdatedPin struct {
+	ID           int             `json:"id"`
+	Label        *string         `json:"label"`
+	TopLeftX     *int            `json:"top_left_x"`
+	TopLeftY     *int            `json:"top_left_y"`
+	BottomRightX *int            `json:"bottom_right_x"`
+	BottomRightY *int            `json:"bottom_right_y"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
 }

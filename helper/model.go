@@ -86,3 +86,27 @@ func ConvertMarkerTypeToEventType(markertype dbmodel.MarkerType) model.EventType
 
 	return item
 }
+
+func ConvertPin(pin dbmodel.Pin) model.Pin {
+	var item model.Pin
+	item.ID = int(pin.ID)
+	item.Label = pin.Label
+	item.TopLeftX = pin.TopLeftX
+	item.TopLeftY = pin.TopLeftY
+	item.BottomRightX = pin.BottomRightX
+	item.BottomRightY = pin.BottomRightY
+	item.ImagePath = pin.ImagePath
+
+	item.CreatedAt = utils.ConvertToOutputTime(pin.CreatedAt)
+	item.UpdatedAt = utils.ConvertToOutputTime(pin.UpdatedAt)
+	if pin.CreatedBy != nil {
+		createdBy := ConvertUser(*pin.CreatedBy)
+		item.CreatedBy = &createdBy
+	}
+	if pin.UpdatedBy != nil {
+		updatedBy := ConvertUser(*pin.UpdatedBy)
+		item.UpdatedBy = &updatedBy
+	}
+
+	return item
+}

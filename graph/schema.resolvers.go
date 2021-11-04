@@ -148,7 +148,7 @@ func (r *mutationResolver) CreateMarkerType(ctx context.Context, input model.New
 
 func (r *mutationResolver) EditMarkerType(ctx context.Context, input model.UpdatedMarkerType) (*model.MarkerType, error) {
 	// ADMIN
-	// Create marker type
+	// Edit marker type
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
@@ -171,7 +171,7 @@ func (r *mutationResolver) EditMarkerType(ctx context.Context, input model.Updat
 
 func (r *mutationResolver) RemoveMarkerType(ctx context.Context, input model.RemoveModel) (string, error) {
 	// ADMIN
-	// Create marker type
+	// Remove marker type
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
@@ -183,6 +183,99 @@ func (r *mutationResolver) RemoveMarkerType(ctx context.Context, input model.Rem
 	}
 
 	err := service.RemoveMarkerType(input)
+	if err != nil {
+		return "", err
+	}
+
+	return "ok", nil
+}
+
+func (r *mutationResolver) CreatePin(ctx context.Context, input model.NewPin) (*model.Pin, error) {
+	// ADMIN
+	// Create pin
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return nil, err
+	}
+
+	pin, err := service.CreatePin(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertPin(*pin)
+
+	return &output, nil
+}
+
+func (r *mutationResolver) EditPin(ctx context.Context, input model.UpdatedPin) (*model.Pin, error) {
+	// ADMIN
+	// Edit pin
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return nil, err
+	}
+
+	pin, err := service.EditPin(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertPin(*pin)
+
+	return &output, err
+}
+
+func (r *mutationResolver) PreviewPin(ctx context.Context, input model.PreviewPinInput) (string, error) {
+	// ADMIN
+	// Preview Pin
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return "", err
+	}
+
+	markertype, err := service.GetMarkerTypeById(input.TypeID)
+	if err != nil {
+		return "", err
+	}
+
+	outputpath, err := service.PreviewPin(input, *markertype)
+	if err != nil {
+		return "", err
+	}
+
+	return outputpath, nil
+}
+
+func (r *mutationResolver) RemovePin(ctx context.Context, input model.RemoveModel) (string, error) {
+	// ADMIN
+	// Remove pin
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return "", err
+	}
+
+	err := service.RemovePin(input)
 	if err != nil {
 		return "", err
 	}
@@ -392,6 +485,35 @@ func (r *queryResolver) Eventtypes(ctx context.Context) ([]*model.EventType, err
 
 	for _, markertype := range types {
 		item := helper.ConvertMarkerTypeToEventType(markertype)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Pins(ctx context.Context) ([]*model.Pin, error) {
+	// ADMIN
+	// get all pins
+
+	var result []*model.Pin
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return result, err
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	pins, err := service.GetAllPin(requested_field)
+	if err != nil {
+		return result, err
+	}
+
+	for _, pin := range pins {
+		item := helper.ConvertPin(pin)
 		result = append(result, &item)
 	}
 

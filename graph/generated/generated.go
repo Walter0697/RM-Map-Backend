@@ -92,18 +92,37 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateMarker     func(childComplexity int, input model.NewMarker) int
 		CreateMarkerType func(childComplexity int, input model.NewMarkerType) int
+		CreatePin        func(childComplexity int, input model.NewPin) int
 		CreateUser       func(childComplexity int, input model.NewUser) int
 		EditMarkerType   func(childComplexity int, input model.UpdatedMarkerType) int
+		EditPin          func(childComplexity int, input model.UpdatedPin) int
 		Login            func(childComplexity int, input model.Login) int
+		PreviewPin       func(childComplexity int, input model.PreviewPinInput) int
 		RemoveMarkerType func(childComplexity int, input model.RemoveModel) int
+		RemovePin        func(childComplexity int, input model.RemoveModel) int
 		UpdateMarkerFav  func(childComplexity int, input model.UpdateMarkerFavourite) int
 		UpdateRelation   func(childComplexity int, input model.UpdateRelation) int
+	}
+
+	Pin struct {
+		BottomRightX func(childComplexity int) int
+		BottomRightY func(childComplexity int) int
+		CreatedAt    func(childComplexity int) int
+		CreatedBy    func(childComplexity int) int
+		ID           func(childComplexity int) int
+		ImagePath    func(childComplexity int) int
+		Label        func(childComplexity int) int
+		TopLeftX     func(childComplexity int) int
+		TopLeftY     func(childComplexity int) int
+		UpdatedAt    func(childComplexity int) int
+		UpdatedBy    func(childComplexity int) int
 	}
 
 	Query struct {
 		Eventtypes  func(childComplexity int) int
 		Markers     func(childComplexity int) int
 		Markertypes func(childComplexity int) int
+		Pins        func(childComplexity int) int
 		Preference  func(childComplexity int) int
 		Users       func(childComplexity int, filter *model.UserFilter) int
 		Usersearch  func(childComplexity int, filter model.UserSearch) int
@@ -131,6 +150,10 @@ type MutationResolver interface {
 	CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error)
 	EditMarkerType(ctx context.Context, input model.UpdatedMarkerType) (*model.MarkerType, error)
 	RemoveMarkerType(ctx context.Context, input model.RemoveModel) (string, error)
+	CreatePin(ctx context.Context, input model.NewPin) (*model.Pin, error)
+	EditPin(ctx context.Context, input model.UpdatedPin) (*model.Pin, error)
+	PreviewPin(ctx context.Context, input model.PreviewPinInput) (string, error)
+	RemovePin(ctx context.Context, input model.RemoveModel) (string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 }
 type QueryResolver interface {
@@ -140,6 +163,7 @@ type QueryResolver interface {
 	Markers(ctx context.Context) ([]*model.Marker, error)
 	Markertypes(ctx context.Context) ([]*model.MarkerType, error)
 	Eventtypes(ctx context.Context) ([]*model.EventType, error)
+	Pins(ctx context.Context) ([]*model.Pin, error)
 }
 
 type executableSchema struct {
@@ -419,6 +443,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateMarkerType(childComplexity, args["input"].(model.NewMarkerType)), true
 
+	case "Mutation.createPin":
+		if e.complexity.Mutation.CreatePin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createPin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreatePin(childComplexity, args["input"].(model.NewPin)), true
+
 	case "Mutation.createUser":
 		if e.complexity.Mutation.CreateUser == nil {
 			break
@@ -443,6 +479,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.EditMarkerType(childComplexity, args["input"].(model.UpdatedMarkerType)), true
 
+	case "Mutation.editPin":
+		if e.complexity.Mutation.EditPin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editPin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditPin(childComplexity, args["input"].(model.UpdatedPin)), true
+
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
 			break
@@ -455,6 +503,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
 
+	case "Mutation.previewPin":
+		if e.complexity.Mutation.PreviewPin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_previewPin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PreviewPin(childComplexity, args["input"].(model.PreviewPinInput)), true
+
 	case "Mutation.removeMarkerType":
 		if e.complexity.Mutation.RemoveMarkerType == nil {
 			break
@@ -466,6 +526,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RemoveMarkerType(childComplexity, args["input"].(model.RemoveModel)), true
+
+	case "Mutation.removePin":
+		if e.complexity.Mutation.RemovePin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removePin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemovePin(childComplexity, args["input"].(model.RemoveModel)), true
 
 	case "Mutation.updateMarkerFav":
 		if e.complexity.Mutation.UpdateMarkerFav == nil {
@@ -491,6 +563,83 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
 
+	case "Pin.bottom_right_x":
+		if e.complexity.Pin.BottomRightX == nil {
+			break
+		}
+
+		return e.complexity.Pin.BottomRightX(childComplexity), true
+
+	case "Pin.bottom_right_y":
+		if e.complexity.Pin.BottomRightY == nil {
+			break
+		}
+
+		return e.complexity.Pin.BottomRightY(childComplexity), true
+
+	case "Pin.created_at":
+		if e.complexity.Pin.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Pin.CreatedAt(childComplexity), true
+
+	case "Pin.created_by":
+		if e.complexity.Pin.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.Pin.CreatedBy(childComplexity), true
+
+	case "Pin.id":
+		if e.complexity.Pin.ID == nil {
+			break
+		}
+
+		return e.complexity.Pin.ID(childComplexity), true
+
+	case "Pin.image_path":
+		if e.complexity.Pin.ImagePath == nil {
+			break
+		}
+
+		return e.complexity.Pin.ImagePath(childComplexity), true
+
+	case "Pin.label":
+		if e.complexity.Pin.Label == nil {
+			break
+		}
+
+		return e.complexity.Pin.Label(childComplexity), true
+
+	case "Pin.top_left_x":
+		if e.complexity.Pin.TopLeftX == nil {
+			break
+		}
+
+		return e.complexity.Pin.TopLeftX(childComplexity), true
+
+	case "Pin.top_left_y":
+		if e.complexity.Pin.TopLeftY == nil {
+			break
+		}
+
+		return e.complexity.Pin.TopLeftY(childComplexity), true
+
+	case "Pin.updated_at":
+		if e.complexity.Pin.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Pin.UpdatedAt(childComplexity), true
+
+	case "Pin.updated_by":
+		if e.complexity.Pin.UpdatedBy == nil {
+			break
+		}
+
+		return e.complexity.Pin.UpdatedBy(childComplexity), true
+
 	case "Query.eventtypes":
 		if e.complexity.Query.Eventtypes == nil {
 			break
@@ -511,6 +660,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Markertypes(childComplexity), true
+
+	case "Query.pins":
+		if e.complexity.Query.Pins == nil {
+			break
+		}
+
+		return e.complexity.Query.Pins(childComplexity), true
 
 	case "Query.preference":
 		if e.complexity.Query.Preference == nil {
@@ -721,6 +877,20 @@ type EventType {
   icon_path: String!
 }
 
+type Pin {
+  id: Int!
+  label: String!
+  image_path: String!
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -728,6 +898,7 @@ type Query {
   markers: [Marker]!
   markertypes: [MarkerType]!
   eventtypes: [EventType]!
+  pins: [Pin]!
 }
 
 input NewUser {
@@ -776,6 +947,34 @@ input updatedMarkerType {
   icon_upload: Upload
 }
 
+input newPin {
+  label: String!
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  image_upload: Upload
+}
+
+input updatedPin {
+  id: Int!
+  label: String
+  top_left_x: Int
+  top_left_y: Int
+  bottom_right_x: Int
+  bottom_right_y: Int
+  image_upload: Upload
+}
+
+input previewPinInput {
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  image_upload: Upload
+  type_id: Int!
+}
+
 input removeModel {
   id: Int!
 }
@@ -798,6 +997,10 @@ type Mutation {
   createMarkerType(input: newMarkerType!): MarkerType!
   editMarkerType(input: updatedMarkerType!): MarkerType!
   removeMarkerType(input: removeModel!): String!
+  createPin(input: newPin!): Pin!
+  editPin(input: updatedPin!): Pin!
+  previewPin(input: previewPinInput!): String!
+  removePin(input: removeModel!): String!
   login(input: Login!): LoginResult!
 }`, BuiltIn: false},
 }
@@ -837,6 +1040,21 @@ func (ec *executionContext) field_Mutation_createMarker_args(ctx context.Context
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewPin
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNnewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -867,6 +1085,21 @@ func (ec *executionContext) field_Mutation_editMarkerType_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_editPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdatedPin
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNupdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -882,7 +1115,37 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_previewPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.PreviewPinInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNpreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_removeMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.RemoveModel
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removePin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.RemoveModel
@@ -2470,6 +2733,174 @@ func (ec *executionContext) _Mutation_removeMarkerType(ctx context.Context, fiel
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createPin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreatePin(rctx, args["input"].(model.NewPin))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_editPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editPin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditPin(rctx, args["input"].(model.UpdatedPin))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_previewPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_previewPin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PreviewPin(rctx, args["input"].(model.PreviewPinInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removePin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removePin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemovePin(rctx, args["input"].(model.RemoveModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2510,6 +2941,391 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	res := resTmp.(*model.LoginResult)
 	fc.Result = res
 	return ec.marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐLoginResult(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_id(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_label(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_image_path(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImagePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_top_left_x(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TopLeftX, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_top_left_y(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TopLeftY, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_bottom_right_x(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BottomRightX, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_bottom_right_y(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.BottomRightY, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_created_by(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_users(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2728,6 +3544,41 @@ func (ec *executionContext) _Query_eventtypes(ctx context.Context, field graphql
 	res := resTmp.([]*model.EventType)
 	fc.Result = res
 	return ec.marshalNEventType2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Pins(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Pin)
+	fc.Result = res
+	return ec.marshalNPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4506,6 +5357,132 @@ func (ec *executionContext) unmarshalInputnewMarkerType(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputnewPin(ctx context.Context, obj interface{}) (model.NewPin, error) {
+	var it model.NewPin
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "top_left_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_x"))
+			it.TopLeftX, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "top_left_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_y"))
+			it.TopLeftY, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_x"))
+			it.BottomRightX, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_y"))
+			it.BottomRightY, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
+			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputpreviewPinInput(ctx context.Context, obj interface{}) (model.PreviewPinInput, error) {
+	var it model.PreviewPinInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "top_left_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_x"))
+			it.TopLeftX, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "top_left_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_y"))
+			it.TopLeftY, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_x"))
+			it.BottomRightX, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_y"))
+			it.BottomRightY, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
+			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type_id"))
+			it.TypeID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputremoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
 	var it model.RemoveModel
 	asMap := map[string]interface{}{}
@@ -4575,6 +5552,77 @@ func (ec *executionContext) unmarshalInputupdatedMarkerType(ctx context.Context,
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("icon_upload"))
 			it.IconUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputupdatedPin(ctx context.Context, obj interface{}) (model.UpdatedPin, error) {
+	var it model.UpdatedPin
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "top_left_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_x"))
+			it.TopLeftX, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "top_left_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("top_left_y"))
+			it.TopLeftY, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_x"))
+			it.BottomRightX, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "bottom_right_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("bottom_right_y"))
+			it.BottomRightY, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
+			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -4876,8 +5924,105 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createPin":
+			out.Values[i] = ec._Mutation_createPin(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "editPin":
+			out.Values[i] = ec._Mutation_editPin(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "previewPin":
+			out.Values[i] = ec._Mutation_previewPin(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removePin":
+			out.Values[i] = ec._Mutation_removePin(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var pinImplementors = []string{"Pin"}
+
+func (ec *executionContext) _Pin(ctx context.Context, sel ast.SelectionSet, obj *model.Pin) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, pinImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Pin")
+		case "id":
+			out.Values[i] = ec._Pin_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._Pin_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "image_path":
+			out.Values[i] = ec._Pin_image_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "top_left_x":
+			out.Values[i] = ec._Pin_top_left_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "top_left_y":
+			out.Values[i] = ec._Pin_top_left_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "bottom_right_x":
+			out.Values[i] = ec._Pin_bottom_right_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "bottom_right_y":
+			out.Values[i] = ec._Pin_bottom_right_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created_at":
+			out.Values[i] = ec._Pin_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created_by":
+			out.Values[i] = ec._Pin_created_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_at":
+			out.Values[i] = ec._Pin_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_by":
+			out.Values[i] = ec._Pin_updated_by(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -4980,6 +6125,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_eventtypes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pins":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pins(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -5539,6 +6698,58 @@ func (ec *executionContext) unmarshalNNewUser2mapmarkerᚋbackendᚋgraphᚋmode
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx context.Context, sel ast.SelectionSet, v model.Pin) graphql.Marshaler {
+	return ec._Pin(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx context.Context, sel ast.SelectionSet, v []*model.Pin) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx context.Context, sel ast.SelectionSet, v *model.Pin) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Pin(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5879,6 +7090,16 @@ func (ec *executionContext) unmarshalNnewMarkerType2mapmarkerᚋbackendᚋgraph�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNnewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx context.Context, v interface{}) (model.NewPin, error) {
+	res, err := ec.unmarshalInputnewPin(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNpreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx context.Context, v interface{}) (model.PreviewPinInput, error) {
+	res, err := ec.unmarshalInputpreviewPinInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
 	res, err := ec.unmarshalInputremoveModel(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -5886,6 +7107,11 @@ func (ec *executionContext) unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋ
 
 func (ec *executionContext) unmarshalNupdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx context.Context, v interface{}) (model.UpdatedMarkerType, error) {
 	res, err := ec.unmarshalInputupdatedMarkerType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNupdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx context.Context, v interface{}) (model.UpdatedPin, error) {
+	res, err := ec.unmarshalInputupdatedPin(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -5947,6 +7173,13 @@ func (ec *executionContext) marshalOMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋ
 		return graphql.Null
 	}
 	return ec._MarkerType(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx context.Context, sel ast.SelectionSet, v *model.Pin) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Pin(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

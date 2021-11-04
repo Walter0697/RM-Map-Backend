@@ -47,6 +47,10 @@ func main() {
 	FileServer(router, "/image/markers", markersDir)
 	typesDir := http.Dir(filepath.Join(workDir, "uploads/types"))
 	FileServer(router, "/image/types", typesDir)
+	pinsDir := http.Dir(filepath.Join(workDir, "uploads/pins"))
+	FileServer(router, "/image/pins", pinsDir)
+	previewsDir := http.Dir(filepath.Join(workDir, "uploads/previews"))
+	FileServer(router, "/image/previews", previewsDir)
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)

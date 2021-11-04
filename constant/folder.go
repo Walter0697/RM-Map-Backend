@@ -6,6 +6,8 @@ const (
 	BasePath          string = "./uploads"
 	MarkerPreviewPath string = "/markers/"
 	TypeIconPath      string = "/types/"
+	PinImagePath      string = "/pins/"
+	PreviewImagePath  string = "/previews/"
 )
 
 func GetImageName(filetype string, extension string) string {

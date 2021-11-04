@@ -125,3 +125,13 @@ func GetAllEventType() ([]dbmodel.MarkerType, error) {
 
 	return types, nil
 }
+
+func GetMarkerTypeById(id int) (*dbmodel.MarkerType, error) {
+	var markertype dbmodel.MarkerType
+	markertype.ID = uint(id)
+	if err := markertype.GetById(); err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	return &markertype, nil
+}

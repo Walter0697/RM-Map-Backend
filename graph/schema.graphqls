@@ -63,6 +63,20 @@ type EventType {
   icon_path: String!
 }
 
+type Pin {
+  id: Int!
+  label: String!
+  image_path: String!
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -70,6 +84,7 @@ type Query {
   markers: [Marker]!
   markertypes: [MarkerType]!
   eventtypes: [EventType]!
+  pins: [Pin]!
 }
 
 input NewUser {
@@ -118,6 +133,34 @@ input updatedMarkerType {
   icon_upload: Upload
 }
 
+input newPin {
+  label: String!
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  image_upload: Upload
+}
+
+input updatedPin {
+  id: Int!
+  label: String
+  top_left_x: Int
+  top_left_y: Int
+  bottom_right_x: Int
+  bottom_right_y: Int
+  image_upload: Upload
+}
+
+input previewPinInput {
+  top_left_x: Int!
+  top_left_y: Int!
+  bottom_right_x: Int!
+  bottom_right_y: Int!
+  image_upload: Upload
+  type_id: Int!
+}
+
 input removeModel {
   id: Int!
 }
@@ -140,5 +183,9 @@ type Mutation {
   createMarkerType(input: newMarkerType!): MarkerType!
   editMarkerType(input: updatedMarkerType!): MarkerType!
   removeMarkerType(input: removeModel!): String!
+  createPin(input: newPin!): Pin!
+  editPin(input: updatedPin!): Pin!
+  previewPin(input: previewPinInput!): String!
+  removePin(input: removeModel!): String!
   login(input: Login!): LoginResult!
 }
