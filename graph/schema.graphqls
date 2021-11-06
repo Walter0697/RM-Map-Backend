@@ -20,6 +20,10 @@ type UserPreference {
   id: Int!
   user: User
   relation: User
+  regular_pin: Pin
+  favourite_pin: Pin
+  schedule_pin: Pin
+  hurry_pin: Pin
 }
 
 type Marker {
@@ -67,6 +71,7 @@ type Pin {
   id: Int!
   label: String!
   image_path: String!
+  display_path: String!
   top_left_x: Int!
   top_left_y: Int!
   bottom_right_x: Int!
@@ -77,6 +82,15 @@ type Pin {
   updated_by: User!
 }
 
+type DefaultPin {
+  label: String!
+  pin: Pin
+  created_at: String
+  created_by: User
+  updated_at: String
+  updated_by: User
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -85,6 +99,7 @@ type Query {
   markertypes: [MarkerType]!
   eventtypes: [EventType]!
   pins: [Pin]!
+  defaultpins: [DefaultPin]!
 }
 
 input NewUser {
@@ -95,6 +110,11 @@ input NewUser {
 
 input UpdateRelation {
   username: String!
+}
+
+input UpdatePreferredPin {
+  label: String!
+  pin_id: Int
 }
 
 input NewMarker {
@@ -118,14 +138,14 @@ input UpdateMarkerFavourite {
   is_fav: Boolean!
 }
 
-input newMarkerType {
+input NewMarkerType {
   label: String!
   value: String!
   priority: Int!
   icon_upload: Upload
 }
 
-input updatedMarkerType {
+input UpdatedMarkerType {
   id: Int!
   label: String
   value: String
@@ -133,7 +153,7 @@ input updatedMarkerType {
   icon_upload: Upload
 }
 
-input newPin {
+input NewPin {
   label: String!
   top_left_x: Int!
   top_left_y: Int!
@@ -142,7 +162,7 @@ input newPin {
   image_upload: Upload
 }
 
-input updatedPin {
+input UpdatedPin {
   id: Int!
   label: String
   top_left_x: Int
@@ -152,7 +172,7 @@ input updatedPin {
   image_upload: Upload
 }
 
-input previewPinInput {
+input PreviewPinInput {
   top_left_x: Int!
   top_left_y: Int!
   bottom_right_x: Int!
@@ -161,8 +181,15 @@ input previewPinInput {
   type_id: Int!
 }
 
-input removeModel {
+input RemoveModel {
   id: Int!
+}
+
+input UpdatedDefault {
+  label: String!
+  updated_type: String!
+  int_value: Int
+  string_value: String
 }
 
 input Login {
@@ -178,14 +205,16 @@ type LoginResult {
 type Mutation {
   createUser(input: NewUser!): String!
   updateRelation(input: UpdateRelation!): String!
+  updatePreferredPin(input: UpdatePreferredPin!): String!
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
-  createMarkerType(input: newMarkerType!): MarkerType!
-  editMarkerType(input: updatedMarkerType!): MarkerType!
-  removeMarkerType(input: removeModel!): String!
-  createPin(input: newPin!): Pin!
-  editPin(input: updatedPin!): Pin!
-  previewPin(input: previewPinInput!): String!
-  removePin(input: removeModel!): String!
+  createMarkerType(input: NewMarkerType!): MarkerType!
+  editMarkerType(input: UpdatedMarkerType!): MarkerType!
+  removeMarkerType(input: RemoveModel!): String!
+  createPin(input: NewPin!): Pin!
+  editPin(input: UpdatedPin!): Pin!
+  previewPin(input: PreviewPinInput!): String!
+  removePin(input: RemoveModel!): String!
+  updateDefault(input: UpdatedDefault!): String!
   login(input: Login!): LoginResult!
 }

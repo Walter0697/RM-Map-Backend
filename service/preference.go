@@ -1,6 +1,7 @@
 package service
 
 import (
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -77,4 +78,60 @@ func GetCurrentRelation(user dbmodel.User) (*dbmodel.UserRelation, error) {
 	}
 
 	return &relation, nil
+}
+
+func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbmodel.UserPreference, error) {
+	var preference dbmodel.UserPreference
+	preference.CurrentUser = user
+	if err := preference.GetOrCreateByUserId(); err != nil {
+		return nil, err
+	}
+
+	if input.PinID != nil {
+		var pin dbmodel.Pin
+		pin.ID = uint(*input.PinID)
+		if err := pin.GetById(); err != nil {
+			return nil, err
+		}
+
+		switch input.Label {
+		case constant.RegularPin:
+			preference.RpinId = &pin.ID
+			break
+		case constant.FavouritePin:
+			preference.FpinId = &pin.ID
+			break
+		case constant.SchedulePin:
+			preference.SpinId = &pin.ID
+			break
+		case constant.HurryPin:
+			preference.HpinId = &pin.ID
+			break
+		default:
+			break
+		}
+	} else {
+		switch input.Label {
+		case constant.RegularPin:
+			preference.RpinId = nil
+			break
+		case constant.FavouritePin:
+			preference.FpinId = nil
+			break
+		case constant.SchedulePin:
+			preference.SpinId = nil
+			break
+		case constant.HurryPin:
+			preference.HpinId = nil
+			break
+		default:
+			break
+		}
+	}
+
+	if err := preference.Update(); err != nil {
+		return nil, err
+	}
+
+	return &preference, nil
 }

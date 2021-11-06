@@ -6,6 +6,15 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type DefaultPin struct {
+	Label     string  `json:"label"`
+	Pin       *Pin    `json:"pin"`
+	CreatedAt *string `json:"created_at"`
+	CreatedBy *User   `json:"created_by"`
+	UpdatedAt *string `json:"updated_at"`
+	UpdatedBy *User   `json:"updated_by"`
+}
+
 type EventType struct {
 	Label    string `json:"label"`
 	Value    string `json:"value"`
@@ -73,57 +82,6 @@ type NewMarker struct {
 	Price        *string         `json:"price"`
 }
 
-type NewUser struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
-}
-
-type Pin struct {
-	ID           int    `json:"id"`
-	Label        string `json:"label"`
-	ImagePath    string `json:"image_path"`
-	TopLeftX     int    `json:"top_left_x"`
-	TopLeftY     int    `json:"top_left_y"`
-	BottomRightX int    `json:"bottom_right_x"`
-	BottomRightY int    `json:"bottom_right_y"`
-	CreatedAt    string `json:"created_at"`
-	CreatedBy    *User  `json:"created_by"`
-	UpdatedAt    string `json:"updated_at"`
-	UpdatedBy    *User  `json:"updated_by"`
-}
-
-type UpdateMarkerFavourite struct {
-	ID    int  `json:"id"`
-	IsFav bool `json:"is_fav"`
-}
-
-type UpdateRelation struct {
-	Username string `json:"username"`
-}
-
-type User struct {
-	ID        int    `json:"id"`
-	Username  string `json:"username"`
-	Role      string `json:"role"`
-	CreatedAt string `json:"created_at"`
-}
-
-type UserFilter struct {
-	Username *string `json:"username"`
-	Role     *string `json:"role"`
-}
-
-type UserPreference struct {
-	ID       int   `json:"id"`
-	User     *User `json:"user"`
-	Relation *User `json:"relation"`
-}
-
-type UserSearch struct {
-	Username string `json:"username"`
-}
-
 type NewMarkerType struct {
 	Label      string          `json:"label"`
 	Value      string          `json:"value"`
@@ -140,6 +98,27 @@ type NewPin struct {
 	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 
+type NewUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
+
+type Pin struct {
+	ID           int    `json:"id"`
+	Label        string `json:"label"`
+	ImagePath    string `json:"image_path"`
+	DisplayPath  string `json:"display_path"`
+	TopLeftX     int    `json:"top_left_x"`
+	TopLeftY     int    `json:"top_left_y"`
+	BottomRightX int    `json:"bottom_right_x"`
+	BottomRightY int    `json:"bottom_right_y"`
+	CreatedAt    string `json:"created_at"`
+	CreatedBy    *User  `json:"created_by"`
+	UpdatedAt    string `json:"updated_at"`
+	UpdatedBy    *User  `json:"updated_by"`
+}
+
 type PreviewPinInput struct {
 	TopLeftX     int             `json:"top_left_x"`
 	TopLeftY     int             `json:"top_left_y"`
@@ -151,6 +130,27 @@ type PreviewPinInput struct {
 
 type RemoveModel struct {
 	ID int `json:"id"`
+}
+
+type UpdateMarkerFavourite struct {
+	ID    int  `json:"id"`
+	IsFav bool `json:"is_fav"`
+}
+
+type UpdatePreferredPin struct {
+	Label string `json:"label"`
+	PinID *int   `json:"pin_id"`
+}
+
+type UpdateRelation struct {
+	Username string `json:"username"`
+}
+
+type UpdatedDefault struct {
+	Label       string  `json:"label"`
+	UpdatedType string  `json:"updated_type"`
+	IntValue    *int    `json:"int_value"`
+	StringValue *string `json:"string_value"`
 }
 
 type UpdatedMarkerType struct {
@@ -169,4 +169,30 @@ type UpdatedPin struct {
 	BottomRightX *int            `json:"bottom_right_x"`
 	BottomRightY *int            `json:"bottom_right_y"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
+}
+
+type User struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Role      string `json:"role"`
+	CreatedAt string `json:"created_at"`
+}
+
+type UserFilter struct {
+	Username *string `json:"username"`
+	Role     *string `json:"role"`
+}
+
+type UserPreference struct {
+	ID           int   `json:"id"`
+	User         *User `json:"user"`
+	Relation     *User `json:"relation"`
+	RegularPin   *Pin  `json:"regular_pin"`
+	FavouritePin *Pin  `json:"favourite_pin"`
+	SchedulePin  *Pin  `json:"schedule_pin"`
+	HurryPin     *Pin  `json:"hurry_pin"`
+}
+
+type UserSearch struct {
+	Username string `json:"username"`
 }

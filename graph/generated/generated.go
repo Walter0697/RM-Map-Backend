@@ -43,6 +43,15 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	DefaultPin struct {
+		CreatedAt func(childComplexity int) int
+		CreatedBy func(childComplexity int) int
+		Label     func(childComplexity int) int
+		Pin       func(childComplexity int) int
+		UpdatedAt func(childComplexity int) int
+		UpdatedBy func(childComplexity int) int
+	}
+
 	EventType struct {
 		IconPath func(childComplexity int) int
 		Label    func(childComplexity int) int
@@ -90,18 +99,20 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateMarker     func(childComplexity int, input model.NewMarker) int
-		CreateMarkerType func(childComplexity int, input model.NewMarkerType) int
-		CreatePin        func(childComplexity int, input model.NewPin) int
-		CreateUser       func(childComplexity int, input model.NewUser) int
-		EditMarkerType   func(childComplexity int, input model.UpdatedMarkerType) int
-		EditPin          func(childComplexity int, input model.UpdatedPin) int
-		Login            func(childComplexity int, input model.Login) int
-		PreviewPin       func(childComplexity int, input model.PreviewPinInput) int
-		RemoveMarkerType func(childComplexity int, input model.RemoveModel) int
-		RemovePin        func(childComplexity int, input model.RemoveModel) int
-		UpdateMarkerFav  func(childComplexity int, input model.UpdateMarkerFavourite) int
-		UpdateRelation   func(childComplexity int, input model.UpdateRelation) int
+		CreateMarker       func(childComplexity int, input model.NewMarker) int
+		CreateMarkerType   func(childComplexity int, input model.NewMarkerType) int
+		CreatePin          func(childComplexity int, input model.NewPin) int
+		CreateUser         func(childComplexity int, input model.NewUser) int
+		EditMarkerType     func(childComplexity int, input model.UpdatedMarkerType) int
+		EditPin            func(childComplexity int, input model.UpdatedPin) int
+		Login              func(childComplexity int, input model.Login) int
+		PreviewPin         func(childComplexity int, input model.PreviewPinInput) int
+		RemoveMarkerType   func(childComplexity int, input model.RemoveModel) int
+		RemovePin          func(childComplexity int, input model.RemoveModel) int
+		UpdateDefault      func(childComplexity int, input model.UpdatedDefault) int
+		UpdateMarkerFav    func(childComplexity int, input model.UpdateMarkerFavourite) int
+		UpdatePreferredPin func(childComplexity int, input model.UpdatePreferredPin) int
+		UpdateRelation     func(childComplexity int, input model.UpdateRelation) int
 	}
 
 	Pin struct {
@@ -109,6 +120,7 @@ type ComplexityRoot struct {
 		BottomRightY func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		CreatedBy    func(childComplexity int) int
+		DisplayPath  func(childComplexity int) int
 		ID           func(childComplexity int) int
 		ImagePath    func(childComplexity int) int
 		Label        func(childComplexity int) int
@@ -119,6 +131,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Defaultpins func(childComplexity int) int
 		Eventtypes  func(childComplexity int) int
 		Markers     func(childComplexity int) int
 		Markertypes func(childComplexity int) int
@@ -136,15 +149,20 @@ type ComplexityRoot struct {
 	}
 
 	UserPreference struct {
-		ID       func(childComplexity int) int
-		Relation func(childComplexity int) int
-		User     func(childComplexity int) int
+		FavouritePin func(childComplexity int) int
+		HurryPin     func(childComplexity int) int
+		ID           func(childComplexity int) int
+		RegularPin   func(childComplexity int) int
+		Relation     func(childComplexity int) int
+		SchedulePin  func(childComplexity int) int
+		User         func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (string, error)
 	UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error)
+	UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (string, error)
 	CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error)
 	UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error)
 	CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error)
@@ -154,6 +172,7 @@ type MutationResolver interface {
 	EditPin(ctx context.Context, input model.UpdatedPin) (*model.Pin, error)
 	PreviewPin(ctx context.Context, input model.PreviewPinInput) (string, error)
 	RemovePin(ctx context.Context, input model.RemoveModel) (string, error)
+	UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 }
 type QueryResolver interface {
@@ -164,6 +183,7 @@ type QueryResolver interface {
 	Markertypes(ctx context.Context) ([]*model.MarkerType, error)
 	Eventtypes(ctx context.Context) ([]*model.EventType, error)
 	Pins(ctx context.Context) ([]*model.Pin, error)
+	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
 }
 
 type executableSchema struct {
@@ -180,6 +200,48 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "DefaultPin.created_at":
+		if e.complexity.DefaultPin.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.CreatedAt(childComplexity), true
+
+	case "DefaultPin.created_by":
+		if e.complexity.DefaultPin.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.CreatedBy(childComplexity), true
+
+	case "DefaultPin.label":
+		if e.complexity.DefaultPin.Label == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.Label(childComplexity), true
+
+	case "DefaultPin.pin":
+		if e.complexity.DefaultPin.Pin == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.Pin(childComplexity), true
+
+	case "DefaultPin.updated_at":
+		if e.complexity.DefaultPin.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.UpdatedAt(childComplexity), true
+
+	case "DefaultPin.updated_by":
+		if e.complexity.DefaultPin.UpdatedBy == nil {
+			break
+		}
+
+		return e.complexity.DefaultPin.UpdatedBy(childComplexity), true
 
 	case "EventType.icon_path":
 		if e.complexity.EventType.IconPath == nil {
@@ -539,6 +601,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RemovePin(childComplexity, args["input"].(model.RemoveModel)), true
 
+	case "Mutation.updateDefault":
+		if e.complexity.Mutation.UpdateDefault == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateDefault_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateDefault(childComplexity, args["input"].(model.UpdatedDefault)), true
+
 	case "Mutation.updateMarkerFav":
 		if e.complexity.Mutation.UpdateMarkerFav == nil {
 			break
@@ -550,6 +624,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateMarkerFav(childComplexity, args["input"].(model.UpdateMarkerFavourite)), true
+
+	case "Mutation.updatePreferredPin":
+		if e.complexity.Mutation.UpdatePreferredPin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updatePreferredPin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdatePreferredPin(childComplexity, args["input"].(model.UpdatePreferredPin)), true
 
 	case "Mutation.updateRelation":
 		if e.complexity.Mutation.UpdateRelation == nil {
@@ -590,6 +676,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Pin.CreatedBy(childComplexity), true
+
+	case "Pin.display_path":
+		if e.complexity.Pin.DisplayPath == nil {
+			break
+		}
+
+		return e.complexity.Pin.DisplayPath(childComplexity), true
 
 	case "Pin.id":
 		if e.complexity.Pin.ID == nil {
@@ -639,6 +732,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Pin.UpdatedBy(childComplexity), true
+
+	case "Query.defaultpins":
+		if e.complexity.Query.Defaultpins == nil {
+			break
+		}
+
+		return e.complexity.Query.Defaultpins(childComplexity), true
 
 	case "Query.eventtypes":
 		if e.complexity.Query.Eventtypes == nil {
@@ -727,6 +827,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Username(childComplexity), true
 
+	case "UserPreference.favourite_pin":
+		if e.complexity.UserPreference.FavouritePin == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.FavouritePin(childComplexity), true
+
+	case "UserPreference.hurry_pin":
+		if e.complexity.UserPreference.HurryPin == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.HurryPin(childComplexity), true
+
 	case "UserPreference.id":
 		if e.complexity.UserPreference.ID == nil {
 			break
@@ -734,12 +848,26 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserPreference.ID(childComplexity), true
 
+	case "UserPreference.regular_pin":
+		if e.complexity.UserPreference.RegularPin == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.RegularPin(childComplexity), true
+
 	case "UserPreference.relation":
 		if e.complexity.UserPreference.Relation == nil {
 			break
 		}
 
 		return e.complexity.UserPreference.Relation(childComplexity), true
+
+	case "UserPreference.schedule_pin":
+		if e.complexity.UserPreference.SchedulePin == nil {
+			break
+		}
+
+		return e.complexity.UserPreference.SchedulePin(childComplexity), true
 
 	case "UserPreference.user":
 		if e.complexity.UserPreference.User == nil {
@@ -834,6 +962,10 @@ type UserPreference {
   id: Int!
   user: User
   relation: User
+  regular_pin: Pin
+  favourite_pin: Pin
+  schedule_pin: Pin
+  hurry_pin: Pin
 }
 
 type Marker {
@@ -881,6 +1013,7 @@ type Pin {
   id: Int!
   label: String!
   image_path: String!
+  display_path: String!
   top_left_x: Int!
   top_left_y: Int!
   bottom_right_x: Int!
@@ -891,6 +1024,15 @@ type Pin {
   updated_by: User!
 }
 
+type DefaultPin {
+  label: String!
+  pin: Pin
+  created_at: String
+  created_by: User
+  updated_at: String
+  updated_by: User
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -899,6 +1041,7 @@ type Query {
   markertypes: [MarkerType]!
   eventtypes: [EventType]!
   pins: [Pin]!
+  defaultpins: [DefaultPin]!
 }
 
 input NewUser {
@@ -909,6 +1052,11 @@ input NewUser {
 
 input UpdateRelation {
   username: String!
+}
+
+input UpdatePreferredPin {
+  label: String!
+  pin_id: Int
 }
 
 input NewMarker {
@@ -932,14 +1080,14 @@ input UpdateMarkerFavourite {
   is_fav: Boolean!
 }
 
-input newMarkerType {
+input NewMarkerType {
   label: String!
   value: String!
   priority: Int!
   icon_upload: Upload
 }
 
-input updatedMarkerType {
+input UpdatedMarkerType {
   id: Int!
   label: String
   value: String
@@ -947,7 +1095,7 @@ input updatedMarkerType {
   icon_upload: Upload
 }
 
-input newPin {
+input NewPin {
   label: String!
   top_left_x: Int!
   top_left_y: Int!
@@ -956,7 +1104,7 @@ input newPin {
   image_upload: Upload
 }
 
-input updatedPin {
+input UpdatedPin {
   id: Int!
   label: String
   top_left_x: Int
@@ -966,7 +1114,7 @@ input updatedPin {
   image_upload: Upload
 }
 
-input previewPinInput {
+input PreviewPinInput {
   top_left_x: Int!
   top_left_y: Int!
   bottom_right_x: Int!
@@ -975,8 +1123,15 @@ input previewPinInput {
   type_id: Int!
 }
 
-input removeModel {
+input RemoveModel {
   id: Int!
+}
+
+input UpdatedDefault {
+  label: String!
+  updated_type: String!
+  int_value: Int
+  string_value: String
 }
 
 input Login {
@@ -992,15 +1147,17 @@ type LoginResult {
 type Mutation {
   createUser(input: NewUser!): String!
   updateRelation(input: UpdateRelation!): String!
+  updatePreferredPin(input: UpdatePreferredPin!): String!
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
-  createMarkerType(input: newMarkerType!): MarkerType!
-  editMarkerType(input: updatedMarkerType!): MarkerType!
-  removeMarkerType(input: removeModel!): String!
-  createPin(input: newPin!): Pin!
-  editPin(input: updatedPin!): Pin!
-  previewPin(input: previewPinInput!): String!
-  removePin(input: removeModel!): String!
+  createMarkerType(input: NewMarkerType!): MarkerType!
+  editMarkerType(input: UpdatedMarkerType!): MarkerType!
+  removeMarkerType(input: RemoveModel!): String!
+  createPin(input: NewPin!): Pin!
+  editPin(input: UpdatedPin!): Pin!
+  previewPin(input: PreviewPinInput!): String!
+  removePin(input: RemoveModel!): String!
+  updateDefault(input: UpdatedDefault!): String!
   login(input: Login!): LoginResult!
 }`, BuiltIn: false},
 }
@@ -1016,7 +1173,7 @@ func (ec *executionContext) field_Mutation_createMarkerType_args(ctx context.Con
 	var arg0 model.NewMarkerType
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNnewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx, tmp)
+		arg0, err = ec.unmarshalNNewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1046,7 +1203,7 @@ func (ec *executionContext) field_Mutation_createPin_args(ctx context.Context, r
 	var arg0 model.NewPin
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNnewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
+		arg0, err = ec.unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1076,7 +1233,7 @@ func (ec *executionContext) field_Mutation_editMarkerType_args(ctx context.Conte
 	var arg0 model.UpdatedMarkerType
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNupdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1091,7 +1248,7 @@ func (ec *executionContext) field_Mutation_editPin_args(ctx context.Context, raw
 	var arg0 model.UpdatedPin
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNupdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx, tmp)
+		arg0, err = ec.unmarshalNUpdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1121,7 +1278,7 @@ func (ec *executionContext) field_Mutation_previewPin_args(ctx context.Context, 
 	var arg0 model.PreviewPinInput
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNpreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx, tmp)
+		arg0, err = ec.unmarshalNPreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1136,7 +1293,7 @@ func (ec *executionContext) field_Mutation_removeMarkerType_args(ctx context.Con
 	var arg0 model.RemoveModel
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1151,7 +1308,22 @@ func (ec *executionContext) field_Mutation_removePin_args(ctx context.Context, r
 	var arg0 model.RemoveModel
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateDefault_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdatedDefault
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdatedDefault2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedDefault(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1167,6 +1339,21 @@ func (ec *executionContext) field_Mutation_updateMarkerFav_args(ctx context.Cont
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updatePreferredPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdatePreferredPin
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdatePreferredPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatePreferredPin(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1272,6 +1459,201 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _DefaultPin_label(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DefaultPin_pin(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DefaultPin_created_at(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DefaultPin_created_by(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DefaultPin_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _DefaultPin_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "DefaultPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _EventType_label(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
 	defer func() {
@@ -2523,6 +2905,48 @@ func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updatePreferredPin_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdatePreferredPin(rctx, args["input"].(model.UpdatePreferredPin))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -2901,6 +3325,48 @@ func (ec *executionContext) _Mutation_removePin(ctx context.Context, field graph
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_updateDefault(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_updateDefault_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateDefault(rctx, args["input"].(model.UpdatedDefault))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3032,6 +3498,41 @@ func (ec *executionContext) _Pin_image_path(ctx context.Context, field graphql.C
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.ImagePath, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Pin_display_path(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Pin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.DisplayPath, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3581,6 +4082,41 @@ func (ec *executionContext) _Query_pins(ctx context.Context, field graphql.Colle
 	return ec.marshalNPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_defaultpins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Defaultpins(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.DefaultPin)
+	fc.Result = res
+	return ec.marshalNDefaultPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3889,6 +4425,134 @@ func (ec *executionContext) _UserPreference_relation(ctx context.Context, field 
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_regular_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RegularPin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_favourite_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.FavouritePin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_schedule_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SchedulePin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _UserPreference_hurry_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "UserPreference",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.HurryPin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Pin)
+	fc.Result = res
+	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -5163,154 +5827,7 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (model.NewUser, error) {
-	var it model.NewUser
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "username":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "password":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			it.Password, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "role":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
-			it.Role, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Context, obj interface{}) (model.UpdateMarkerFavourite, error) {
-	var it model.UpdateMarkerFavourite
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "is_fav":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_fav"))
-			it.IsFav, err = ec.unmarshalNBoolean2bool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, obj interface{}) (model.UpdateRelation, error) {
-	var it model.UpdateRelation
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "username":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj interface{}) (model.UserFilter, error) {
-	var it model.UserFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "username":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "role":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
-			it.Role, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj interface{}) (model.UserSearch, error) {
-	var it model.UserSearch
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "username":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-			it.Username, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputnewMarkerType(ctx context.Context, obj interface{}) (model.NewMarkerType, error) {
+func (ec *executionContext) unmarshalInputNewMarkerType(ctx context.Context, obj interface{}) (model.NewMarkerType, error) {
 	var it model.NewMarkerType
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5357,7 +5874,7 @@ func (ec *executionContext) unmarshalInputnewMarkerType(ctx context.Context, obj
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputnewPin(ctx context.Context, obj interface{}) (model.NewPin, error) {
+func (ec *executionContext) unmarshalInputNewPin(ctx context.Context, obj interface{}) (model.NewPin, error) {
 	var it model.NewPin
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5420,7 +5937,46 @@ func (ec *executionContext) unmarshalInputnewPin(ctx context.Context, obj interf
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputpreviewPinInput(ctx context.Context, obj interface{}) (model.PreviewPinInput, error) {
+func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (model.NewUser, error) {
+	var it model.NewUser
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "password":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			it.Password, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "role":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			it.Role, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPreviewPinInput(ctx context.Context, obj interface{}) (model.PreviewPinInput, error) {
 	var it model.PreviewPinInput
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5483,7 +6039,7 @@ func (ec *executionContext) unmarshalInputpreviewPinInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputremoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
+func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
 	var it model.RemoveModel
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5506,7 +6062,139 @@ func (ec *executionContext) unmarshalInputremoveModel(ctx context.Context, obj i
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputupdatedMarkerType(ctx context.Context, obj interface{}) (model.UpdatedMarkerType, error) {
+func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Context, obj interface{}) (model.UpdateMarkerFavourite, error) {
+	var it model.UpdateMarkerFavourite
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "is_fav":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_fav"))
+			it.IsFav, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdatePreferredPin(ctx context.Context, obj interface{}) (model.UpdatePreferredPin, error) {
+	var it model.UpdatePreferredPin
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "pin_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("pin_id"))
+			it.PinID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, obj interface{}) (model.UpdateRelation, error) {
+	var it model.UpdateRelation
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdatedDefault(ctx context.Context, obj interface{}) (model.UpdatedDefault, error) {
+	var it model.UpdatedDefault
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "updated_type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("updated_type"))
+			it.UpdatedType, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "int_value":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("int_value"))
+			it.IntValue, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "string_value":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("string_value"))
+			it.StringValue, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdatedMarkerType(ctx context.Context, obj interface{}) (model.UpdatedMarkerType, error) {
 	var it model.UpdatedMarkerType
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5561,7 +6249,7 @@ func (ec *executionContext) unmarshalInputupdatedMarkerType(ctx context.Context,
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputupdatedPin(ctx context.Context, obj interface{}) (model.UpdatedPin, error) {
+func (ec *executionContext) unmarshalInputUpdatedPin(ctx context.Context, obj interface{}) (model.UpdatedPin, error) {
 	var it model.UpdatedPin
 	asMap := map[string]interface{}{}
 	for k, v := range obj.(map[string]interface{}) {
@@ -5632,6 +6320,60 @@ func (ec *executionContext) unmarshalInputupdatedPin(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj interface{}) (model.UserFilter, error) {
+	var it model.UserFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "role":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			it.Role, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj interface{}) (model.UserSearch, error) {
+	var it model.UserSearch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "username":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5639,6 +6381,43 @@ func (ec *executionContext) unmarshalInputupdatedPin(ctx context.Context, obj in
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var defaultPinImplementors = []string{"DefaultPin"}
+
+func (ec *executionContext) _DefaultPin(ctx context.Context, sel ast.SelectionSet, obj *model.DefaultPin) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, defaultPinImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DefaultPin")
+		case "label":
+			out.Values[i] = ec._DefaultPin_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pin":
+			out.Values[i] = ec._DefaultPin_pin(ctx, field, obj)
+		case "created_at":
+			out.Values[i] = ec._DefaultPin_created_at(ctx, field, obj)
+		case "created_by":
+			out.Values[i] = ec._DefaultPin_created_by(ctx, field, obj)
+		case "updated_at":
+			out.Values[i] = ec._DefaultPin_updated_at(ctx, field, obj)
+		case "updated_by":
+			out.Values[i] = ec._DefaultPin_updated_by(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var eventTypeImplementors = []string{"EventType"}
 
@@ -5899,6 +6678,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updatePreferredPin":
+			out.Values[i] = ec._Mutation_updatePreferredPin(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "createMarker":
 			out.Values[i] = ec._Mutation_createMarker(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5944,6 +6728,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "updateDefault":
+			out.Values[i] = ec._Mutation_updateDefault(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -5983,6 +6772,11 @@ func (ec *executionContext) _Pin(ctx context.Context, sel ast.SelectionSet, obj 
 			}
 		case "image_path":
 			out.Values[i] = ec._Pin_image_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "display_path":
+			out.Values[i] = ec._Pin_display_path(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -6144,6 +6938,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "defaultpins":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_defaultpins(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -6221,6 +7029,14 @@ func (ec *executionContext) _UserPreference(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._UserPreference_user(ctx, field, obj)
 		case "relation":
 			out.Values[i] = ec._UserPreference_relation(ctx, field, obj)
+		case "regular_pin":
+			out.Values[i] = ec._UserPreference_regular_pin(ctx, field, obj)
+		case "favourite_pin":
+			out.Values[i] = ec._UserPreference_favourite_pin(ctx, field, obj)
+		case "schedule_pin":
+			out.Values[i] = ec._UserPreference_schedule_pin(ctx, field, obj)
+		case "hurry_pin":
+			out.Values[i] = ec._UserPreference_hurry_pin(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6497,6 +7313,44 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNDefaultPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v []*model.DefaultPin) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalODefaultPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNEventType2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx context.Context, sel ast.SelectionSet, v []*model.EventType) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6693,6 +7547,16 @@ func (ec *executionContext) unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmo
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNNewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx context.Context, v interface{}) (model.NewMarkerType, error) {
+	res, err := ec.unmarshalInputNewMarkerType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx context.Context, v interface{}) (model.NewPin, error) {
+	res, err := ec.unmarshalInputNewPin(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNNewUser2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewUser(ctx context.Context, v interface{}) (model.NewUser, error) {
 	res, err := ec.unmarshalInputNewUser(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6750,6 +7614,16 @@ func (ec *executionContext) marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodel�
 	return ec._Pin(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNPreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx context.Context, v interface{}) (model.PreviewPinInput, error) {
+	res, err := ec.unmarshalInputPreviewPinInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
+	res, err := ec.unmarshalInputRemoveModel(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	res, err := graphql.UnmarshalString(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6770,8 +7644,28 @@ func (ec *executionContext) unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackend�
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNUpdatePreferredPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatePreferredPin(ctx context.Context, v interface{}) (model.UpdatePreferredPin, error) {
+	res, err := ec.unmarshalInputUpdatePreferredPin(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx context.Context, v interface{}) (model.UpdateRelation, error) {
 	res, err := ec.unmarshalInputUpdateRelation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdatedDefault2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedDefault(ctx context.Context, v interface{}) (model.UpdatedDefault, error) {
+	res, err := ec.unmarshalInputUpdatedDefault(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx context.Context, v interface{}) (model.UpdatedMarkerType, error) {
+	res, err := ec.unmarshalInputUpdatedMarkerType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx context.Context, v interface{}) (model.UpdatedPin, error) {
+	res, err := ec.unmarshalInputUpdatedPin(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -7085,36 +7979,6 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
-func (ec *executionContext) unmarshalNnewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx context.Context, v interface{}) (model.NewMarkerType, error) {
-	res, err := ec.unmarshalInputnewMarkerType(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNnewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx context.Context, v interface{}) (model.NewPin, error) {
-	res, err := ec.unmarshalInputnewPin(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNpreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx context.Context, v interface{}) (model.PreviewPinInput, error) {
-	res, err := ec.unmarshalInputpreviewPinInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNremoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
-	res, err := ec.unmarshalInputremoveModel(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx context.Context, v interface{}) (model.UpdatedMarkerType, error) {
-	res, err := ec.unmarshalInputupdatedMarkerType(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNupdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx context.Context, v interface{}) (model.UpdatedPin, error) {
-	res, err := ec.unmarshalInputupdatedPin(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7137,6 +8001,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) marshalODefaultPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v *model.DefaultPin) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._DefaultPin(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOEventType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐEventType(ctx context.Context, sel ast.SelectionSet, v *model.EventType) graphql.Marshaler {

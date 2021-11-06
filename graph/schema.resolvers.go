@@ -6,6 +6,7 @@ package graph
 import (
 	"context"
 	"mapmarker/backend/config"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/generated"
 	"mapmarker/backend/graph/model"
@@ -67,6 +68,27 @@ func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.Updat
 	}
 
 	if _, err := service.UpdateRelation(input, *user); err != nil {
+		return "", err
+	}
+
+	return "ok", nil
+}
+
+func (r *mutationResolver) UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (string, error) {
+	// USER
+	// update your current pin preference
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return "", err
+	}
+
+	_, err := service.UpdatePreferredPin(input, *user)
+	if err != nil {
 		return "", err
 	}
 
@@ -283,6 +305,33 @@ func (r *mutationResolver) RemovePin(ctx context.Context, input model.RemoveMode
 	return "ok", nil
 }
 
+func (r *mutationResolver) UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error) {
+	// ADMIN
+	// Update default
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return "", err
+	}
+
+	if input.UpdatedType == constant.PinType {
+		if input.IntValue == nil {
+			return "", &helper.MissingIntUpdateDefault{}
+		}
+
+		_, err := service.EditDefaultPin(input, *user)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return "ok", nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -377,7 +426,12 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		}
 	}
 
-	var result model.UserPreference
+	defaultPins, err := service.GetAllDefaultPins()
+	if err != nil {
+		return nil, err
+	}
+
+	result := helper.UserPreferencePin(preferencePtr, defaultPins)
 	if preferencePtr != nil {
 		result.ID = int(preference.ID)
 		if preference.RelationId != nil {
@@ -398,7 +452,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		return &result, nil
 	}
 
-	return nil, nil
+	return &result, nil
 }
 
 func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
@@ -514,6 +568,32 @@ func (r *queryResolver) Pins(ctx context.Context) ([]*model.Pin, error) {
 
 	for _, pin := range pins {
 		item := helper.ConvertPin(pin)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Defaultpins(ctx context.Context) ([]*model.DefaultPin, error) {
+	// ADMIN
+	// get all default pins value
+	var result []*model.DefaultPin
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+		return result, err
+	}
+
+	pins, err := service.GetAllDefaultPins()
+	if err != nil {
+		return result, err
+	}
+
+	for _, pin := range pins {
+		item := helper.ConvertToDefaultPin(pin)
 		result = append(result, &item)
 	}
 

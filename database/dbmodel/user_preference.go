@@ -10,6 +10,14 @@ type UserPreference struct {
 	UserId           uint
 	SelectedRelation *UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId       *uint
+	RegularPin       *Pin `gorm:"foreignKey:rpin_id;reference:id"` // selected pin
+	RpinId           *uint
+	FavouritePin     *Pin `gorm:"foreignKey:fpin_id;reference:id"`
+	FpinId           *uint
+	SchedulePin      *Pin `gorm:"foreignKey:spin_id;reference:id"`
+	SpinId           *uint
+	HurryPin         *Pin `gorm:"foreignKey:hpin_id;reference:id"`
+	HpinId           *uint
 }
 
 func (preference *UserPreference) Create() error {
@@ -37,7 +45,14 @@ func (preference *UserPreference) GetOrCreateByUserId() error {
 }
 
 func (preference *UserPreference) GetByUserId() error {
-	if err := database.Connection.Where("user_id = ?", preference.UserId).First(preference).Error; err != nil {
+	if err := database.
+		Connection.
+		Preload("RegularPin").
+		Preload("FavouritePin").
+		Preload("SchedulePin").
+		Preload("HurryPin").
+		Where("user_id = ?", preference.UserId).
+		First(preference).Error; err != nil {
 		return err
 	}
 

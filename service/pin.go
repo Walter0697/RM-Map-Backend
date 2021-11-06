@@ -84,7 +84,7 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 			return nil, &helper.UploadFileNotImageError{}
 		}
 
-		// decode the image first since upload might destroy the image
+		// decode the image
 		pinFile, _, err := image.Decode(input.ImageUpload.File)
 		if err != nil {
 			return nil, err
@@ -92,12 +92,17 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 
 		filename := constant.GetImageName(constant.PinImagePath, typeInfo[1])
 		filepath := constant.BasePath + filename
-		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
+
+		// clone the image for saving the origin
+		pinOriginFile := imaging.Clone(pinFile)
+		err = imaging.Save(pinOriginFile, filepath)
+		if err != nil {
 			return nil, err
 		}
 
 		pin.ImagePath = filename
 
+		// then, use the pin file to handle preview image for admin
 		var bound Boundary
 		bound.TopLeftX = input.TopLeftX
 		bound.TopLeftY = input.TopLeftY
@@ -136,20 +141,26 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 		pin.Label = *input.Label
 	}
 
+	shouldUpdatePosition := false
+
 	if input.TopLeftX != nil {
 		pin.TopLeftX = *input.TopLeftX
+		shouldUpdatePosition = true
 	}
 
 	if input.TopLeftY != nil {
 		pin.TopLeftY = *input.TopLeftY
+		shouldUpdatePosition = true
 	}
 
 	if input.BottomRightX != nil {
 		pin.BottomRightX = *input.BottomRightX
+		shouldUpdatePosition = true
 	}
 
 	if input.BottomRightY != nil {
 		pin.BottomRightY = *input.BottomRightY
+		shouldUpdatePosition = true
 	}
 
 	if input.ImageUpload != nil {
@@ -158,25 +169,44 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 			return nil, &helper.UploadFileNotImageError{}
 		}
 
-		// decode the image first since upload might destroy the image
+		// decode the image
 		pinFile, _, err := image.Decode(input.ImageUpload.File)
 		if err != nil {
 			return nil, err
 		}
 
-		filename := constant.GetImageName(constant.TypeIconPath, typeInfo[1])
+		filename := constant.GetImageName(constant.PinImagePath, typeInfo[1])
 		filepath := constant.BasePath + filename
-		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
+
+		// clone the image for saving the origin
+		pinOriginFile := imaging.Clone(pinFile)
+		err = imaging.Save(pinOriginFile, filepath)
+		if err != nil {
 			return nil, err
 		}
 
 		pin.ImagePath = filename
 
 		var bound Boundary
-		bound.TopLeftX = *input.TopLeftX
-		bound.TopLeftY = *input.TopLeftY
-		bound.BottomRightX = *input.BottomRightX
-		bound.BottomRightY = *input.BottomRightY
+		bound.TopLeftX = pin.TopLeftX
+		bound.TopLeftY = pin.TopLeftY
+		bound.BottomRightX = pin.BottomRightX
+		bound.BottomRightY = pin.BottomRightY
+
+		display_filename, err := CreateDisplayPin(pinFile, bound)
+		if err != nil {
+			return nil, err
+		}
+
+		pin.DisplayPath = display_filename
+	} else if shouldUpdatePosition {
+		pinFile, err := imaging.Open(constant.BasePath + pin.ImagePath)
+
+		var bound Boundary
+		bound.TopLeftX = pin.TopLeftX
+		bound.TopLeftY = pin.TopLeftY
+		bound.BottomRightX = pin.BottomRightX
+		bound.BottomRightY = pin.BottomRightY
 
 		display_filename, err := CreateDisplayPin(pinFile, bound)
 		if err != nil {

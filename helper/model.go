@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/utils"
@@ -96,6 +97,7 @@ func ConvertPin(pin dbmodel.Pin) model.Pin {
 	item.BottomRightX = pin.BottomRightX
 	item.BottomRightY = pin.BottomRightY
 	item.ImagePath = pin.DisplayPath
+	item.DisplayPath = pin.ImagePath
 
 	item.CreatedAt = utils.ConvertToOutputTime(pin.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(pin.UpdatedAt)
@@ -109,4 +111,119 @@ func ConvertPin(pin dbmodel.Pin) model.Pin {
 	}
 
 	return item
+}
+
+func ConvertToDefaultPin(defaultPin dbmodel.DefaultValue) model.DefaultPin {
+	var item model.DefaultPin
+	item.Label = defaultPin.Label
+	if defaultPin.PinType != nil {
+		pin := ConvertPin(*defaultPin.PinType)
+		item.Pin = &pin
+	}
+
+	if defaultPin.CreatedBy != nil {
+		createtime := utils.ConvertToOutputTime(defaultPin.CreatedAt)
+		item.CreatedAt = &createtime
+		createdBy := ConvertUser(*defaultPin.CreatedBy)
+		item.CreatedBy = &createdBy
+	}
+	if defaultPin.UpdatedBy != nil {
+		updatetime := utils.ConvertToOutputTime(defaultPin.UpdatedAt)
+		item.UpdatedAt = &updatetime
+		updatedBy := ConvertUser(*defaultPin.UpdatedBy)
+		item.UpdatedBy = &updatedBy
+	}
+
+	return item
+}
+
+func UserPreferencePin(preference *dbmodel.UserPreference, default_pins []dbmodel.DefaultValue) model.UserPreference {
+	var item model.UserPreference
+
+	if preference != nil {
+		for _, pin := range default_pins {
+			pinmodel := GetDefaultOrPreferredPin(*preference, pin)
+			switch pin.Label {
+			case constant.RegularPin:
+				item.RegularPin = pinmodel
+				break
+			case constant.FavouritePin:
+				item.FavouritePin = pinmodel
+				break
+			case constant.SchedulePin:
+				item.SchedulePin = pinmodel
+				break
+			case constant.HurryPin:
+				item.HurryPin = pinmodel
+				break
+			}
+		}
+	} else {
+		for _, pin := range default_pins {
+			if pin.PinType != nil {
+				pinmodel := ConvertPin(*pin.PinType)
+				switch pin.Label {
+				case constant.RegularPin:
+					item.RegularPin = &pinmodel
+					break
+				case constant.FavouritePin:
+					item.FavouritePin = &pinmodel
+					break
+				case constant.SchedulePin:
+					item.SchedulePin = &pinmodel
+					break
+				case constant.HurryPin:
+					item.HurryPin = &pinmodel
+					break
+				default:
+					break
+				}
+			}
+		}
+	}
+
+	return item
+}
+
+func GetDefaultOrPreferredPin(preference dbmodel.UserPreference, default_pin dbmodel.DefaultValue) *model.Pin {
+	var pin model.Pin
+	switch default_pin.Label {
+	case constant.RegularPin:
+		if preference.RegularPin != nil {
+			pin = ConvertPin(*preference.RegularPin)
+		} else if default_pin.PinType != nil {
+			pin = ConvertPin(*default_pin.PinType)
+		} else {
+			return nil
+		}
+		return &pin
+	case constant.FavouritePin:
+		if preference.FavouritePin != nil {
+			pin = ConvertPin(*preference.FavouritePin)
+		} else if default_pin.PinType != nil {
+			pin = ConvertPin(*default_pin.PinType)
+		} else {
+			return nil
+		}
+		return &pin
+	case constant.SchedulePin:
+		if preference.SchedulePin != nil {
+			pin = ConvertPin(*preference.SchedulePin)
+		} else if default_pin.PinType != nil {
+			pin = ConvertPin(*default_pin.PinType)
+		} else {
+			return nil
+		}
+		return &pin
+	case constant.HurryPin:
+		if preference.HurryPin != nil {
+			pin = ConvertPin(*preference.HurryPin)
+		} else if default_pin.PinType != nil {
+			pin = ConvertPin(*default_pin.PinType)
+		} else {
+			return nil
+		}
+		return &pin
+	}
+	return nil
 }

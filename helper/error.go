@@ -76,3 +76,9 @@ type FavouriteMarkerNotDeletableError struct{}
 func (n *FavouriteMarkerNotDeletableError) Error() string {
 	return "favourite marker cannot be deleted"
 }
+
+type MissingIntUpdateDefault struct{}
+
+func (n *MissingIntUpdateDefault) Error() string {
+	return "cannot update this field without int value"
+}
