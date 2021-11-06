@@ -31,6 +31,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&Marker{})
 	database.Connection.AutoMigrate(&MarkerType{})
 	database.Connection.AutoMigrate(&Pin{})
+	database.Connection.AutoMigrate(&TypePin{})
 
 	log.Println("auto migration completed")
 }

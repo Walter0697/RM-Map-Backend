@@ -6,6 +6,7 @@ type Pin struct {
 	ObjectBase
 	Label        string `json:"label"`
 	ImagePath    string `json:"imagePath"`
+	DisplayPath  string `json:"displayPath"`
 	TopLeftX     int    `json:"topLeftx"`
 	TopLeftY     int    `json:"topLefty"`
 	BottomRightX int    `json:"bottomRightx"`

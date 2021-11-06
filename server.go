@@ -49,6 +49,8 @@ func main() {
 	FileServer(router, "/image/types", typesDir)
 	pinsDir := http.Dir(filepath.Join(workDir, "uploads/pins"))
 	FileServer(router, "/image/pins", pinsDir)
+	typePinsDir := http.Dir(filepath.Join(workDir, "uploads/typepins"))
+	FileServer(router, "/image/typepins", typePinsDir)
 	previewsDir := http.Dir(filepath.Join(workDir, "uploads/previews"))
 	FileServer(router, "/image/previews", previewsDir)
 

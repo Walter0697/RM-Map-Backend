@@ -41,6 +41,8 @@ func CreateMarkerType(input model.NewMarkerType, user dbmodel.User) (*dbmodel.Ma
 		return nil, err
 	}
 
+	UpdateTypePinByType(markertype)
+
 	return &markertype, nil
 }
 
@@ -84,6 +86,8 @@ func EditMarkerType(input model.UpdatedMarkerType, user dbmodel.User) (*dbmodel.
 	if err := markertype.Update(); err != nil {
 		return nil, err
 	}
+
+	UpdateTypePinByType(markertype)
 
 	return &markertype, nil
 }

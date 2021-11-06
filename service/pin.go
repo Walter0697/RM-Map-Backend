@@ -2,6 +2,7 @@ package service
 
 import (
 	"image"
+	"image/color"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -12,6 +13,13 @@ import (
 
 	"github.com/disintegration/imaging"
 )
+
+type Boundary struct {
+	TopLeftX     int
+	TopLeftY     int
+	BottomRightX int
+	BottomRightY int
+}
 
 func PreviewPin(input model.PreviewPinInput, markertype dbmodel.MarkerType) (string, error) {
 	pinFile, _, err := image.Decode(input.ImageUpload.File)
@@ -38,6 +46,29 @@ func PreviewPin(input model.PreviewPinInput, markertype dbmodel.MarkerType) (str
 	return filename, nil
 }
 
+func CreateDisplayPin(pinFile image.Image, boundary Boundary) (string, error) {
+	iconWidth := boundary.BottomRightX - boundary.TopLeftX
+	iconHeight := boundary.BottomRightY - boundary.TopLeftY
+
+	var pixel color.RGBA
+	pixel.B = 200
+	pixel.A = 0xff
+
+	sampleTypeImage := imaging.New(iconWidth, iconHeight, pixel)
+
+	finalImage := imaging.Overlay(pinFile, sampleTypeImage, image.Pt(boundary.TopLeftX, boundary.TopLeftY), 0.5)
+
+	filename := constant.GetPinDisplayName("png")
+	filepath := constant.BasePath + filename
+
+	err := imaging.Save(finalImage, filepath)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
+}
+
 func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 	var pin dbmodel.Pin
 
@@ -53,6 +84,12 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 			return nil, &helper.UploadFileNotImageError{}
 		}
 
+		// decode the image first since upload might destroy the image
+		pinFile, _, err := image.Decode(input.ImageUpload.File)
+		if err != nil {
+			return nil, err
+		}
+
 		filename := constant.GetImageName(constant.PinImagePath, typeInfo[1])
 		filepath := constant.BasePath + filename
 		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
@@ -60,6 +97,19 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 		}
 
 		pin.ImagePath = filename
+
+		var bound Boundary
+		bound.TopLeftX = input.TopLeftX
+		bound.TopLeftY = input.TopLeftY
+		bound.BottomRightX = input.BottomRightX
+		bound.BottomRightY = input.BottomRightY
+
+		display_filename, err := CreateDisplayPin(pinFile, bound)
+		if err != nil {
+			return nil, err
+		}
+
+		pin.DisplayPath = display_filename
 	}
 
 	pin.CreatedBy = &user
@@ -68,6 +118,8 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 	if err := pin.Create(); err != nil {
 		return nil, err
 	}
+
+	UpdateTypePinByPin(pin)
 
 	return &pin, nil
 }
@@ -106,6 +158,12 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 			return nil, &helper.UploadFileNotImageError{}
 		}
 
+		// decode the image first since upload might destroy the image
+		pinFile, _, err := image.Decode(input.ImageUpload.File)
+		if err != nil {
+			return nil, err
+		}
+
 		filename := constant.GetImageName(constant.TypeIconPath, typeInfo[1])
 		filepath := constant.BasePath + filename
 		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
@@ -113,6 +171,19 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 		}
 
 		pin.ImagePath = filename
+
+		var bound Boundary
+		bound.TopLeftX = *input.TopLeftX
+		bound.TopLeftY = *input.TopLeftY
+		bound.BottomRightX = *input.BottomRightX
+		bound.BottomRightY = *input.BottomRightY
+
+		display_filename, err := CreateDisplayPin(pinFile, bound)
+		if err != nil {
+			return nil, err
+		}
+
+		pin.DisplayPath = display_filename
 	}
 
 	pin.UpdatedBy = &user
@@ -120,6 +191,8 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 	if err := pin.Update(); err != nil {
 		return nil, err
 	}
+
+	UpdateTypePinByPin(pin)
 
 	return &pin, nil
 }

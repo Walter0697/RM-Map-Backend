@@ -95,7 +95,7 @@ func ConvertPin(pin dbmodel.Pin) model.Pin {
 	item.TopLeftY = pin.TopLeftY
 	item.BottomRightX = pin.BottomRightX
 	item.BottomRightY = pin.BottomRightY
-	item.ImagePath = pin.ImagePath
+	item.ImagePath = pin.DisplayPath
 
 	item.CreatedAt = utils.ConvertToOutputTime(pin.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(pin.UpdatedAt)
