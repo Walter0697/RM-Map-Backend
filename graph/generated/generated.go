@@ -154,7 +154,7 @@ type ComplexityRoot struct {
 		ID           func(childComplexity int) int
 		RegularPin   func(childComplexity int) int
 		Relation     func(childComplexity int) int
-		SchedulePin  func(childComplexity int) int
+		SelectedPin  func(childComplexity int) int
 		User         func(childComplexity int) int
 	}
 }
@@ -162,7 +162,7 @@ type ComplexityRoot struct {
 type MutationResolver interface {
 	CreateUser(ctx context.Context, input model.NewUser) (string, error)
 	UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error)
-	UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (string, error)
+	UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (*model.UserPreference, error)
 	CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error)
 	UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error)
 	CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error)
@@ -862,12 +862,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.UserPreference.Relation(childComplexity), true
 
-	case "UserPreference.schedule_pin":
-		if e.complexity.UserPreference.SchedulePin == nil {
+	case "UserPreference.selected_pin":
+		if e.complexity.UserPreference.SelectedPin == nil {
 			break
 		}
 
-		return e.complexity.UserPreference.SchedulePin(childComplexity), true
+		return e.complexity.UserPreference.SelectedPin(childComplexity), true
 
 	case "UserPreference.user":
 		if e.complexity.UserPreference.User == nil {
@@ -964,7 +964,7 @@ type UserPreference {
   relation: User
   regular_pin: Pin
   favourite_pin: Pin
-  schedule_pin: Pin
+  selected_pin: Pin
   hurry_pin: Pin
 }
 
@@ -1147,7 +1147,7 @@ type LoginResult {
 type Mutation {
   createUser(input: NewUser!): String!
   updateRelation(input: UpdateRelation!): String!
-  updatePreferredPin(input: UpdatePreferredPin!): String!
+  updatePreferredPin(input: UpdatePreferredPin!): UserPreference!
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   createMarkerType(input: NewMarkerType!): MarkerType!
@@ -2942,9 +2942,9 @@ func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.UserPreference)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNUserPreference2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -4491,7 +4491,7 @@ func (ec *executionContext) _UserPreference_favourite_pin(ctx context.Context, f
 	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _UserPreference_schedule_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
+func (ec *executionContext) _UserPreference_selected_pin(ctx context.Context, field graphql.CollectedField, obj *model.UserPreference) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -4509,7 +4509,7 @@ func (ec *executionContext) _UserPreference_schedule_pin(ctx context.Context, fi
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.SchedulePin, nil
+		return obj.SelectedPin, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -7033,8 +7033,8 @@ func (ec *executionContext) _UserPreference(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._UserPreference_regular_pin(ctx, field, obj)
 		case "favourite_pin":
 			out.Values[i] = ec._UserPreference_favourite_pin(ctx, field, obj)
-		case "schedule_pin":
-			out.Values[i] = ec._UserPreference_schedule_pin(ctx, field, obj)
+		case "selected_pin":
+			out.Values[i] = ec._UserPreference_selected_pin(ctx, field, obj)
 		case "hurry_pin":
 			out.Values[i] = ec._UserPreference_hurry_pin(ctx, field, obj)
 		default:
@@ -7715,6 +7715,20 @@ func (ec *executionContext) marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodel�
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNUserPreference2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx context.Context, sel ast.SelectionSet, v model.UserPreference) graphql.Marshaler {
+	return ec._UserPreference(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNUserPreference2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx context.Context, sel ast.SelectionSet, v *model.UserPreference) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._UserPreference(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUserSearch2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserSearch(ctx context.Context, v interface{}) (model.UserSearch, error) {

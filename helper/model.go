@@ -150,8 +150,8 @@ func UserPreferencePin(preference *dbmodel.UserPreference, default_pins []dbmode
 			case constant.FavouritePin:
 				item.FavouritePin = pinmodel
 				break
-			case constant.SchedulePin:
-				item.SchedulePin = pinmodel
+			case constant.SelectedPin:
+				item.SelectedPin = pinmodel
 				break
 			case constant.HurryPin:
 				item.HurryPin = pinmodel
@@ -169,8 +169,8 @@ func UserPreferencePin(preference *dbmodel.UserPreference, default_pins []dbmode
 				case constant.FavouritePin:
 					item.FavouritePin = &pinmodel
 					break
-				case constant.SchedulePin:
-					item.SchedulePin = &pinmodel
+				case constant.SelectedPin:
+					item.SelectedPin = &pinmodel
 					break
 				case constant.HurryPin:
 					item.HurryPin = &pinmodel
@@ -206,9 +206,9 @@ func GetDefaultOrPreferredPin(preference dbmodel.UserPreference, default_pin dbm
 			return nil
 		}
 		return &pin
-	case constant.SchedulePin:
-		if preference.SchedulePin != nil {
-			pin = ConvertPin(*preference.SchedulePin)
+	case constant.SelectedPin:
+		if preference.SelectedPin != nil {
+			pin = ConvertPin(*preference.SelectedPin)
 		} else if default_pin.PinType != nil {
 			pin = ConvertPin(*default_pin.PinType)
 		} else {

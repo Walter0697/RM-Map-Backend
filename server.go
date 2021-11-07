@@ -54,6 +54,10 @@ func main() {
 	previewsDir := http.Dir(filepath.Join(workDir, "uploads/previews"))
 	FileServer(router, "/image/previews", previewsDir)
 
+	// for non dynamic asset that is required when nothing is set
+	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
+	FileServer(router, "/image/static", assetsDir)
+
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)
 

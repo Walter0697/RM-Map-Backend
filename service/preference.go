@@ -101,8 +101,8 @@ func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbm
 		case constant.FavouritePin:
 			preference.FavouritePin = &pin
 			break
-		case constant.SchedulePin:
-			preference.SchedulePin = &pin
+		case constant.SelectedPin:
+			preference.SelectedPin = &pin
 			break
 		case constant.HurryPin:
 			preference.HurryPin = &pin
@@ -120,8 +120,8 @@ func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbm
 			preference.FavouritePin = nil
 			preference.FpinId = nil
 			break
-		case constant.SchedulePin:
-			preference.SchedulePin = nil
+		case constant.SelectedPin:
+			preference.SelectedPin = nil
 			preference.SpinId = nil
 			break
 		case constant.HurryPin:

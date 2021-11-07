@@ -22,7 +22,7 @@ type UserPreference {
   relation: User
   regular_pin: Pin
   favourite_pin: Pin
-  schedule_pin: Pin
+  selected_pin: Pin
   hurry_pin: Pin
 }
 
@@ -205,7 +205,7 @@ type LoginResult {
 type Mutation {
   createUser(input: NewUser!): String!
   updateRelation(input: UpdateRelation!): String!
-  updatePreferredPin(input: UpdatePreferredPin!): String!
+  updatePreferredPin(input: UpdatePreferredPin!): UserPreference!
   createMarker(input: NewMarker!): Marker!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   createMarkerType(input: NewMarkerType!): MarkerType!

@@ -74,25 +74,32 @@ func (r *mutationResolver) UpdateRelation(ctx context.Context, input model.Updat
 	return "ok", nil
 }
 
-func (r *mutationResolver) UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (string, error) {
+func (r *mutationResolver) UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (*model.UserPreference, error) {
 	// USER
 	// update your current pin preference
 
 	user := middleware.ForContext(ctx)
 	if user == nil {
-		return "", &helper.PermissionDeniedError{}
+		return nil, &helper.PermissionDeniedError{}
 	}
 
 	if err := helper.IsAuthorize(*user, helper.User); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	_, err := service.UpdatePreferredPin(input, *user)
+	preference, err := service.UpdatePreferredPin(input, *user)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return "ok", nil
+	defaultPins, err := service.GetAllDefaultPins()
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.UserPreferencePin(preference, defaultPins)
+
+	return &output, nil
 }
 
 func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error) {

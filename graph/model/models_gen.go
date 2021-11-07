@@ -189,7 +189,7 @@ type UserPreference struct {
 	Relation     *User `json:"relation"`
 	RegularPin   *Pin  `json:"regular_pin"`
 	FavouritePin *Pin  `json:"favourite_pin"`
-	SchedulePin  *Pin  `json:"schedule_pin"`
+	SelectedPin  *Pin  `json:"selected_pin"`
 	HurryPin     *Pin  `json:"hurry_pin"`
 }
 
