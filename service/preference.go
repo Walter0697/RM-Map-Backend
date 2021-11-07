@@ -96,16 +96,16 @@ func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbm
 
 		switch input.Label {
 		case constant.RegularPin:
-			preference.RpinId = &pin.ID
+			preference.RegularPin = &pin
 			break
 		case constant.FavouritePin:
-			preference.FpinId = &pin.ID
+			preference.FavouritePin = &pin
 			break
 		case constant.SchedulePin:
-			preference.SpinId = &pin.ID
+			preference.SchedulePin = &pin
 			break
 		case constant.HurryPin:
-			preference.HpinId = &pin.ID
+			preference.HurryPin = &pin
 			break
 		default:
 			break
@@ -113,15 +113,19 @@ func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbm
 	} else {
 		switch input.Label {
 		case constant.RegularPin:
+			preference.RegularPin = nil
 			preference.RpinId = nil
 			break
 		case constant.FavouritePin:
+			preference.FavouritePin = nil
 			preference.FpinId = nil
 			break
 		case constant.SchedulePin:
+			preference.SchedulePin = nil
 			preference.SpinId = nil
 			break
 		case constant.HurryPin:
+			preference.HurryPin = nil
 			preference.HpinId = nil
 			break
 		default:

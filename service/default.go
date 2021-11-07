@@ -42,6 +42,7 @@ func EditDefaultPin(input model.UpdatedDefault, user dbmodel.User) (*dbmodel.Def
 		return nil, helper.GetDatabaseError(err)
 	}
 
+	value.PinType = nil
 	value.PinId = &pin.ID
 	value.UpdatedBy = &user
 
