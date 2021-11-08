@@ -227,3 +227,26 @@ func GetDefaultOrPreferredPin(preference dbmodel.UserPreference, default_pin dbm
 	}
 	return nil
 }
+
+type MapPinRef struct {
+	TypePin     dbmodel.TypePin
+	MapPinLabel string
+}
+
+func ConvertToMapPin(input MapPinRef) model.MapPin {
+	var item model.MapPin
+	item.Typelabel = input.TypePin.RelatedType.Label
+	item.Pinlabel = input.MapPinLabel
+	item.ImagePath = input.TypePin.ImagePath
+
+	return item
+}
+
+func ConvertPinToMapPin(input dbmodel.Pin, pintype string) model.MapPin {
+	var item model.MapPin
+	item.Typelabel = ""
+	item.Pinlabel = pintype
+	item.ImagePath = input.ImagePath
+
+	return item
+}

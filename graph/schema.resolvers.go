@@ -92,6 +92,12 @@ func (r *mutationResolver) UpdatePreferredPin(ctx context.Context, input model.U
 		return nil, err
 	}
 
+	if err := preference.GetByUserId(); err != nil {
+		if !utils.RecordNotFound(err) {
+			return nil, err
+		}
+	}
+
 	defaultPins, err := service.GetAllDefaultPins()
 	if err != nil {
 		return nil, err
@@ -602,6 +608,73 @@ func (r *queryResolver) Defaultpins(ctx context.Context) ([]*model.DefaultPin, e
 	for _, pin := range pins {
 		item := helper.ConvertToDefaultPin(pin)
 		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Mappins(ctx context.Context) ([]*model.MapPin, error) {
+	// ADMIN
+	// get all default pins value
+	var result []*model.MapPin
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return result, err
+	}
+
+	// get the user preference first
+	var preference dbmodel.UserPreference
+
+	preference.UserId = user.ID
+
+	preferencePtr := &preference
+
+	if err := preferencePtr.GetByUserId(); err != nil {
+		if !utils.RecordNotFound(err) {
+			return nil, err
+		}
+	}
+
+	// get the default pins
+	defaultPins, err := service.GetAllDefaultPins()
+	if err != nil {
+		return nil, err
+	}
+
+	userpreference := helper.UserPreferencePin(preferencePtr, defaultPins)
+
+	typepin_list, err := service.FetchAllTypePinByUserPreference(userpreference)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, typepin := range typepin_list {
+		item := helper.ConvertToMapPin(typepin)
+		result = append(result, &item)
+	}
+
+	if preferencePtr.RegularPin != nil {
+		regularItem := helper.ConvertPinToMapPin(*preference.RegularPin, constant.RegularPin)
+		result = append(result, &regularItem)
+	}
+
+	if preferencePtr.FavouritePin != nil {
+		favouriteItem := helper.ConvertPinToMapPin(*preference.FavouritePin, constant.FavouritePin)
+		result = append(result, &favouriteItem)
+	}
+
+	if preferencePtr.SelectedPin != nil {
+		selectedItem := helper.ConvertPinToMapPin(*preference.SelectedPin, constant.SelectedPin)
+		result = append(result, &selectedItem)
+	}
+
+	if preferencePtr.HurryPin != nil {
+		hurryItem := helper.ConvertPinToMapPin(*preference.HurryPin, constant.HurryPin)
+		result = append(result, &hurryItem)
 	}
 
 	return result, nil

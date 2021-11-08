@@ -34,3 +34,14 @@ func (typePin *TypePin) GetOrCreate() error {
 
 	return nil
 }
+
+func (typePin *TypePin) GetFull() error {
+	if err := database.Connection.
+		Preload("RelatedPin").
+		Preload("RelatedType").
+		Where("pin_id = ? AND type_id = ?", typePin.PinId, typePin.TypeId).
+		First(typePin).Error; err != nil {
+		return err
+	}
+	return nil
+}

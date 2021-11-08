@@ -4,6 +4,8 @@ import (
 	"image"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
+	"mapmarker/backend/graph/model"
+	"mapmarker/backend/helper"
 
 	"github.com/disintegration/imaging"
 )
@@ -86,4 +88,69 @@ func UpdateTypePinByType(markertype dbmodel.MarkerType) error {
 	}
 
 	return nil
+}
+
+func FetchAllTypePinByUserPreference(preference model.UserPreference) ([]helper.MapPinRef, error) {
+	var list []helper.MapPinRef
+
+	types, err := GetAllEventType()
+	if err != nil {
+		return list, err
+	}
+
+	for _, item := range types {
+		if preference.RegularPin != nil {
+			var regular dbmodel.TypePin
+			regular.PinId = uint(preference.RegularPin.ID)
+			regular.TypeId = item.ID
+			if err := regular.GetFull(); err != nil {
+				return list, err
+			}
+			var regularRef helper.MapPinRef
+			regularRef.TypePin = regular
+			regularRef.MapPinLabel = constant.RegularPin
+			list = append(list, regularRef)
+		}
+
+		if preference.FavouritePin != nil {
+			var favourite dbmodel.TypePin
+			favourite.PinId = uint(preference.FavouritePin.ID)
+			favourite.TypeId = item.ID
+			if err := favourite.GetFull(); err != nil {
+				return list, err
+			}
+			var favouriteRef helper.MapPinRef
+			favouriteRef.TypePin = favourite
+			favouriteRef.MapPinLabel = constant.FavouritePin
+			list = append(list, favouriteRef)
+		}
+
+		if preference.SelectedPin != nil {
+			var selected dbmodel.TypePin
+			selected.PinId = uint(preference.SelectedPin.ID)
+			selected.TypeId = item.ID
+			if err := selected.GetFull(); err != nil {
+				return list, err
+			}
+			var selectedRef helper.MapPinRef
+			selectedRef.TypePin = selected
+			selectedRef.MapPinLabel = constant.SelectedPin
+			list = append(list, selectedRef)
+		}
+
+		if preference.HurryPin != nil {
+			var hurry dbmodel.TypePin
+			hurry.PinId = uint(preference.HurryPin.ID)
+			hurry.TypeId = item.ID
+			if err := hurry.GetFull(); err != nil {
+				return list, err
+			}
+			var hurryRef helper.MapPinRef
+			hurryRef.TypePin = hurry
+			hurryRef.MapPinLabel = constant.HurryPin
+			list = append(list, hurryRef)
+		}
+	}
+
+	return list, nil
 }

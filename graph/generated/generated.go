@@ -64,6 +64,12 @@ type ComplexityRoot struct {
 		Username func(childComplexity int) int
 	}
 
+	MapPin struct {
+		ImagePath func(childComplexity int) int
+		Pinlabel  func(childComplexity int) int
+		Typelabel func(childComplexity int) int
+	}
+
 	Marker struct {
 		Address      func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
@@ -133,6 +139,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Defaultpins func(childComplexity int) int
 		Eventtypes  func(childComplexity int) int
+		Mappins     func(childComplexity int) int
 		Markers     func(childComplexity int) int
 		Markertypes func(childComplexity int) int
 		Pins        func(childComplexity int) int
@@ -184,6 +191,7 @@ type QueryResolver interface {
 	Eventtypes(ctx context.Context) ([]*model.EventType, error)
 	Pins(ctx context.Context) ([]*model.Pin, error)
 	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
+	Mappins(ctx context.Context) ([]*model.MapPin, error)
 }
 
 type executableSchema struct {
@@ -284,6 +292,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.LoginResult.Username(childComplexity), true
+
+	case "MapPin.image_path":
+		if e.complexity.MapPin.ImagePath == nil {
+			break
+		}
+
+		return e.complexity.MapPin.ImagePath(childComplexity), true
+
+	case "MapPin.pinlabel":
+		if e.complexity.MapPin.Pinlabel == nil {
+			break
+		}
+
+		return e.complexity.MapPin.Pinlabel(childComplexity), true
+
+	case "MapPin.typelabel":
+		if e.complexity.MapPin.Typelabel == nil {
+			break
+		}
+
+		return e.complexity.MapPin.Typelabel(childComplexity), true
 
 	case "Marker.address":
 		if e.complexity.Marker.Address == nil {
@@ -747,6 +776,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Eventtypes(childComplexity), true
 
+	case "Query.mappins":
+		if e.complexity.Query.Mappins == nil {
+			break
+		}
+
+		return e.complexity.Query.Mappins(childComplexity), true
+
 	case "Query.markers":
 		if e.complexity.Query.Markers == nil {
 			break
@@ -1033,6 +1069,12 @@ type DefaultPin {
   updated_by: User
 }
 
+type MapPin {
+  pinlabel: String!
+  typelabel: String!
+  image_path: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -1042,6 +1084,7 @@ type Query {
   eventtypes: [EventType]!
   pins: [Pin]!
   defaultpins: [DefaultPin]!
+  mappins: [MapPin]!
 }
 
 input NewUser {
@@ -1849,6 +1892,111 @@ func (ec *executionContext) _LoginResult_username(ctx context.Context, field gra
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Username, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MapPin_pinlabel(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MapPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Pinlabel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MapPin_typelabel(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MapPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Typelabel, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MapPin_image_path(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MapPin",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImagePath, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4115,6 +4263,41 @@ func (ec *executionContext) _Query_defaultpins(ctx context.Context, field graphq
 	res := resTmp.([]*model.DefaultPin)
 	fc.Result = res
 	return ec.marshalNDefaultPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_mappins(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Mappins(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.MapPin)
+	fc.Result = res
+	return ec.marshalNMapPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6493,6 +6676,43 @@ func (ec *executionContext) _LoginResult(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var mapPinImplementors = []string{"MapPin"}
+
+func (ec *executionContext) _MapPin(ctx context.Context, sel ast.SelectionSet, obj *model.MapPin) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mapPinImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MapPin")
+		case "pinlabel":
+			out.Values[i] = ec._MapPin_pinlabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "typelabel":
+			out.Values[i] = ec._MapPin_typelabel(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "image_path":
+			out.Values[i] = ec._MapPin_image_path(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var markerImplementors = []string{"Marker"}
 
 func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, obj *model.Marker) graphql.Marshaler {
@@ -6947,6 +7167,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_defaultpins(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "mappins":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_mappins(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -7436,6 +7670,44 @@ func (ec *executionContext) marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraph�
 		return graphql.Null
 	}
 	return ec._LoginResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMapPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx context.Context, sel ast.SelectionSet, v []*model.MapPin) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOMapPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
 func (ec *executionContext) marshalNMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v model.Marker) graphql.Marshaler {
@@ -8044,6 +8316,13 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return graphql.MarshalInt(*v)
+}
+
+func (ec *executionContext) marshalOMapPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx context.Context, sel ast.SelectionSet, v *model.MapPin) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._MapPin(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx context.Context, sel ast.SelectionSet, v *model.Marker) graphql.Marshaler {

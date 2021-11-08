@@ -32,6 +32,12 @@ type LoginResult struct {
 	Username string `json:"username"`
 }
 
+type MapPin struct {
+	Pinlabel  string `json:"pinlabel"`
+	Typelabel string `json:"typelabel"`
+	ImagePath string `json:"image_path"`
+}
+
 type Marker struct {
 	ID           int     `json:"id"`
 	Label        string  `json:"label"`

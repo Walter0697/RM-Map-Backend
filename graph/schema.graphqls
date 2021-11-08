@@ -91,6 +91,12 @@ type DefaultPin {
   updated_by: User
 }
 
+type MapPin {
+  pinlabel: String!
+  typelabel: String!
+  image_path: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -100,6 +106,7 @@ type Query {
   eventtypes: [EventType]!
   pins: [Pin]!
   defaultpins: [DefaultPin]!
+  mappins: [MapPin]!
 }
 
 input NewUser {

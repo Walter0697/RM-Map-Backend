@@ -45,8 +45,7 @@ func (preference *UserPreference) GetOrCreateByUserId() error {
 }
 
 func (preference *UserPreference) GetByUserId() error {
-	if err := database.
-		Connection.
+	if err := database.Connection.
 		Preload("RegularPin").
 		Preload("FavouritePin").
 		Preload("SelectedPin").
