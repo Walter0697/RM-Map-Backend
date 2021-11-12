@@ -33,10 +33,21 @@ type LDAPSetting struct {
 	DefaultRole  string `mapstructure:"defaultrole"`
 }
 
+type SeedSetting struct {
+	EnableSeed       bool    `mapstructure:"enableSeed"`
+	MarkerNums       int     `mapstructure:"markerNums"`
+	MarkerRelationId uint    `mapstructure:"markerRelationId"`
+	CreateUserId     uint    `mapstructure:"createUserId"`
+	CenterLatitude   float64 `mapstructure:"centerLatitude"`
+	CenterLongitude  float64 `mapstructure:"centerLongitude"`
+	CenterOffset     float64 `mapstructure:"centerOffset"`
+}
+
 type Config struct {
 	DB   Database    `mapstructure:"database"`
 	App  AppEnv      `mapstructure:"app"`
 	LDAP LDAPSetting `mapstructure:"ldap"`
+	Seed SeedSetting `mapstructure:"seed"`
 }
 
 func Init() {

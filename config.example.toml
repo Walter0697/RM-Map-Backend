@@ -19,3 +19,12 @@ host="localhost"
 bindpassword=""
 filter="(uid=%s)"
 defaultrole="user"
+
+[seed]
+enableSeed=true
+markerNums=20
+markerRelationId=1
+createUserId=1
+centerLatitude=0
+centerLongitude=0
+centerOffset=0.01

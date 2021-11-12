@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/99designs/gqlgen v0.14.0
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-chi/chi v1.5.4
 	github.com/go-chi/cors v1.2.0
@@ -16,6 +17,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	gorm.io/driver/postgres v1.1.2
 	gorm.io/gorm v1.21.15
+	syreclabs.com/go/faker v1.2.3
 )
 
 replace github.com/spf13/afero => github.com/spf13/afero v1.5.1

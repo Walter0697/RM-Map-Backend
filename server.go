@@ -8,6 +8,7 @@ import (
 	"mapmarker/backend/graph"
 	"mapmarker/backend/graph/generated"
 	"mapmarker/backend/middleware"
+	"mapmarker/backend/seed"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -25,6 +26,19 @@ func main() {
 	database.Init()
 	dbmodel.AutoMigration()
 
+	argLength := len(os.Args[1:])
+	if argLength != 0 {
+		if os.Args[1] == "seed" {
+			startSeed()
+			return
+		}
+	}
+
+	startServer()
+}
+
+// start the server
+func startServer() {
 	port := config.Data.App.Port
 
 	router := chi.NewRouter()
@@ -44,19 +58,19 @@ func main() {
 
 	workDir, _ := os.Getwd()
 	markersDir := http.Dir(filepath.Join(workDir, "uploads/markers"))
-	FileServer(router, "/image/markers", markersDir)
+	fileServer(router, "/image/markers", markersDir)
 	typesDir := http.Dir(filepath.Join(workDir, "uploads/types"))
-	FileServer(router, "/image/types", typesDir)
+	fileServer(router, "/image/types", typesDir)
 	pinsDir := http.Dir(filepath.Join(workDir, "uploads/pins"))
-	FileServer(router, "/image/pins", pinsDir)
+	fileServer(router, "/image/pins", pinsDir)
 	typePinsDir := http.Dir(filepath.Join(workDir, "uploads/typepins"))
-	FileServer(router, "/image/typepins", typePinsDir)
+	fileServer(router, "/image/typepins", typePinsDir)
 	previewsDir := http.Dir(filepath.Join(workDir, "uploads/previews"))
-	FileServer(router, "/image/previews", previewsDir)
+	fileServer(router, "/image/previews", previewsDir)
 
 	// for non dynamic asset that is required when nothing is set
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
-	FileServer(router, "/image/static", assetsDir)
+	fileServer(router, "/image/static", assetsDir)
 
 	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", server)
@@ -65,7 +79,17 @@ func main() {
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
-func FileServer(r chi.Router, path string, root http.FileSystem) {
+// start seeding the database
+// seeding is only good for testing, you shouldn't seed in production
+// please create one user and relation before seeding
+// we should also have pin type and marker type before seeding (might also be also seed-able in the future)
+func startSeed() {
+	log.Println("start seeding...")
+	seed.SeedDatabase()
+	log.Println("finished seeding")
+}
+
+func fileServer(r chi.Router, path string, root http.FileSystem) {
 	if strings.ContainsAny(path, "{}*") {
 		panic("FileServer does not permit any URL parameters.")
 	}
