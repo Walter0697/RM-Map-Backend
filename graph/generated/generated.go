@@ -112,6 +112,7 @@ type ComplexityRoot struct {
 		EditMarkerType     func(childComplexity int, input model.UpdatedMarkerType) int
 		EditPin            func(childComplexity int, input model.UpdatedPin) int
 		Login              func(childComplexity int, input model.Login) int
+		Logout             func(childComplexity int, input model.Logout) int
 		PreviewPin         func(childComplexity int, input model.PreviewPinInput) int
 		RemoveMarkerType   func(childComplexity int, input model.RemoveModel) int
 		RemovePin          func(childComplexity int, input model.RemoveModel) int
@@ -142,6 +143,7 @@ type ComplexityRoot struct {
 		Mappins     func(childComplexity int) int
 		Markers     func(childComplexity int) int
 		Markertypes func(childComplexity int) int
+		Me          func(childComplexity int) int
 		Pins        func(childComplexity int) int
 		Preference  func(childComplexity int) int
 		Users       func(childComplexity int, filter *model.UserFilter) int
@@ -181,6 +183,7 @@ type MutationResolver interface {
 	RemovePin(ctx context.Context, input model.RemoveModel) (string, error)
 	UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
+	Logout(ctx context.Context, input model.Logout) (string, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error)
@@ -192,6 +195,7 @@ type QueryResolver interface {
 	Pins(ctx context.Context) ([]*model.Pin, error)
 	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
 	Mappins(ctx context.Context) ([]*model.MapPin, error)
+	Me(ctx context.Context) (string, error)
 }
 
 type executableSchema struct {
@@ -594,6 +598,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
 
+	case "Mutation.logout":
+		if e.complexity.Mutation.Logout == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_logout_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.Logout(childComplexity, args["input"].(model.Logout)), true
+
 	case "Mutation.previewPin":
 		if e.complexity.Mutation.PreviewPin == nil {
 			break
@@ -796,6 +812,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Markertypes(childComplexity), true
+
+	case "Query.me":
+		if e.complexity.Query.Me == nil {
+			break
+		}
+
+		return e.complexity.Query.Me(childComplexity), true
 
 	case "Query.pins":
 		if e.complexity.Query.Pins == nil {
@@ -1085,6 +1108,7 @@ type Query {
   pins: [Pin]!
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
+  me: String!
 }
 
 input NewUser {
@@ -1182,6 +1206,10 @@ input Login {
   password: String!
 }
 
+input Logout {
+  jwt: String!
+}
+
 type LoginResult {
   jwt: String!
   username: String!
@@ -1202,6 +1230,7 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   login(input: Login!): LoginResult!
+  logout(input: Logout!): String!
 }`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
@@ -1307,6 +1336,21 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLogin2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.Logout
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3557,6 +3601,48 @@ func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.C
 	return ec.marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐLoginResult(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_logout_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().Logout(rctx, args["input"].(model.Logout))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Pin_id(ctx context.Context, field graphql.CollectedField, obj *model.Pin) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4298,6 +4384,41 @@ func (ec *executionContext) _Query_mappins(ctx context.Context, field graphql.Co
 	res := resTmp.([]*model.MapPin)
 	fc.Result = res
 	return ec.marshalNMapPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Me(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5891,6 +6012,29 @@ func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interfa
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputLogout(ctx context.Context, obj interface{}) (model.Logout, error) {
+	var it model.Logout
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "jwt":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("jwt"))
+			it.Jwt, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj interface{}) (model.NewMarker, error) {
 	var it model.NewMarker
 	asMap := map[string]interface{}{}
@@ -6958,6 +7102,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "logout":
+			out.Values[i] = ec._Mutation_logout(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7181,6 +7330,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_mappins(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "me":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_me(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -7670,6 +7833,11 @@ func (ec *executionContext) marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraph�
 		return graphql.Null
 	}
 	return ec._LoginResult(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx context.Context, v interface{}) (model.Logout, error) {
+	res, err := ec.unmarshalInputLogout(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNMapPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMapPin(ctx context.Context, sel ast.SelectionSet, v []*model.MapPin) graphql.Marshaler {

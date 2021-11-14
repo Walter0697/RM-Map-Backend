@@ -21,6 +21,16 @@ func Login(username string, password string) (string, error) {
 	return normalLogin(username, password)
 }
 
+func Logout(user *dbmodel.User) error {
+	user.LoginToken = ""
+
+	if err := user.Update(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func ldapLogin(username string, password string) (string, error) {
 	if err := LDAP(username, password); err != nil {
 		return "", err
@@ -101,6 +111,10 @@ func ValidateToken(token string) *dbmodel.User {
 	var user dbmodel.User
 	user.Username = jwtInfo.Username
 	if err := user.GetUserByUsername(); err != nil {
+		return nil
+	}
+
+	if user.LoginToken == "" {
 		return nil
 	}
 

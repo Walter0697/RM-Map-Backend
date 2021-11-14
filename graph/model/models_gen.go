@@ -32,6 +32,10 @@ type LoginResult struct {
 	Username string `json:"username"`
 }
 
+type Logout struct {
+	Jwt string `json:"jwt"`
+}
+
 type MapPin struct {
 	Pinlabel  string `json:"pinlabel"`
 	Typelabel string `json:"typelabel"`

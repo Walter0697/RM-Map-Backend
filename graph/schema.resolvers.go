@@ -359,6 +359,22 @@ func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model
 	}, nil
 }
 
+func (r *mutationResolver) Logout(ctx context.Context, input model.Logout) (string, error) {
+	// ANYONE WITH JWT
+	// logout
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := service.Logout(user); err != nil {
+		return "", err
+	}
+
+	return "ok", nil
+}
+
 func (r *queryResolver) Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error) {
 	// ADMIN
 	// get all users for management
@@ -678,6 +694,15 @@ func (r *queryResolver) Mappins(ctx context.Context) ([]*model.MapPin, error) {
 	}
 
 	return result, nil
+}
+
+func (r *queryResolver) Me(ctx context.Context) (string, error) {
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	return "ok", nil
 }
 
 // Mutation returns generated.MutationResolver implementation.

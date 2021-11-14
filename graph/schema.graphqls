@@ -107,6 +107,7 @@ type Query {
   pins: [Pin]!
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
+  me: String!
 }
 
 input NewUser {
@@ -204,6 +205,10 @@ input Login {
   password: String!
 }
 
+input Logout {
+  jwt: String!
+}
+
 type LoginResult {
   jwt: String!
   username: String!
@@ -224,4 +229,5 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   login(input: Login!): LoginResult!
+  logout(input: Logout!): String!
 }
