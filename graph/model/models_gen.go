@@ -108,6 +108,13 @@ type NewPin struct {
 	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 
+type NewSchedule struct {
+	Label        string `json:"label"`
+	Description  string `json:"description"`
+	SelectedTime string `json:"selected_time"`
+	MarkerID     int    `json:"marker_id"`
+}
+
 type NewUser struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -140,6 +147,19 @@ type PreviewPinInput struct {
 
 type RemoveModel struct {
 	ID int `json:"id"`
+}
+
+type Schedule struct {
+	ID           int     `json:"id"`
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	Status       string  `json:"status"`
+	SelectedDate string  `json:"selected_date"`
+	Marker       *Marker `json:"marker"`
+	CreatedAt    string  `json:"created_at"`
+	CreatedBy    *User   `json:"created_by"`
+	UpdatedAt    string  `json:"updated_at"`
+	UpdatedBy    *User   `json:"updated_by"`
 }
 
 type UpdateMarkerFavourite struct {

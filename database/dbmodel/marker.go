@@ -17,15 +17,14 @@ type Marker struct {
 	Description  string       `json:"description"` // optional fields
 	EstimateTime string       `json:"estimate"`
 	Price        string       `json:"price"`
-	Status       string       `json:"status"`   // visited / cancelled / ???
-	FromTime     *time.Time   `json:"fromTime"` // time related
+	Status       string       `json:"status"`    // visited / scheduled / ???
+	VisitTime    *time.Time   `json:"visitTime"` // if visited
+	FromTime     *time.Time   `json:"fromTime"`  // time related
 	ToTime       *time.Time   `json:"toTime"`
 	IsFavourite  bool         `json:"isFavourite"` // pre defined value
 	Relation     UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId   uint
 }
-
-//TODO: add icon table to add icon
 
 func (marker *Marker) Create() error {
 	if err := database.Connection.Create(marker).Error; err != nil {

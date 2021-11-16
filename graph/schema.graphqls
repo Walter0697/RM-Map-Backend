@@ -97,6 +97,19 @@ type MapPin {
   image_path: String!
 }
 
+type Schedule {
+  id: Int!
+  label: String!
+  description: String!
+  status: String!
+  selected_date: String!
+  marker: Marker!
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -107,6 +120,7 @@ type Query {
   pins: [Pin]!
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
+  schedules: [Schedule]!
   me: String!
 }
 
@@ -189,6 +203,13 @@ input PreviewPinInput {
   type_id: Int!
 }
 
+input NewSchedule {
+  label: String!
+  description: String!
+  selected_time: String!
+  marker_id: Int!
+}
+
 input RemoveModel {
   id: Int!
 }
@@ -228,6 +249,7 @@ type Mutation {
   previewPin(input: PreviewPinInput!): String!
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
+  createSchedule(input: NewSchedule!): Schedule!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

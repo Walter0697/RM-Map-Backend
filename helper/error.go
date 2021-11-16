@@ -11,6 +11,13 @@ func GetDatabaseError(err error) error {
 	return err
 }
 
+func CheckDatabaseError(err error, notfounderr error) error {
+	if utils.RecordNotFound(err) {
+		return notfounderr
+	}
+	return err
+}
+
 type RecordNotFoundError struct{}
 
 func (m *RecordNotFoundError) Error() string {
@@ -81,4 +88,10 @@ type MissingIntUpdateDefault struct{}
 
 func (n *MissingIntUpdateDefault) Error() string {
 	return "cannot update this field without int value"
+}
+
+type MarkerNotFound struct{}
+
+func (n *MarkerNotFound) Error() string {
+	return "cannot find marker in the database"
 }

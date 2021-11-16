@@ -56,6 +56,32 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	return item
 }
 
+func ConvertSchedule(schedule dbmodel.Schedule) model.Schedule {
+	var item model.Schedule
+	item.ID = int(schedule.ID)
+	item.Label = schedule.Label
+	item.Description = schedule.Description
+	item.Status = schedule.Status
+	item.SelectedDate = utils.ConvertToOutputTime(schedule.SelectedDate)
+	if schedule.SelectedMarker != nil {
+		marker := ConvertMarker(*schedule.SelectedMarker)
+		item.Marker = &marker
+	}
+
+	item.CreatedAt = utils.ConvertToOutputTime(schedule.CreatedAt)
+	item.UpdatedAt = utils.ConvertToOutputTime(schedule.UpdatedAt)
+	if schedule.CreatedBy != nil {
+		createdBy := ConvertUser(*schedule.CreatedBy)
+		item.CreatedBy = &createdBy
+	}
+	if schedule.UpdatedBy != nil {
+		updatedBy := ConvertUser(*schedule.UpdatedBy)
+		item.UpdatedBy = &updatedBy
+	}
+
+	return item
+}
+
 func ConvertMarkerType(markertype dbmodel.MarkerType) model.MarkerType {
 	var item model.MarkerType
 	item.ID = int(markertype.ID)
