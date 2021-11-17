@@ -23,6 +23,7 @@ defaultrole="user"
 [seed]
 enableSeed=true
 markerNums=20
+scheduleDays=10
 markerRelationId=1
 createUserId=1
 centerLatitude=0

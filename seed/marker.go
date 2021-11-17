@@ -1,7 +1,6 @@
 package seed
 
 import (
-	"fmt"
 	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
@@ -42,7 +41,6 @@ func SeedMarkers() {
 
 func MarkerFactory(eventtypes []string, user dbmodel.User, index int) dbmodel.Marker {
 	now := time.Now()
-	fmt.Println(now)
 
 	var marker dbmodel.Marker
 	marker.Label = faker.Name().Title()

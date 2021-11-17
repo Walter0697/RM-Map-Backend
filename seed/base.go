@@ -9,6 +9,7 @@ import (
 func SeedDatabase() {
 	if config.Data.Seed.EnableSeed {
 		SeedMarkers()
+		SeedSchedules()
 	} else {
 		log.Println("seeding not enabled in config")
 	}

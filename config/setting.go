@@ -36,6 +36,7 @@ type LDAPSetting struct {
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
+	ScheduleDays     int     `mapstructure:"scheduleDays"`
 	MarkerRelationId uint    `mapstructure:"markerRelationId"`
 	CreateUserId     uint    `mapstructure:"createUserId"`
 	CenterLatitude   float64 `mapstructure:"centerLatitude"`
