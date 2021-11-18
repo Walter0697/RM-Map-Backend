@@ -34,7 +34,7 @@ func SeedSchedules() {
 	for i := 0; i < config.Data.Seed.ScheduleDays; i++ {
 		selected := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 		for j := 0; j < 8; j++ {
-			selected.Add(time.Hour * time.Duration(1))
+			selected = selected.Add(time.Hour * time.Duration(1))
 			schedule := ScheduleFactory(markers, user, selected, i*j)
 			if err := schedule.Create(); err != nil {
 				panic(err)
