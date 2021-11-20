@@ -129,6 +129,9 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 
 	query = query.Where("relation_id = ?", relation.ID)
 
+	// filtering non-active markers
+	query = query.Where("status != ? AND status != ?", constant.Arrived, constant.Scheduled)
+
 	if err := query.Find(&markers).Error; err != nil {
 		return markers, err
 	}

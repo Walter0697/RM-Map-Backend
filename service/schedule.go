@@ -58,6 +58,10 @@ func GetAllSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmode
 
 	query = query.Where("relation_id = ?", relation.ID)
 
+	// filter previous schedules
+	now := time.Now()
+	query = query.Where("selected_date > ?", now.Format(time.RFC3339))
+
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err
 	}
