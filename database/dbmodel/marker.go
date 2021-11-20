@@ -3,6 +3,8 @@ package dbmodel
 import (
 	"mapmarker/backend/database"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Marker struct {
@@ -36,6 +38,14 @@ func (marker *Marker) Create() error {
 
 func (marker *Marker) Update() error {
 	if err := database.Connection.Save(marker).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (marker *Marker) UpdateWithTransaction(tx *gorm.DB) error {
+	if err := tx.Save(marker).Error; err != nil {
 		return err
 	}
 

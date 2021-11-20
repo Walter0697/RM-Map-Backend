@@ -3,6 +3,8 @@ package dbmodel
 import (
 	"mapmarker/backend/database"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type Schedule struct {
@@ -33,8 +35,24 @@ func (schedule *Schedule) Update() error {
 	return nil
 }
 
+func (schedule *Schedule) UpdateWithTransaction(tx *gorm.DB) error {
+	if err := tx.Save(schedule).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (schedule *Schedule) GetById() error {
 	if err := database.Connection.Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (schedule *Schedule) GetByIdWithTransaction(tx *gorm.DB) error {
+	if err := tx.Preload("SelectedMarker").Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
 		return err
 	}
 

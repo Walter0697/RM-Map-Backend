@@ -7,6 +7,7 @@ import (
 	"context"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/generated"
 	"mapmarker/backend/graph/model"
@@ -382,6 +383,52 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 
 	output := helper.ConvertSchedule(*schedule)
 	return &output, nil
+}
+
+func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error) {
+	// USER
+	// update schedule status, will also update marker status
+
+	var result []*model.Schedule
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return result, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	// might add validation here
+
+	if err := helper.ValidateScheduleStatus(input); err != nil {
+		return nil, err
+	}
+
+	transaction := database.Connection.Begin()
+
+	affected_schedules, err := service.UpdateScheduleStatus(transaction, input, *relation, *user)
+	if err != nil {
+		transaction.Rollback()
+		return result, err
+	}
+
+	transaction.Commit()
+
+	for _, schedule := range affected_schedules {
+		item := helper.ConvertSchedule(schedule)
+		result = append(result, &item)
+	}
+
+	return result, nil
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {

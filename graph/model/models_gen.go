@@ -162,6 +162,15 @@ type Schedule struct {
 	UpdatedBy    *User   `json:"updated_by"`
 }
 
+type ScheduleStatus struct {
+	ID     int    `json:"id"`
+	Status string `json:"status"`
+}
+
+type ScheduleStatusList struct {
+	Ids []*ScheduleStatus `json:"ids"`
+}
+
 type UpdateMarkerFavourite struct {
 	ID    int  `json:"id"`
 	IsFav bool `json:"is_fav"`

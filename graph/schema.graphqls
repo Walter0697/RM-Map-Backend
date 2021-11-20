@@ -210,6 +210,15 @@ input NewSchedule {
   marker_id: Int!
 }
 
+input ScheduleStatus {
+  id: Int!
+  status: String!
+}
+
+input ScheduleStatusList {
+  ids: [ScheduleStatus]!
+}
+
 input RemoveModel {
   id: Int!
 }
@@ -250,6 +259,7 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
+  updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

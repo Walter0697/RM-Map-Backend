@@ -95,3 +95,15 @@ type MarkerNotFound struct{}
 func (n *MarkerNotFound) Error() string {
 	return "cannot find marker in the database"
 }
+
+type InvalidRelationUpdateError struct{}
+
+func (n *InvalidRelationUpdateError) Error() string {
+	return "the item you are trying to update has the wrong relation"
+}
+
+type InvalidStatusError struct{}
+
+func (n *InvalidStatusError) Error() string {
+	return "status is not valid"
+}

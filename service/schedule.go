@@ -4,8 +4,11 @@ import (
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
+	"mapmarker/backend/helper"
 	"mapmarker/backend/utils"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func CreateSchedule(input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
@@ -51,6 +54,41 @@ func GetAllSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmode
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err
+	}
+
+	return schedules, nil
+}
+
+func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation dbmodel.UserRelation, user dbmodel.User) ([]dbmodel.Schedule, error) {
+	var schedules []dbmodel.Schedule
+
+	for _, updateStatus := range input.Ids {
+		var schedule dbmodel.Schedule
+		schedule.ID = uint(updateStatus.ID)
+		if err := schedule.GetByIdWithTransaction(tx); err != nil {
+			return schedules, helper.GetDatabaseError(err)
+		}
+
+		if schedule.RelationId != relation.ID {
+			return schedules, &helper.InvalidRelationUpdateError{}
+		}
+
+		schedule.Status = updateStatus.Status
+		if updateStatus.Status == "arrived" {
+			schedule.SelectedMarker.Status = updateStatus.Status
+			schedule.SelectedMarker.UpdatedBy = &user
+
+			if err := schedule.SelectedMarker.UpdateWithTransaction(tx); err != nil {
+				return schedules, err
+			}
+		}
+		schedule.UpdatedBy = &user
+
+		if err := schedule.UpdateWithTransaction(tx); err != nil {
+			return schedules, err
+		}
+
+		schedules = append(schedules, schedule)
 	}
 
 	return schedules, nil
