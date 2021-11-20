@@ -4,6 +4,7 @@ import (
 	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/service"
 	"mapmarker/backend/utils"
@@ -27,13 +28,13 @@ func SeedMarkers() {
 
 	var user dbmodel.User
 	user.ID = config.Data.Seed.CreateUserId
-	if err := user.GetUserById(); err != nil {
+	if err := user.GetUserById(database.Connection); err != nil {
 		panic(err)
 	}
 
 	for i := 0; i < config.Data.Seed.MarkerNums; i++ {
 		marker := MarkerFactory(types, user, i)
-		if err := marker.Create(); err != nil {
+		if err := marker.Create(database.Connection); err != nil {
 			panic(err)
 		}
 	}

@@ -1,7 +1,7 @@
 package dbmodel
 
 import (
-	"mapmarker/backend/database"
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -13,41 +13,41 @@ type User struct {
 	IsActivated bool   `json:"is_activated"`
 }
 
-func (user *User) Create() error {
-	if err := database.Connection.Create(user).Error; err != nil {
+func (user *User) Create(db *gorm.DB) error {
+	if err := db.Create(user).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (user *User) Update() error {
-	if err := database.Connection.Save(user).Error; err != nil {
+func (user *User) Update(db *gorm.DB) error {
+	if err := db.Save(user).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (user *User) GetUserByUsername() error {
-	if err := database.Connection.Where("username = ?", user.Username).First(user).Error; err != nil {
+func (user *User) GetUserByUsername(db *gorm.DB) error {
+	if err := db.Where("username = ?", user.Username).First(user).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (user *User) GetUserById() error {
-	if err := database.Connection.Where("id = ?", user.ID).First(user).Error; err != nil {
+func (user *User) GetUserById(db *gorm.DB) error {
+	if err := db.Where("id = ?", user.ID).First(user).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (user User) CheckUsernameExist() bool {
+func (user User) CheckUsernameExist(db *gorm.DB) bool {
 	var count int64
-	if err := database.Connection.Model(&user).Where("username = ?", user.Username).Count(&count).Error; err != nil {
+	if err := db.Model(&user).Where("username = ?", user.Username).Count(&count).Error; err != nil {
 		return false
 	}
 

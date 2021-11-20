@@ -3,6 +3,7 @@ package service
 import (
 	"image"
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -16,7 +17,7 @@ func CreateTypePin(markertype dbmodel.MarkerType, pin dbmodel.Pin) (dbmodel.Type
 	typePin.TypeId = markertype.ID
 	typePin.PinId = pin.ID
 
-	if err := typePin.GetOrCreate(); err != nil {
+	if err := typePin.GetOrCreate(database.Connection); err != nil {
 		return typePin, err
 	}
 
@@ -47,7 +48,7 @@ func CreateTypePin(markertype dbmodel.MarkerType, pin dbmodel.Pin) (dbmodel.Type
 
 	typePin.ImagePath = filename
 
-	if err := typePin.Update(); err != nil {
+	if err := typePin.Update(database.Connection); err != nil {
 		return typePin, err
 	}
 
@@ -103,7 +104,7 @@ func FetchAllTypePinByUserPreference(preference model.UserPreference) ([]helper.
 			var regular dbmodel.TypePin
 			regular.PinId = uint(preference.RegularPin.ID)
 			regular.TypeId = item.ID
-			if err := regular.GetFull(); err != nil {
+			if err := regular.GetFull(database.Connection); err != nil {
 				return list, err
 			}
 			var regularRef helper.MapPinRef
@@ -116,7 +117,7 @@ func FetchAllTypePinByUserPreference(preference model.UserPreference) ([]helper.
 			var favourite dbmodel.TypePin
 			favourite.PinId = uint(preference.FavouritePin.ID)
 			favourite.TypeId = item.ID
-			if err := favourite.GetFull(); err != nil {
+			if err := favourite.GetFull(database.Connection); err != nil {
 				return list, err
 			}
 			var favouriteRef helper.MapPinRef
@@ -129,7 +130,7 @@ func FetchAllTypePinByUserPreference(preference model.UserPreference) ([]helper.
 			var selected dbmodel.TypePin
 			selected.PinId = uint(preference.SelectedPin.ID)
 			selected.TypeId = item.ID
-			if err := selected.GetFull(); err != nil {
+			if err := selected.GetFull(database.Connection); err != nil {
 				return list, err
 			}
 			var selectedRef helper.MapPinRef
@@ -142,7 +143,7 @@ func FetchAllTypePinByUserPreference(preference model.UserPreference) ([]helper.
 			var hurry dbmodel.TypePin
 			hurry.PinId = uint(preference.HurryPin.ID)
 			hurry.TypeId = item.ID
-			if err := hurry.GetFull(); err != nil {
+			if err := hurry.GetFull(database.Connection); err != nil {
 				return list, err
 			}
 			var hurryRef helper.MapPinRef

@@ -37,7 +37,7 @@ func CreateMarkerType(input model.NewMarkerType, user dbmodel.User) (*dbmodel.Ma
 	markertype.CreatedBy = &user
 	markertype.UpdatedBy = &user
 
-	if err := markertype.Create(); err != nil {
+	if err := markertype.Create(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func EditMarkerType(input model.UpdatedMarkerType, user dbmodel.User) (*dbmodel.
 	var markertype dbmodel.MarkerType
 
 	markertype.ID = uint(input.ID)
-	if err := markertype.GetById(); err != nil {
+	if err := markertype.GetById(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -83,7 +83,7 @@ func EditMarkerType(input model.UpdatedMarkerType, user dbmodel.User) (*dbmodel.
 
 	markertype.UpdatedBy = &user
 
-	if err := markertype.Update(); err != nil {
+	if err := markertype.Update(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -97,7 +97,7 @@ func RemoveMarkerType(input model.RemoveModel) error {
 
 	markertype.ID = uint(input.ID)
 
-	if err := markertype.RemoveById(); err != nil {
+	if err := markertype.RemoveById(database.Connection); err != nil {
 		return err
 	}
 
@@ -133,7 +133,7 @@ func GetAllEventType() ([]dbmodel.MarkerType, error) {
 func GetMarkerTypeById(id int) (*dbmodel.MarkerType, error) {
 	var markertype dbmodel.MarkerType
 	markertype.ID = uint(id)
-	if err := markertype.GetById(); err != nil {
+	if err := markertype.GetById(database.Connection); err != nil {
 		return nil, helper.GetDatabaseError(err)
 	}
 

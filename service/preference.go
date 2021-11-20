@@ -2,6 +2,7 @@ package service
 
 import (
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -13,7 +14,7 @@ func CreateRelation(input *dbmodel.UserRelation, user1 dbmodel.User, user2 dbmod
 	relation.UserOne = user1
 	relation.UserTwo = user2
 
-	if err := relation.Create(); err != nil {
+	if err := relation.Create(database.Connection); err != nil {
 		return err
 	}
 
@@ -25,14 +26,14 @@ func CreateRelation(input *dbmodel.UserRelation, user1 dbmodel.User, user2 dbmod
 func UpdateRelation(input model.UpdateRelation, user dbmodel.User) (*dbmodel.UserRelation, error) {
 	var preference dbmodel.UserPreference
 	preference.CurrentUser = user
-	if err := preference.GetOrCreateByUserId(); err != nil {
+	if err := preference.GetOrCreateByUserId(database.Connection); err != nil {
 		return nil, err
 	}
 
 	var relatedUser dbmodel.User
 	relatedUser.Username = input.Username
 
-	if err := relatedUser.GetUserByUsername(); err != nil {
+	if err := relatedUser.GetUserByUsername(database.Connection); err != nil {
 		if utils.RecordNotFound(err) {
 			return nil, &helper.RecordNotFoundError{}
 		}
@@ -42,12 +43,12 @@ func UpdateRelation(input model.UpdateRelation, user dbmodel.User) (*dbmodel.Use
 	var relation dbmodel.UserRelation
 	relation.UserOne = user
 	relation.UserTwo = relatedUser
-	if err := relation.GetOrCreateByUsers(); err != nil {
+	if err := relation.GetOrCreateByUsers(database.Connection); err != nil {
 		return nil, err
 	}
 
 	preference.SelectedRelation = &relation
-	if err := preference.Update(); err != nil {
+	if err := preference.Update(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -57,7 +58,7 @@ func UpdateRelation(input model.UpdateRelation, user dbmodel.User) (*dbmodel.Use
 func GetCurrentRelation(user dbmodel.User) (*dbmodel.UserRelation, error) {
 	var preference dbmodel.UserPreference
 	preference.UserId = user.ID
-	if err := preference.GetByUserId(); err != nil {
+	if err := preference.GetByUserId(database.Connection); err != nil {
 		if utils.RecordNotFound(err) {
 			return nil, nil
 		}
@@ -70,7 +71,7 @@ func GetCurrentRelation(user dbmodel.User) (*dbmodel.UserRelation, error) {
 
 	var relation dbmodel.UserRelation
 	relation.ID = *preference.RelationId
-	if err := relation.GetRelationById(); err != nil {
+	if err := relation.GetRelationById(database.Connection); err != nil {
 		if utils.RecordNotFound(err) {
 			return nil, nil
 		}
@@ -83,14 +84,14 @@ func GetCurrentRelation(user dbmodel.User) (*dbmodel.UserRelation, error) {
 func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbmodel.UserPreference, error) {
 	var preference dbmodel.UserPreference
 	preference.CurrentUser = user
-	if err := preference.GetOrCreateByUserId(); err != nil {
+	if err := preference.GetOrCreateByUserId(database.Connection); err != nil {
 		return nil, err
 	}
 
 	if input.PinID != nil {
 		var pin dbmodel.Pin
 		pin.ID = uint(*input.PinID)
-		if err := pin.GetById(); err != nil {
+		if err := pin.GetById(database.Connection); err != nil {
 			return nil, err
 		}
 
@@ -133,7 +134,7 @@ func UpdatePreferredPin(input model.UpdatePreferredPin, user dbmodel.User) (*dbm
 		}
 	}
 
-	if err := preference.Update(); err != nil {
+	if err := preference.Update(database.Connection); err != nil {
 		return nil, err
 	}
 

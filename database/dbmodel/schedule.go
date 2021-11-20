@@ -1,7 +1,6 @@
 package dbmodel
 
 import (
-	"mapmarker/backend/database"
 	"time"
 
 	"gorm.io/gorm"
@@ -19,40 +18,24 @@ type Schedule struct {
 	RelationId     uint
 }
 
-func (schedule *Schedule) Create() error {
-	if err := database.Connection.Create(schedule).Error; err != nil {
+func (schedule *Schedule) Create(db *gorm.DB) error {
+	if err := db.Create(schedule).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (schedule *Schedule) Update() error {
-	if err := database.Connection.Save(schedule).Error; err != nil {
+func (schedule *Schedule) Update(db *gorm.DB) error {
+	if err := db.Save(schedule).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (schedule *Schedule) UpdateWithTransaction(tx *gorm.DB) error {
-	if err := tx.Save(schedule).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (schedule *Schedule) GetById() error {
-	if err := database.Connection.Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (schedule *Schedule) GetByIdWithTransaction(tx *gorm.DB) error {
-	if err := tx.Preload("SelectedMarker").Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
+func (schedule *Schedule) GetById(db *gorm.DB) error {
+	if err := db.Preload("SelectedMarker").Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
 		return err
 	}
 

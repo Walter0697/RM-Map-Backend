@@ -120,7 +120,7 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 	pin.CreatedBy = &user
 	pin.UpdatedBy = &user
 
-	if err := pin.Create(); err != nil {
+	if err := pin.Create(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -133,7 +133,7 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 	var pin dbmodel.Pin
 
 	pin.ID = uint(input.ID)
-	if err := pin.GetById(); err != nil {
+	if err := pin.GetById(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -218,7 +218,7 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 
 	pin.UpdatedBy = &user
 
-	if err := pin.Update(); err != nil {
+	if err := pin.Update(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -232,7 +232,7 @@ func RemovePin(input model.RemoveModel) error {
 
 	pin.ID = uint(input.ID)
 
-	if err := pin.RemoveById(); err != nil {
+	if err := pin.RemoveById(database.Connection); err != nil {
 		return err
 	}
 

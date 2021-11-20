@@ -92,7 +92,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 
 	marker.IsFavourite = false
 
-	if err := marker.Create(); err != nil {
+	if err := marker.Create(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -102,7 +102,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 	marker.ID = uint(input.ID)
-	if err := marker.GetById(); err != nil {
+	if err := marker.GetById(database.Connection); err != nil {
 		return nil, helper.GetDatabaseError(err)
 	}
 
@@ -110,7 +110,7 @@ func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User)
 	marker.UpdatedBy = &user
 	marker.UpdatedAt = time.Now()
 
-	if err := marker.Update(); err != nil {
+	if err := marker.Update(database.Connection); err != nil {
 		return nil, err
 	}
 

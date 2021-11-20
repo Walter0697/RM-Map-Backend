@@ -1,8 +1,6 @@
 package dbmodel
 
-import (
-	"mapmarker/backend/database"
-)
+import "gorm.io/gorm"
 
 type UserPreference struct {
 	BaseModel
@@ -20,32 +18,32 @@ type UserPreference struct {
 	HpinId           *uint
 }
 
-func (preference *UserPreference) Create() error {
-	if err := database.Connection.Create(preference).Error; err != nil {
+func (preference *UserPreference) Create(db *gorm.DB) error {
+	if err := db.Create(preference).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (preference *UserPreference) Update() error {
-	if err := database.Connection.Save(preference).Error; err != nil {
+func (preference *UserPreference) Update(db *gorm.DB) error {
+	if err := db.Save(preference).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (preference *UserPreference) GetOrCreateByUserId() error {
-	if err := database.Connection.Where("user_id = ?", preference.CurrentUser.ID).FirstOrCreate(preference).Error; err != nil {
+func (preference *UserPreference) GetOrCreateByUserId(db *gorm.DB) error {
+	if err := db.Where("user_id = ?", preference.CurrentUser.ID).FirstOrCreate(preference).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (preference *UserPreference) GetByUserId() error {
-	if err := database.Connection.
+func (preference *UserPreference) GetByUserId(db *gorm.DB) error {
+	if err := db.
 		Preload("RegularPin").
 		Preload("FavouritePin").
 		Preload("SelectedPin").

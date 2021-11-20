@@ -1,6 +1,7 @@
 package service
 
 import (
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
@@ -11,11 +12,16 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateSchedule(input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
+func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
 
 	schedule.Label = input.Label
 	schedule.Description = input.Description
+
+	marker.Status = constant.Scheduled
+	if err := marker.Update(tx); err != nil {
+		return nil, err
+	}
 
 	schedule.SelectedMarker = &marker
 
@@ -30,7 +36,7 @@ func CreateSchedule(input model.NewSchedule, marker dbmodel.Marker, user dbmodel
 	schedule.CreatedBy = &user
 	schedule.UpdatedBy = &user
 
-	if err := schedule.Create(); err != nil {
+	if err := schedule.Create(tx); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +71,7 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 	for _, updateStatus := range input.Ids {
 		var schedule dbmodel.Schedule
 		schedule.ID = uint(updateStatus.ID)
-		if err := schedule.GetByIdWithTransaction(tx); err != nil {
+		if err := schedule.GetById(tx); err != nil {
 			return schedules, helper.GetDatabaseError(err)
 		}
 
@@ -74,17 +80,31 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 		}
 
 		schedule.Status = updateStatus.Status
-		if updateStatus.Status == "arrived" {
-			schedule.SelectedMarker.Status = updateStatus.Status
-			schedule.SelectedMarker.UpdatedBy = &user
 
-			if err := schedule.SelectedMarker.UpdateWithTransaction(tx); err != nil {
+		// update marker based on the current status as well
+		schedule.SelectedMarker.UpdatedBy = &user
+		if updateStatus.Status == constant.Arrived {
+			schedule.SelectedMarker.Status = constant.Arrived
+
+			if err := schedule.SelectedMarker.Update(tx); err != nil {
+				return schedules, err
+			}
+		} else if updateStatus.Status == constant.Cancelled {
+			schedule.SelectedMarker.Status = constant.Empty
+
+			if err := schedule.SelectedMarker.Update(tx); err != nil {
+				return schedules, err
+			}
+		} else if updateStatus.Status == constant.Empty {
+			schedule.SelectedMarker.Status = constant.Scheduled
+
+			if err := schedule.SelectedMarker.Update(tx); err != nil {
 				return schedules, err
 			}
 		}
 		schedule.UpdatedBy = &user
 
-		if err := schedule.UpdateWithTransaction(tx); err != nil {
+		if err := schedule.Update(tx); err != nil {
 			return schedules, err
 		}
 

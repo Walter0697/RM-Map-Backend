@@ -1,6 +1,8 @@
 package dbmodel
 
-import "mapmarker/backend/database"
+import (
+	"gorm.io/gorm"
+)
 
 type DefaultValue struct {
 	ObjectBase
@@ -9,24 +11,24 @@ type DefaultValue struct {
 	PinId   *uint
 }
 
-func (value *DefaultValue) GetOrCreate() error {
-	if err := database.Connection.Where("label = ?", value.Label).FirstOrCreate(value).Error; err != nil {
+func (value *DefaultValue) GetOrCreate(db *gorm.DB) error {
+	if err := db.Where("label = ?", value.Label).FirstOrCreate(value).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (value *DefaultValue) GetOrCreatePin() error {
-	if err := database.Connection.Preload("PinType").Where("label = ?", value.Label).FirstOrCreate(value).Error; err != nil {
+func (value *DefaultValue) GetOrCreatePin(db *gorm.DB) error {
+	if err := db.Preload("PinType").Where("label = ?", value.Label).FirstOrCreate(value).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (value *DefaultValue) Update() error {
-	if err := database.Connection.Save(value).Error; err != nil {
+func (value *DefaultValue) Update(db *gorm.DB) error {
+	if err := db.Save(value).Error; err != nil {
 		return err
 	}
 

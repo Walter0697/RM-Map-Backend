@@ -3,6 +3,7 @@ package seed
 import (
 	"log"
 	"mapmarker/backend/config"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/service"
 	"time"
@@ -15,7 +16,7 @@ func SeedSchedules() {
 
 	var relation dbmodel.UserRelation
 	relation.ID = config.Data.Seed.MarkerRelationId
-	if err := relation.GetRelationById(); err != nil {
+	if err := relation.GetRelationById(database.Connection); err != nil {
 		panic(err)
 	}
 
@@ -26,7 +27,7 @@ func SeedSchedules() {
 
 	var user dbmodel.User
 	user.ID = config.Data.Seed.CreateUserId
-	if err := user.GetUserById(); err != nil {
+	if err := user.GetUserById(database.Connection); err != nil {
 		panic(err)
 	}
 
@@ -36,7 +37,8 @@ func SeedSchedules() {
 		for j := 0; j < 8; j++ {
 			selected = selected.Add(time.Hour * time.Duration(1))
 			schedule := ScheduleFactory(markers, user, selected, i*j)
-			if err := schedule.Create(); err != nil {
+
+			if err := schedule.Create(database.Connection); err != nil {
 				panic(err)
 			}
 		}

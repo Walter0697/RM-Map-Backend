@@ -1,7 +1,6 @@
 package dbmodel
 
 import (
-	"mapmarker/backend/database"
 	"time"
 
 	"gorm.io/gorm"
@@ -28,32 +27,24 @@ type Marker struct {
 	RelationId   uint
 }
 
-func (marker *Marker) Create() error {
-	if err := database.Connection.Create(marker).Error; err != nil {
+func (marker *Marker) Create(db *gorm.DB) error {
+	if err := db.Create(marker).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (marker *Marker) Update() error {
-	if err := database.Connection.Save(marker).Error; err != nil {
+func (marker *Marker) Update(db *gorm.DB) error {
+	if err := db.Save(marker).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (marker *Marker) UpdateWithTransaction(tx *gorm.DB) error {
-	if err := tx.Save(marker).Error; err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (marker *Marker) GetById() error {
-	if err := database.Connection.Where("id = ?", marker.ID).First(marker).Error; err != nil {
+func (marker *Marker) GetById(db *gorm.DB) error {
+	if err := db.Where("id = ?", marker.ID).First(marker).Error; err != nil {
 		return err
 	}
 

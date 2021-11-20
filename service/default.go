@@ -2,6 +2,7 @@ package service
 
 import (
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -18,7 +19,7 @@ func GetAllDefaultPins() ([]dbmodel.DefaultValue, error) {
 	for _, label := range labelList {
 		var value dbmodel.DefaultValue
 		value.Label = label
-		if err := value.GetOrCreatePin(); err != nil {
+		if err := value.GetOrCreatePin(database.Connection); err != nil {
 			return values, err
 		}
 		values = append(values, value)
@@ -31,14 +32,14 @@ func EditDefaultPin(input model.UpdatedDefault, user dbmodel.User) (*dbmodel.Def
 	var value dbmodel.DefaultValue
 	value.Label = input.Label
 
-	if err := value.GetOrCreatePin(); err != nil {
+	if err := value.GetOrCreatePin(database.Connection); err != nil {
 		return nil, err
 	}
 
 	var pin dbmodel.Pin
 	pin.ID = uint(*input.IntValue)
 
-	if err := pin.GetById(); err != nil {
+	if err := pin.GetById(database.Connection); err != nil {
 		return nil, helper.GetDatabaseError(err)
 	}
 
@@ -46,7 +47,7 @@ func EditDefaultPin(input model.UpdatedDefault, user dbmodel.User) (*dbmodel.Def
 	value.PinId = &pin.ID
 	value.UpdatedBy = &user
 
-	if err := value.Update(); err != nil {
+	if err := value.Update(database.Connection); err != nil {
 		return nil, err
 	}
 

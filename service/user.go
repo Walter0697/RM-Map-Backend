@@ -23,7 +23,7 @@ func CreateUser(input model.NewUser) (*dbmodel.User, error) {
 	}
 	user.Password = password
 
-	if err := user.Create(); err != nil {
+	if err := user.Create(database.Connection); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func GetAllUser(filter *model.UserFilter) ([]dbmodel.User, error) {
 func GetUserByExactUsername(filter model.UserSearch) (*dbmodel.User, error) {
 	var user dbmodel.User
 	user.Username = filter.Username
-	if err := user.GetUserByUsername(); err != nil {
+	if err := user.GetUserByUsername(database.Connection); err != nil {
 		if utils.RecordNotFound(err) {
 			return nil, nil
 		}

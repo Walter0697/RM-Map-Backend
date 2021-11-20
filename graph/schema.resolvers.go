@@ -40,7 +40,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 
 	var newuser dbmodel.User
 	newuser.Username = input.Username
-	if newuser.CheckUsernameExist() {
+	if newuser.CheckUsernameExist(database.Connection) {
 		return "", &helper.SameUserNameExistError{}
 	}
 
@@ -93,7 +93,7 @@ func (r *mutationResolver) UpdatePreferredPin(ctx context.Context, input model.U
 		return nil, err
 	}
 
-	if err := preference.GetByUserId(); err != nil {
+	if err := preference.GetByUserId(database.Connection); err != nil {
 		if !utils.RecordNotFound(err) {
 			return nil, err
 		}
@@ -372,14 +372,19 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 
 	var marker dbmodel.Marker
 	marker.ID = uint(input.MarkerID)
-	if err := marker.GetById(); err != nil {
+	if err := marker.GetById(database.Connection); err != nil {
 		return nil, helper.CheckDatabaseError(err, &helper.MarkerNotFound{})
 	}
 
-	schedule, err := service.CreateSchedule(input, marker, *user, *relation)
+	transaction := database.Connection.Begin()
+
+	schedule, err := service.CreateSchedule(transaction, input, marker, *user, *relation)
 	if err != nil {
+		transaction.Rollback()
 		return nil, err
 	}
+
+	transaction.Commit()
 
 	output := helper.ConvertSchedule(*schedule)
 	return &output, nil
@@ -535,7 +540,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 
 	preferencePtr := &preference
 
-	if err := preferencePtr.GetByUserId(); err != nil {
+	if err := preferencePtr.GetByUserId(database.Connection); err != nil {
 		if !utils.RecordNotFound(err) {
 			return nil, err
 		}
@@ -552,7 +557,7 @@ func (r *queryResolver) Preference(ctx context.Context) (*model.UserPreference, 
 		if preference.RelationId != nil {
 			var relation dbmodel.UserRelation
 			relation.ID = *preference.RelationId
-			if err := relation.GetWithUserById(); err == nil {
+			if err := relation.GetWithUserById(database.Connection); err == nil {
 				user1 := helper.ConvertUser(relation.UserOne)
 				user2 := helper.ConvertUser(relation.UserTwo)
 				if user.Username == relation.UserOne.Username {
@@ -738,7 +743,7 @@ func (r *queryResolver) Mappins(ctx context.Context) ([]*model.MapPin, error) {
 
 	preferencePtr := &preference
 
-	if err := preferencePtr.GetByUserId(); err != nil {
+	if err := preferencePtr.GetByUserId(database.Connection); err != nil {
 		if !utils.RecordNotFound(err) {
 			return nil, err
 		}

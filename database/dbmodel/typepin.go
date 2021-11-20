@@ -1,6 +1,6 @@
 package dbmodel
 
-import "mapmarker/backend/database"
+import "gorm.io/gorm"
 
 type TypePin struct {
 	ObjectBase
@@ -11,32 +11,32 @@ type TypePin struct {
 	ImagePath   string
 }
 
-func (typePin *TypePin) Create() error {
-	if err := database.Connection.Create(typePin).Error; err != nil {
+func (typePin *TypePin) Create(db *gorm.DB) error {
+	if err := db.Create(typePin).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (typePin *TypePin) Update() error {
-	if err := database.Connection.Save(typePin).Error; err != nil {
+func (typePin *TypePin) Update(db *gorm.DB) error {
+	if err := db.Save(typePin).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (typePin *TypePin) GetOrCreate() error {
-	if err := database.Connection.Where("pin_id = ? AND type_id = ?", typePin.PinId, typePin.TypeId).FirstOrCreate(typePin).Error; err != nil {
+func (typePin *TypePin) GetOrCreate(db *gorm.DB) error {
+	if err := db.Where("pin_id = ? AND type_id = ?", typePin.PinId, typePin.TypeId).FirstOrCreate(typePin).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (typePin *TypePin) GetFull() error {
-	if err := database.Connection.
+func (typePin *TypePin) GetFull(db *gorm.DB) error {
+	if err := db.
 		Preload("RelatedPin").
 		Preload("RelatedType").
 		Where("pin_id = ? AND type_id = ?", typePin.PinId, typePin.TypeId).

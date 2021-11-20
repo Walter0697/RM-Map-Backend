@@ -1,6 +1,8 @@
 package dbmodel
 
-import "mapmarker/backend/database"
+import (
+	"gorm.io/gorm"
+)
 
 type MarkerType struct {
 	ObjectBase
@@ -10,32 +12,32 @@ type MarkerType struct {
 	IconPath string `json:"iconPath"`
 }
 
-func (marker_type *MarkerType) Create() error {
-	if err := database.Connection.Create(marker_type).Error; err != nil {
+func (marker_type *MarkerType) Create(db *gorm.DB) error {
+	if err := db.Create(marker_type).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (marker_type *MarkerType) Update() error {
-	if err := database.Connection.Save(marker_type).Error; err != nil {
+func (marker_type *MarkerType) Update(db *gorm.DB) error {
+	if err := db.Save(marker_type).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (marker_type *MarkerType) GetById() error {
-	if err := database.Connection.Where("id = ?", marker_type.ID).First(marker_type).Error; err != nil {
+func (marker_type *MarkerType) GetById(db *gorm.DB) error {
+	if err := db.Where("id = ?", marker_type.ID).First(marker_type).Error; err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (marker_type *MarkerType) RemoveById() error {
-	if err := database.Connection.Where("id = ?", marker_type.ID).Delete(marker_type).Error; err != nil {
+func (marker_type *MarkerType) RemoveById(db *gorm.DB) error {
+	if err := db.Where("id = ?", marker_type.ID).Delete(marker_type).Error; err != nil {
 		return err
 	}
 

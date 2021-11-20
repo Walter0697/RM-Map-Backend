@@ -2,6 +2,7 @@ package service
 
 import (
 	"mapmarker/backend/config"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/utils"
 
@@ -24,7 +25,7 @@ func Login(username string, password string) (string, error) {
 func Logout(user *dbmodel.User) error {
 	user.LoginToken = ""
 
-	if err := user.Update(); err != nil {
+	if err := user.Update(database.Connection); err != nil {
 		return err
 	}
 
@@ -38,26 +39,26 @@ func ldapLogin(username string, password string) (string, error) {
 
 	var user dbmodel.User
 	user.Username = username
-	exist := user.CheckUsernameExist()
+	exist := user.CheckUsernameExist(database.Connection)
 	if !exist {
 		user.Password = ""
 		user.Role = config.Data.LDAP.DefaultRole
 		user.IsActivated = true
 		newtoken := utils.GenerateLoginKey()
 		user.LoginToken = newtoken
-		if err := user.Create(); err != nil {
+		if err := user.Create(database.Connection); err != nil {
 			return "", err
 		}
 	}
 
-	if err := user.GetUserByUsername(); err != nil {
+	if err := user.GetUserByUsername(database.Connection); err != nil {
 		return "", err
 	}
 
 	if user.LoginToken == "" {
 		newtoken := utils.GenerateLoginKey()
 		user.LoginToken = newtoken
-		if err := user.Update(); err != nil {
+		if err := user.Update(database.Connection); err != nil {
 			return "", err
 		}
 	}
@@ -74,7 +75,7 @@ func normalLogin(username string, password string) (string, error) {
 	var user dbmodel.User
 	user.Username = username
 
-	if err := user.GetUserByUsername(); err != nil {
+	if err := user.GetUserByUsername(database.Connection); err != nil {
 		if utils.RecordNotFound(err) {
 			return "", &UnauthorizationError{}
 		}
@@ -89,7 +90,7 @@ func normalLogin(username string, password string) (string, error) {
 	if user.LoginToken == "" {
 		newtoken := utils.GenerateLoginKey()
 		user.LoginToken = newtoken
-		if err := user.Update(); err != nil {
+		if err := user.Update(database.Connection); err != nil {
 			return "", err
 		}
 	}
@@ -110,7 +111,7 @@ func ValidateToken(token string) *dbmodel.User {
 
 	var user dbmodel.User
 	user.Username = jwtInfo.Username
-	if err := user.GetUserByUsername(); err != nil {
+	if err := user.GetUserByUsername(database.Connection); err != nil {
 		return nil
 	}
 
