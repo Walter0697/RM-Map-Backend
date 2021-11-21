@@ -827,6 +827,49 @@ func (r *queryResolver) Schedules(ctx context.Context) ([]*model.Schedule, error
 	return result, nil
 }
 
+func (r *queryResolver) Today(ctx context.Context) (*model.TodayEvent, error) {
+	// USER
+	// get today event
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetPreloads(ctx)
+
+	yesterday_schedules, err := service.GetYesterdaySchedules(requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	// creating output object
+	var result model.TodayEvent
+
+	var schedules_output []*model.Schedule
+
+	for _, schedule := range yesterday_schedules {
+		item := helper.ConvertSchedule(schedule)
+		schedules_output = append(schedules_output, &item)
+	}
+
+	result.YesterdayEvent = schedules_output
+
+	return &result, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {

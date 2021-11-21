@@ -17,13 +17,13 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	var toTime time.Time
 	var err error
 	if input.FromTime != nil {
-		fromTime, err = time.Parse(time.RFC3339, *input.FromTime)
+		fromTime, err = time.Parse(utils.StandardTime, *input.FromTime)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if input.ToTime != nil {
-		toTime, err = time.Parse(time.RFC3339, *input.ToTime)
+		toTime, err = time.Parse(utils.StandardTime, *input.ToTime)
 		if err != nil {
 			return nil, err
 		}

@@ -8,6 +8,10 @@ import (
 	"gorm.io/gorm"
 )
 
+const (
+	StandardTime = "2006-01-02 15:04:05+00"
+)
+
 func ConvertFieldsToDBColumns(fields []string) string {
 	return strings.Join(fields, ", ")
 }

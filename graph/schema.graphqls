@@ -110,6 +110,10 @@ type Schedule {
   updated_by: User!
 }
 
+type TodayEvent {
+  yesterday_event: [Schedule]!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -121,6 +125,7 @@ type Query {
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
   schedules: [Schedule]!
+  today: TodayEvent!
   me: String!
 }
 

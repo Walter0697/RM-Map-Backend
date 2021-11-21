@@ -25,7 +25,7 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 
 	schedule.SelectedMarker = &marker
 
-	selectedTime, err := time.Parse(time.RFC3339, input.SelectedTime)
+	selectedTime, err := time.Parse(utils.StandardTime, input.SelectedTime)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,8 @@ func GetAllSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmode
 
 	// filter previous schedules
 	now := time.Now()
-	query = query.Where("selected_date > ?", now.Format(time.RFC3339))
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	query = query.Where("selected_date > ?", today.Format(utils.StandardTime))
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err
@@ -113,6 +114,36 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 		}
 
 		schedules = append(schedules, schedule)
+	}
+
+	return schedules, nil
+}
+
+// this function is used to get all yesterday schedules
+func GetYesterdaySchedules(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+	var schedules []dbmodel.Schedule
+	query := database.Connection
+	if utils.StringInSlice("yesterday_event.created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("yesterday_event.updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("yesterday_event.marker", requested) {
+		query = query.Preload("SelectedMarker")
+	}
+
+	// filter only yesterday schedules
+	now := time.Now()
+	yesterday := now.AddDate(0, 0, -1)
+	start := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+
+	query = query.Where("selected_date >= ?", start.Format(utils.StandardTime)).
+		Where("selected_date < ?", end.Format(utils.StandardTime))
+
+	if err := query.Find(&schedules).Error; err != nil {
+		return schedules, err
 	}
 
 	return schedules, nil

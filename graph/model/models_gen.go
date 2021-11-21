@@ -171,6 +171,10 @@ type ScheduleStatusList struct {
 	Ids []*ScheduleStatus `json:"ids"`
 }
 
+type TodayEvent struct {
+	YesterdayEvent []*Schedule `json:"yesterday_event"`
+}
+
 type UpdateMarkerFavourite struct {
 	ID    int  `json:"id"`
 	IsFav bool `json:"is_fav"`

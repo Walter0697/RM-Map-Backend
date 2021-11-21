@@ -149,6 +149,7 @@ type ComplexityRoot struct {
 		Pins        func(childComplexity int) int
 		Preference  func(childComplexity int) int
 		Schedules   func(childComplexity int) int
+		Today       func(childComplexity int) int
 		Users       func(childComplexity int, filter *model.UserFilter) int
 		Usersearch  func(childComplexity int, filter model.UserSearch) int
 	}
@@ -164,6 +165,10 @@ type ComplexityRoot struct {
 		Status       func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
 		UpdatedBy    func(childComplexity int) int
+	}
+
+	TodayEvent struct {
+		YesterdayEvent func(childComplexity int) int
 	}
 
 	User struct {
@@ -214,6 +219,7 @@ type QueryResolver interface {
 	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
 	Mappins(ctx context.Context) ([]*model.MapPin, error)
 	Schedules(ctx context.Context) ([]*model.Schedule, error)
+	Today(ctx context.Context) (*model.TodayEvent, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -884,6 +890,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Schedules(childComplexity), true
 
+	case "Query.today":
+		if e.complexity.Query.Today == nil {
+			break
+		}
+
+		return e.complexity.Query.Today(childComplexity), true
+
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
 			break
@@ -977,6 +990,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Schedule.UpdatedBy(childComplexity), true
+
+	case "TodayEvent.yesterday_event":
+		if e.complexity.TodayEvent.YesterdayEvent == nil {
+			break
+		}
+
+		return e.complexity.TodayEvent.YesterdayEvent(childComplexity), true
 
 	case "User.created_at":
 		if e.complexity.User.CreatedAt == nil {
@@ -1231,6 +1251,10 @@ type Schedule {
   updated_by: User!
 }
 
+type TodayEvent {
+  yesterday_event: [Schedule]!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -1242,6 +1266,7 @@ type Query {
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
   schedules: [Schedule]!
+  today: TodayEvent!
   me: String!
 }
 
@@ -4687,6 +4712,41 @@ func (ec *executionContext) _Query_schedules(ctx context.Context, field graphql.
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_today(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Today(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.TodayEvent)
+	fc.Result = res
+	return ec.marshalNTodayEvent2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐTodayEvent(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -5141,6 +5201,41 @@ func (ec *executionContext) _Schedule_updated_by(ctx context.Context, field grap
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _TodayEvent_yesterday_event(ctx context.Context, field graphql.CollectedField, obj *model.TodayEvent) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "TodayEvent",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.YesterdayEvent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
@@ -8111,6 +8206,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "today":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_today(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "me":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -8198,6 +8307,33 @@ func (ec *executionContext) _Schedule(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "updated_by":
 			out.Values[i] = ec._Schedule_updated_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var todayEventImplementors = []string{"TodayEvent"}
+
+func (ec *executionContext) _TodayEvent(ctx context.Context, sel ast.SelectionSet, obj *model.TodayEvent) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, todayEventImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TodayEvent")
+		case "yesterday_event":
+			out.Values[i] = ec._TodayEvent_yesterday_event(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9008,6 +9144,20 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNTodayEvent2mapmarkerᚋbackendᚋgraphᚋmodelᚐTodayEvent(ctx context.Context, sel ast.SelectionSet, v model.TodayEvent) graphql.Marshaler {
+	return ec._TodayEvent(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTodayEvent2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐTodayEvent(ctx context.Context, sel ast.SelectionSet, v *model.TodayEvent) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._TodayEvent(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx context.Context, v interface{}) (model.UpdateMarkerFavourite, error) {
