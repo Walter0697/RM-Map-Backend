@@ -43,7 +43,7 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	return &schedule, nil
 }
 
-func GetAllSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -59,9 +59,11 @@ func GetAllSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmode
 	query = query.Where("relation_id = ?", relation.ID)
 
 	// filter previous schedules
-	now := time.Now()
-	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-	query = query.Where("selected_date > ?", today.Format(utils.StandardTime))
+	now, err := time.Parse(utils.DayOnlyTime, input.Time)
+	if err != nil {
+		return schedules, err
+	}
+	query = query.Where("selected_date >= ?", now.Format(time.RFC3339))
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err
@@ -120,7 +122,7 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 }
 
 // this function is used to get all yesterday schedules
-func GetYesterdaySchedules(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("yesterday_event.created_by", requested) {
@@ -134,13 +136,16 @@ func GetYesterdaySchedules(requested []string, relation dbmodel.UserRelation) ([
 	}
 
 	// filter only yesterday schedules
-	now := time.Now()
+	now, err := time.Parse(utils.DayOnlyTime, input.Time)
+	if err != nil {
+		return schedules, err
+	}
 	yesterday := now.AddDate(0, 0, -1)
 	start := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
 	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-	query = query.Where("selected_date >= ?", start.Format(utils.StandardTime)).
-		Where("selected_date < ?", end.Format(utils.StandardTime))
+	query = query.Where("selected_date >= ?", start.Format(time.RFC3339)).
+		Where("selected_date < ?", end.Format(time.RFC3339))
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err

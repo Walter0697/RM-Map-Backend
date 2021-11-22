@@ -790,7 +790,7 @@ func (r *queryResolver) Mappins(ctx context.Context) ([]*model.MapPin, error) {
 	return result, nil
 }
 
-func (r *queryResolver) Schedules(ctx context.Context) ([]*model.Schedule, error) {
+func (r *queryResolver) Schedules(ctx context.Context, params model.CurrentTime) ([]*model.Schedule, error) {
 	// USER
 	// get schedules
 
@@ -814,7 +814,7 @@ func (r *queryResolver) Schedules(ctx context.Context) ([]*model.Schedule, error
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	schedules, err := service.GetAllSchedule(requested_field, *relation)
+	schedules, err := service.GetAllSchedule(params, requested_field, *relation)
 	if err != nil {
 		return result, err
 	}
@@ -827,7 +827,7 @@ func (r *queryResolver) Schedules(ctx context.Context) ([]*model.Schedule, error
 	return result, nil
 }
 
-func (r *queryResolver) Today(ctx context.Context) (*model.TodayEvent, error) {
+func (r *queryResolver) Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error) {
 	// USER
 	// get today event
 
@@ -850,7 +850,7 @@ func (r *queryResolver) Today(ctx context.Context) (*model.TodayEvent, error) {
 
 	requested_field := utils.GetPreloads(ctx)
 
-	yesterday_schedules, err := service.GetYesterdaySchedules(requested_field, *relation)
+	yesterday_schedules, err := service.GetYesterdaySchedules(params, requested_field, *relation)
 	if err != nil {
 		return nil, err
 	}

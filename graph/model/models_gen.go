@@ -6,6 +6,10 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type CurrentTime struct {
+	Time string `json:"time"`
+}
+
 type DefaultPin struct {
 	Label     string  `json:"label"`
 	Pin       *Pin    `json:"pin"`

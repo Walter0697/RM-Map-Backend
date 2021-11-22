@@ -148,8 +148,8 @@ type ComplexityRoot struct {
 		Me          func(childComplexity int) int
 		Pins        func(childComplexity int) int
 		Preference  func(childComplexity int) int
-		Schedules   func(childComplexity int) int
-		Today       func(childComplexity int) int
+		Schedules   func(childComplexity int, params model.CurrentTime) int
+		Today       func(childComplexity int, params model.CurrentTime) int
 		Users       func(childComplexity int, filter *model.UserFilter) int
 		Usersearch  func(childComplexity int, filter model.UserSearch) int
 	}
@@ -218,8 +218,8 @@ type QueryResolver interface {
 	Pins(ctx context.Context) ([]*model.Pin, error)
 	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
 	Mappins(ctx context.Context) ([]*model.MapPin, error)
-	Schedules(ctx context.Context) ([]*model.Schedule, error)
-	Today(ctx context.Context) (*model.TodayEvent, error)
+	Schedules(ctx context.Context, params model.CurrentTime) ([]*model.Schedule, error)
+	Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -888,14 +888,24 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			break
 		}
 
-		return e.complexity.Query.Schedules(childComplexity), true
+		args, err := ec.field_Query_schedules_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Schedules(childComplexity, args["params"].(model.CurrentTime)), true
 
 	case "Query.today":
 		if e.complexity.Query.Today == nil {
 			break
 		}
 
-		return e.complexity.Query.Today(childComplexity), true
+		args, err := ec.field_Query_today_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Today(childComplexity, args["params"].(model.CurrentTime)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
@@ -1150,6 +1160,10 @@ input UserSearch {
   username: String!
 }
 
+input CurrentTime {
+  time: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -1265,8 +1279,8 @@ type Query {
   pins: [Pin]!
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
-  schedules: [Schedule]!
-  today: TodayEvent!
+  schedules(params: CurrentTime!): [Schedule]!
+  today(params: CurrentTime!): TodayEvent!
   me: String!
 }
 
@@ -1683,6 +1697,36 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_schedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CurrentTime
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_today_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.CurrentTime
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
 	return args, nil
 }
 
@@ -4693,9 +4737,16 @@ func (ec *executionContext) _Query_schedules(ctx context.Context, field graphql.
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_schedules_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Schedules(rctx)
+		return ec.resolvers.Query().Schedules(rctx, args["params"].(model.CurrentTime))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4728,9 +4779,16 @@ func (ec *executionContext) _Query_today(ctx context.Context, field graphql.Coll
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_today_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Today(rctx)
+		return ec.resolvers.Query().Today(rctx, args["params"].(model.CurrentTime))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6727,6 +6785,29 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputCurrentTime(ctx context.Context, obj interface{}) (model.CurrentTime, error) {
+	var it model.CurrentTime
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("time"))
+			it.Time, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interface{}) (model.Login, error) {
 	var it model.Login
 	asMap := map[string]interface{}{}
@@ -8692,6 +8773,11 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx context.Context, v interface{}) (model.CurrentTime, error) {
+	res, err := ec.unmarshalInputCurrentTime(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNDefaultPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v []*model.DefaultPin) graphql.Marshaler {

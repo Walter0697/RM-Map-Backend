@@ -10,6 +10,7 @@ import (
 
 const (
 	StandardTime = "2006-01-02 15:04:05+00"
+	DayOnlyTime  = "2006-01-02"
 )
 
 func ConvertFieldsToDBColumns(fields []string) string {

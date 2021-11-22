@@ -9,6 +9,10 @@ input UserSearch {
   username: String!
 }
 
+input CurrentTime {
+  time: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -124,8 +128,8 @@ type Query {
   pins: [Pin]!
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
-  schedules: [Schedule]!
-  today: TodayEvent!
+  schedules(params: CurrentTime!): [Schedule]!
+  today(params: CurrentTime!): TodayEvent!
   me: String!
 }
 
