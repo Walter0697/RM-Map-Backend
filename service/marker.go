@@ -117,6 +117,24 @@ func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User)
 	return &marker, nil
 }
 
+func RevokeMarker(input model.UpdateModel, user dbmodel.User) (*dbmodel.Marker, error) {
+	var marker dbmodel.Marker
+	marker.ID = uint(input.ID)
+	if err := marker.GetById(database.Connection); err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	marker.Status = ""
+	marker.UpdatedBy = &user
+	marker.UpdatedAt = time.Now()
+
+	if err := marker.Update(database.Connection); err != nil {
+		return nil, err
+	}
+
+	return &marker, nil
+}
+
 func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
 	var markers []dbmodel.Marker
 	query := database.Connection
@@ -131,6 +149,27 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 
 	// filtering non-active markers
 	query = query.Where("status != ? AND status != ?", constant.Arrived, constant.Scheduled)
+
+	if err := query.Find(&markers).Error; err != nil {
+		return markers, err
+	}
+	return markers, nil
+}
+
+func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
+	var markers []dbmodel.Marker
+	query := database.Connection
+	if utils.StringInSlice("created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+
+	query = query.Where("relation_id = ?", relation.ID)
+
+	// filtering active markers
+	query = query.Where("status = ?", constant.Arrived)
 
 	if err := query.Find(&markers).Error; err != nil {
 		return markers, err

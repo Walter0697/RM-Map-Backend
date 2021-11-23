@@ -13,6 +13,10 @@ input CurrentTime {
   time: String!
 }
 
+input IdModel {
+  id: Int!
+}
+
 type User {
   id: Int!
   username: String!
@@ -130,6 +134,8 @@ type Query {
   mappins: [MapPin]!
   schedules(params: CurrentTime!): [Schedule]!
   today(params: CurrentTime!): TodayEvent!
+  previousmarkers: [Marker]!
+  markerschedules(params: IdModel!): [Schedule]!
   me: String!
 }
 
@@ -228,6 +234,10 @@ input ScheduleStatusList {
   ids: [ScheduleStatus]!
 }
 
+input UpdateModel {
+  id: Int!
+}
+
 input RemoveModel {
   id: Int!
 }
@@ -269,6 +279,7 @@ type Mutation {
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
+  revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

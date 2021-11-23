@@ -26,6 +26,10 @@ type EventType struct {
 	IconPath string `json:"icon_path"`
 }
 
+type IDModel struct {
+	ID int `json:"id"`
+}
+
 type Login struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -182,6 +186,10 @@ type TodayEvent struct {
 type UpdateMarkerFavourite struct {
 	ID    int  `json:"id"`
 	IsFav bool `json:"is_fav"`
+}
+
+type UpdateModel struct {
+	ID int `json:"id"`
 }
 
 type UpdatePreferredPin struct {

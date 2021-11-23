@@ -436,6 +436,37 @@ func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model
 	return result, nil
 }
 
+func (r *mutationResolver) RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error) {
+	// USER
+	// get previous markers
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	marker, err := service.RevokeMarker(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertMarker(*marker)
+
+	return &output, nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -868,6 +899,80 @@ func (r *queryResolver) Today(ctx context.Context, params model.CurrentTime) (*m
 	result.YesterdayEvent = schedules_output
 
 	return &result, nil
+}
+
+func (r *queryResolver) Previousmarkers(ctx context.Context) ([]*model.Marker, error) {
+	// USER
+	// get previous markers
+
+	var result []*model.Marker
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	markers, err := service.GetAllPreviousMarker(requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, marker := range markers {
+		item := helper.ConvertMarker(marker)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error) {
+	// USER
+	// get all schedules assiocated with this marker
+
+	var result []*model.Schedule
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	schedules, err := service.GetSchedulesByMarker(uint(params.ID), requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, schedule := range schedules {
+		item := helper.ConvertSchedule(schedule)
+		result = append(result, &item)
+	}
+
+	return result, nil
 }
 
 func (r *queryResolver) Me(ctx context.Context) (string, error) {

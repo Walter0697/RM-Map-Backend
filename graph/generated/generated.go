@@ -117,6 +117,7 @@ type ComplexityRoot struct {
 		PreviewPin           func(childComplexity int, input model.PreviewPinInput) int
 		RemoveMarkerType     func(childComplexity int, input model.RemoveModel) int
 		RemovePin            func(childComplexity int, input model.RemoveModel) int
+		RevokeMarker         func(childComplexity int, input model.UpdateModel) int
 		UpdateDefault        func(childComplexity int, input model.UpdatedDefault) int
 		UpdateMarkerFav      func(childComplexity int, input model.UpdateMarkerFavourite) int
 		UpdatePreferredPin   func(childComplexity int, input model.UpdatePreferredPin) int
@@ -140,18 +141,20 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Defaultpins func(childComplexity int) int
-		Eventtypes  func(childComplexity int) int
-		Mappins     func(childComplexity int) int
-		Markers     func(childComplexity int) int
-		Markertypes func(childComplexity int) int
-		Me          func(childComplexity int) int
-		Pins        func(childComplexity int) int
-		Preference  func(childComplexity int) int
-		Schedules   func(childComplexity int, params model.CurrentTime) int
-		Today       func(childComplexity int, params model.CurrentTime) int
-		Users       func(childComplexity int, filter *model.UserFilter) int
-		Usersearch  func(childComplexity int, filter model.UserSearch) int
+		Defaultpins     func(childComplexity int) int
+		Eventtypes      func(childComplexity int) int
+		Mappins         func(childComplexity int) int
+		Markers         func(childComplexity int) int
+		Markerschedules func(childComplexity int, params model.IDModel) int
+		Markertypes     func(childComplexity int) int
+		Me              func(childComplexity int) int
+		Pins            func(childComplexity int) int
+		Preference      func(childComplexity int) int
+		Previousmarkers func(childComplexity int) int
+		Schedules       func(childComplexity int, params model.CurrentTime) int
+		Today           func(childComplexity int, params model.CurrentTime) int
+		Users           func(childComplexity int, filter *model.UserFilter) int
+		Usersearch      func(childComplexity int, filter model.UserSearch) int
 	}
 
 	Schedule struct {
@@ -205,6 +208,7 @@ type MutationResolver interface {
 	UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error)
 	CreateSchedule(ctx context.Context, input model.NewSchedule) (*model.Schedule, error)
 	UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error)
+	RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 	Logout(ctx context.Context, input model.Logout) (string, error)
 }
@@ -220,6 +224,8 @@ type QueryResolver interface {
 	Mappins(ctx context.Context) ([]*model.MapPin, error)
 	Schedules(ctx context.Context, params model.CurrentTime) ([]*model.Schedule, error)
 	Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error)
+	Previousmarkers(ctx context.Context) ([]*model.Marker, error)
+	Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -683,6 +689,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.RemovePin(childComplexity, args["input"].(model.RemoveModel)), true
 
+	case "Mutation.revokeMarker":
+		if e.complexity.Mutation.RevokeMarker == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_revokeMarker_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RevokeMarker(childComplexity, args["input"].(model.UpdateModel)), true
+
 	case "Mutation.updateDefault":
 		if e.complexity.Mutation.UpdateDefault == nil {
 			break
@@ -855,6 +873,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Markers(childComplexity), true
 
+	case "Query.markerschedules":
+		if e.complexity.Query.Markerschedules == nil {
+			break
+		}
+
+		args, err := ec.field_Query_markerschedules_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Markerschedules(childComplexity, args["params"].(model.IDModel)), true
+
 	case "Query.markertypes":
 		if e.complexity.Query.Markertypes == nil {
 			break
@@ -882,6 +912,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Preference(childComplexity), true
+
+	case "Query.previousmarkers":
+		if e.complexity.Query.Previousmarkers == nil {
+			break
+		}
+
+		return e.complexity.Query.Previousmarkers(childComplexity), true
 
 	case "Query.schedules":
 		if e.complexity.Query.Schedules == nil {
@@ -1164,6 +1201,10 @@ input CurrentTime {
   time: String!
 }
 
+input IdModel {
+  id: Int!
+}
+
 type User {
   id: Int!
   username: String!
@@ -1281,6 +1322,8 @@ type Query {
   mappins: [MapPin]!
   schedules(params: CurrentTime!): [Schedule]!
   today(params: CurrentTime!): TodayEvent!
+  previousmarkers: [Marker]!
+  markerschedules(params: IdModel!): [Schedule]!
   me: String!
 }
 
@@ -1379,6 +1422,10 @@ input ScheduleStatusList {
   ids: [ScheduleStatus]!
 }
 
+input UpdateModel {
+  id: Int!
+}
+
 input RemoveModel {
   id: Int!
 }
@@ -1420,6 +1467,7 @@ type Mutation {
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
+  revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }`, BuiltIn: false},
@@ -1610,6 +1658,21 @@ func (ec *executionContext) field_Mutation_removePin_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_revokeMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateModel
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateDefault_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1697,6 +1760,21 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		}
 	}
 	args["name"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_markerschedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.IDModel
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNIdModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐIDModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
 	return args, nil
 }
 
@@ -3894,6 +3972,48 @@ func (ec *executionContext) _Mutation_updateScheduleStatus(ctx context.Context, 
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_revokeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_revokeMarker_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RevokeMarker(rctx, args["input"].(model.UpdateModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4803,6 +4923,83 @@ func (ec *executionContext) _Query_today(ctx context.Context, field graphql.Coll
 	res := resTmp.(*model.TodayEvent)
 	fc.Result = res
 	return ec.marshalNTodayEvent2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐTodayEvent(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_previousmarkers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Previousmarkers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_markerschedules(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_markerschedules_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Markerschedules(rctx, args["params"].(model.IDModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -6808,6 +7005,29 @@ func (ec *executionContext) unmarshalInputCurrentTime(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputIdModel(ctx context.Context, obj interface{}) (model.IDModel, error) {
+	var it model.IDModel
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interface{}) (model.Login, error) {
 	var it model.Login
 	asMap := map[string]interface{}{}
@@ -7339,6 +7559,29 @@ func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Cont
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("is_fav"))
 			it.IsFav, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateModel(ctx context.Context, obj interface{}) (model.UpdateModel, error) {
+	var it model.UpdateModel
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8035,6 +8278,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "revokeMarker":
+			out.Values[i] = ec._Mutation_revokeMarker(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -8296,6 +8544,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_today(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "previousmarkers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_previousmarkers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "markerschedules":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_markerschedules(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -8871,6 +9147,11 @@ func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) unmarshalNIdModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐIDModel(ctx context.Context, v interface{}) (model.IDModel, error) {
+	res, err := ec.unmarshalInputIdModel(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
 	res, err := graphql.UnmarshalInt(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9248,6 +9529,11 @@ func (ec *executionContext) marshalNTodayEvent2ᚖmapmarkerᚋbackendᚋgraphᚋ
 
 func (ec *executionContext) unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx context.Context, v interface{}) (model.UpdateMarkerFavourite, error) {
 	res, err := ec.unmarshalInputUpdateMarkerFavourite(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateModel(ctx context.Context, v interface{}) (model.UpdateModel, error) {
+	res, err := ec.unmarshalInputUpdateModel(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

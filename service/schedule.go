@@ -135,6 +135,8 @@ func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation
 		query = query.Preload("SelectedMarker")
 	}
 
+	query = query.Where("relation_id = ?", relation.ID)
+
 	// filter only yesterday schedules
 	now, err := time.Parse(utils.DayOnlyTime, input.Time)
 	if err != nil {
@@ -146,6 +148,30 @@ func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation
 
 	query = query.Where("selected_date >= ?", start.Format(time.RFC3339)).
 		Where("selected_date < ?", end.Format(time.RFC3339))
+
+	if err := query.Find(&schedules).Error; err != nil {
+		return schedules, err
+	}
+
+	return schedules, nil
+}
+
+func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+	var schedules []dbmodel.Schedule
+	query := database.Connection
+	if utils.StringInSlice("created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("marker", requested) {
+		query = query.Preload("SelectedMarker")
+	}
+
+	query = query.Where("relation_id = ?", relation.ID)
+
+	query = query.Where("marker_id", markerId)
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err
