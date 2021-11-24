@@ -42,16 +42,14 @@ func startServer() {
 	port := config.Data.App.Port
 
 	router := chi.NewRouter()
-	// router.Use(cors.Handler(cors.Options{
-	// 	// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-	// 	AllowedOrigins: []string{"https://*", "http://*"},
-	// 	// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
-	// 	AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-	// 	AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-	// 	ExposedHeaders:   []string{"Link"},
-	// 	AllowCredentials: false,
-	// 	MaxAge:           300, // Maximum value not ignored by any of major browsers
-	// }))
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{config.Data.App.AllowedOrigin},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	}))
 	router.Use(middleware.Middleware())
 
 	server := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))

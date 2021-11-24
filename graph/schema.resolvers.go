@@ -623,9 +623,12 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 	relation, err := service.GetCurrentRelation(*user)
 	if relation == nil {
 		if err == nil {
-			return nil, &helper.RelationNotFoundError{}
+			return result, nil
 		}
-		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+		if utils.RecordNotFound(err) {
+			return result, nil
+		}
+		return nil, err
 	}
 
 	requested_field := utils.GetTopPreloads(ctx)
@@ -838,9 +841,12 @@ func (r *queryResolver) Schedules(ctx context.Context, params model.CurrentTime)
 	relation, err := service.GetCurrentRelation(*user)
 	if relation == nil {
 		if err == nil {
-			return result, &helper.RelationNotFoundError{}
+			return result, nil
 		}
-		return result, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+		if utils.RecordNotFound(err) {
+			return result, nil
+		}
+		return nil, err
 	}
 
 	requested_field := utils.GetTopPreloads(ctx)
@@ -871,12 +877,19 @@ func (r *queryResolver) Today(ctx context.Context, params model.CurrentTime) (*m
 		return nil, err
 	}
 
+	var result model.TodayEvent
+	var schedules_output []*model.Schedule
+
 	relation, err := service.GetCurrentRelation(*user)
 	if relation == nil {
+		result.YesterdayEvent = schedules_output
 		if err == nil {
-			return nil, &helper.RelationNotFoundError{}
+			return &result, nil
 		}
-		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+		if utils.RecordNotFound(err) {
+			return &result, nil
+		}
+		return nil, err
 	}
 
 	requested_field := utils.GetPreloads(ctx)
@@ -887,10 +900,6 @@ func (r *queryResolver) Today(ctx context.Context, params model.CurrentTime) (*m
 	}
 
 	// creating output object
-	var result model.TodayEvent
-
-	var schedules_output []*model.Schedule
-
 	for _, schedule := range yesterday_schedules {
 		item := helper.ConvertSchedule(schedule)
 		schedules_output = append(schedules_output, &item)

@@ -3,7 +3,6 @@ package utils
 import (
 	"log"
 	"mapmarker/backend/config"
-	"time"
 
 	"github.com/golang-jwt/jwt"
 )
@@ -20,7 +19,6 @@ func GenerateToken(username string, secret string) (string, error) {
 
 	claims["username"] = username
 	claims["secret"] = secret
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
 	tokenString, err := token.SignedString([]byte(config.Data.App.JWT))
 	if err != nil {
 		log.Fatal("Error in generating key for " + username)

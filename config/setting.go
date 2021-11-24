@@ -9,9 +9,10 @@ import (
 var Data Config
 
 type AppEnv struct {
-	Environment string `mapstructure:"environment"`
-	JWT         string `mapstructure:"jwtkey"`
-	Port        string `mapstructure:"port"`
+	Environment   string `mapstructure:"environment"`
+	JWT           string `mapstructure:"jwtkey"`
+	Port          string `mapstructure:"port"`
+	AllowedOrigin string `mapstructure:"allowedorigin"`
 }
 
 type Database struct {
