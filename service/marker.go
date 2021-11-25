@@ -73,9 +73,15 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 		marker.Link = *input.Link
 	}
 	marker.Type = input.Type
-	marker.Description = *input.Description
-	marker.EstimateTime = *input.EstimateTime
-	marker.Price = *input.Price
+	if input.Description != nil {
+		marker.Description = *input.Description
+	}
+	if input.EstimateTime != nil {
+		marker.EstimateTime = *input.EstimateTime
+	}
+	if input.Price != nil {
+		marker.Price = *input.Price
+	}
 	if input.FromTime != nil {
 		marker.FromTime = &fromTime
 	}

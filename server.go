@@ -70,10 +70,18 @@ func startServer() {
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
 	fileServer(router, "/image/static", assetsDir)
 
-	router.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	if config.Data.App.Environment == "development" {
+		router.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	}
+
 	router.Handle("/query", server)
 
-	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	if config.Data.App.Environment == "development" {
+		log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
+	} else if config.Data.App.Environment == "production" {
+		log.Printf("PRODUCTION SERVER RUNNING")
+	}
+
 	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 

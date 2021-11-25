@@ -261,7 +261,7 @@ type MapPinRef struct {
 
 func ConvertToMapPin(input MapPinRef) model.MapPin {
 	var item model.MapPin
-	item.Typelabel = input.TypePin.RelatedType.Label
+	item.Typelabel = input.TypePin.RelatedType.Value
 	item.Pinlabel = input.MapPinLabel
 	item.ImagePath = input.TypePin.ImagePath
 

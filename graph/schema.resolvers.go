@@ -712,7 +712,7 @@ func (r *queryResolver) Pins(ctx context.Context) ([]*model.Pin, error) {
 		return result, &helper.PermissionDeniedError{}
 	}
 
-	if err := helper.IsAuthorize(*user, helper.Admin); err != nil {
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
 		return result, err
 	}
 
