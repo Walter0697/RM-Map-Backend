@@ -107,6 +107,113 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	return &marker, nil
 }
 
+func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Marker, error) {
+	var marker dbmodel.Marker
+
+	marker.ID = uint(input.ID)
+	if err := marker.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+
+	if marker.RelationId != relation.ID {
+		return nil, &helper.InvalidRelationUpdateError{}
+	}
+
+	// handle variable that needs to be parsed first
+	if input.FromTime != nil {
+		fromTime, err := time.Parse(utils.StandardTime, *input.FromTime)
+		if err != nil {
+			return nil, err
+		}
+		marker.FromTime = &fromTime
+	}
+	if input.ToTime != nil {
+		toTime, err := time.Parse(utils.StandardTime, *input.ToTime)
+		if err != nil {
+			return nil, err
+		}
+		marker.ToTime = &toTime
+	}
+
+	if input.ImageLink != nil {
+		extension := filepath.Ext(*input.ImageLink)
+
+		filename := constant.GetImageName(constant.MarkerPreviewPath, extension)
+		filepath := constant.BasePath + filename
+		if err := utils.SaveImageFromURL(filepath, *input.ImageLink); err != nil {
+			return nil, err
+		}
+
+		marker.ImageLink = filename
+	}
+
+	if input.ImageUpload != nil {
+		typeInfo := strings.Split(input.ImageUpload.ContentType, "/")
+		if typeInfo[0] != "image" {
+			return nil, &helper.UploadFileNotImageError{}
+		}
+
+		filename := constant.GetImageName(constant.MarkerPreviewPath, typeInfo[1])
+		filepath := constant.BasePath + filename
+		if err := utils.UploadImage(filepath, input.ImageUpload.File); err != nil {
+			return nil, err
+		}
+
+		marker.ImageLink = filename
+	}
+
+	// now, edit the value inside the variable
+	if input.Label != nil {
+		marker.Label = *input.Label
+	}
+
+	if input.Address != nil {
+		marker.Address = *input.Address
+	}
+
+	if input.Link != nil {
+		marker.Link = *input.Link
+	}
+
+	if input.EstimateTime != nil {
+		marker.EstimateTime = *input.EstimateTime
+	}
+
+	if input.Price != nil {
+		marker.Price = *input.Price
+	}
+
+	marker.UpdatedBy = &user
+
+	if err := marker.Update(database.Connection); err != nil {
+		return nil, err
+	}
+
+	return &marker, nil
+}
+
+func RemoveMarker(input model.RemoveModel) error {
+	var marker dbmodel.Marker
+
+	marker.ID = uint(input.ID)
+
+	if err := marker.GetById(database.Connection); err != nil {
+		return err
+	}
+
+	if marker.IsFavourite {
+		return &helper.FavouriteMarkerNotDeletableError{}
+	}
+
+	marker.Status = constant.Cancelled
+
+	if err := marker.Update(database.Connection); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 	marker.ID = uint(input.ID)
@@ -177,7 +284,7 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 
 	// filtering non-active markers
 	current := time.Now().AddDate(0, 0, -1) // minus one to make sure time zone won't affect the funcionality
-	query = query.Where("status != ? AND status != ?", constant.Arrived, constant.Scheduled)
+	query = query.Where("status = ?", "")
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
 
 	if err := query.Find(&markers).Error; err != nil {

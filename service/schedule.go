@@ -43,6 +43,43 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	return &schedule, nil
 }
 
+func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Schedule, error) {
+	var schedule dbmodel.Schedule
+
+	schedule.ID = uint(input.ID)
+	if err := schedule.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+
+	if schedule.RelationId != relation.ID {
+		return nil, &helper.InvalidRelationUpdateError{}
+	}
+
+	if input.Label != nil {
+		schedule.Label = *input.Label
+	}
+
+	if input.Description != nil {
+		schedule.Description = *input.Description
+	}
+
+	if input.SelectedTime != nil {
+		selectedTime, err := time.Parse(utils.StandardTime, *input.SelectedTime)
+		if err != nil {
+			return nil, err
+		}
+		schedule.SelectedDate = selectedTime
+	}
+
+	schedule.UpdatedBy = &user
+
+	if err := schedule.Update(database.Connection); err != nil {
+		return nil, err
+	}
+
+	return &schedule, nil
+}
+
 func RemoveSchedule(tx *gorm.DB, input model.RemoveModel) error {
 	var schedule dbmodel.Schedule
 

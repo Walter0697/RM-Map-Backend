@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -141,11 +140,64 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 }
 
 func (r *mutationResolver) EditMarker(ctx context.Context, input model.UpdateMarker) (*model.Marker, error) {
-	panic(fmt.Errorf("not implemented"))
+	// USER
+	// Edit marker
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	marker, err := service.EditMarker(input, *relation, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertMarker(*marker)
+
+	return &output, nil
 }
 
 func (r *mutationResolver) RemoveMarker(ctx context.Context, input model.RemoveModel) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	// USER
+	// remove marker
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return "", err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return "", &helper.RelationNotFoundError{}
+		}
+		return "", helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	// we only set the status of marker as cancelled, not actually deleting it
+	// since some schedule might need the deleted marker for more information
+	if err := service.RemoveMarker(input); err != nil {
+		return "", err
+	}
+
+	return "ok", nil
 }
 
 func (r *mutationResolver) UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error) {
@@ -400,7 +452,34 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 }
 
 func (r *mutationResolver) EditSchedule(ctx context.Context, input model.UpdateSchedule) (*model.Schedule, error) {
-	panic(fmt.Errorf("not implemented"))
+	// USER
+	// Edit schedule
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	schedule, err := service.EditSchedule(input, *relation, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertSchedule(*schedule)
+
+	return &output, nil
 }
 
 func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error) {

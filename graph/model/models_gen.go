@@ -184,16 +184,18 @@ type TodayEvent struct {
 }
 
 type UpdateMarker struct {
-	ID           int     `json:"id"`
-	Label        *string `json:"label"`
-	Address      *string `json:"address"`
-	Link         *string `json:"link"`
-	Type         *string `json:"type"`
-	Description  *string `json:"description"`
-	ToTime       *string `json:"to_time"`
-	FromTime     *string `json:"from_time"`
-	EstimateTime *string `json:"estimate_time"`
-	Price        *string `json:"price"`
+	ID           int             `json:"id"`
+	Label        *string         `json:"label"`
+	Address      *string         `json:"address"`
+	ImageLink    *string         `json:"image_link"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
+	Link         *string         `json:"link"`
+	Type         *string         `json:"type"`
+	Description  *string         `json:"description"`
+	ToTime       *string         `json:"to_time"`
+	FromTime     *string         `json:"from_time"`
+	EstimateTime *string         `json:"estimate_time"`
+	Price        *string         `json:"price"`
 }
 
 type UpdateMarkerFavourite struct {

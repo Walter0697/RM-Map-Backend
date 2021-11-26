@@ -50,3 +50,11 @@ func (marker *Marker) GetById(db *gorm.DB) error {
 
 	return nil
 }
+
+func (marker *Marker) RemoveById(db *gorm.DB) error {
+	if err := db.Where("id = ?", marker.ID).Delete(marker).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
