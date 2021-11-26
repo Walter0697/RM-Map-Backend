@@ -41,3 +41,11 @@ func (schedule *Schedule) GetById(db *gorm.DB) error {
 
 	return nil
 }
+
+func (schedule *Schedule) RemoveById(db *gorm.DB) error {
+	if err := db.Where("id = ?", schedule.ID).Delete(schedule).Error; err != nil {
+		return err
+	}
+
+	return nil
+}

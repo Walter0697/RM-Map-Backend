@@ -183,6 +183,19 @@ type TodayEvent struct {
 	YesterdayEvent []*Schedule `json:"yesterday_event"`
 }
 
+type UpdateMarker struct {
+	ID           int     `json:"id"`
+	Label        *string `json:"label"`
+	Address      *string `json:"address"`
+	Link         *string `json:"link"`
+	Type         *string `json:"type"`
+	Description  *string `json:"description"`
+	ToTime       *string `json:"to_time"`
+	FromTime     *string `json:"from_time"`
+	EstimateTime *string `json:"estimate_time"`
+	Price        *string `json:"price"`
+}
+
 type UpdateMarkerFavourite struct {
 	ID    int  `json:"id"`
 	IsFav bool `json:"is_fav"`
@@ -199,6 +212,13 @@ type UpdatePreferredPin struct {
 
 type UpdateRelation struct {
 	Username string `json:"username"`
+}
+
+type UpdateSchedule struct {
+	ID           int     `json:"id"`
+	Label        *string `json:"label"`
+	Description  *string `json:"description"`
+	SelectedTime *string `json:"selected_time"`
 }
 
 type UpdatedDefault struct {

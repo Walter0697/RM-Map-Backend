@@ -170,6 +170,21 @@ input NewMarker {
   price: String
 }
 
+input UpdateMarker {
+  id: Int!
+  label: String
+  address: String
+  image_link: String
+  image_upload: Upload
+  link: String
+  type: String
+  description: String
+  to_time: String
+  from_time: String
+  estimate_time: String
+  price: String
+}
+
 input UpdateMarkerFavourite {
   id: Int!
   is_fav: Boolean!
@@ -225,6 +240,13 @@ input NewSchedule {
   marker_id: Int!
 }
 
+input UpdateSchedule {
+  id: Int!
+  label: String
+  description: String
+  selected_time: String
+}
+
 input ScheduleStatus {
   id: Int!
   status: String!
@@ -268,6 +290,8 @@ type Mutation {
   updateRelation(input: UpdateRelation!): String!
   updatePreferredPin(input: UpdatePreferredPin!): UserPreference!
   createMarker(input: NewMarker!): Marker!
+  editMarker(input: UpdateMarker!): Marker!
+  removeMarker(input: RemoveModel!): String!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   createMarkerType(input: NewMarkerType!): MarkerType!
   editMarkerType(input: UpdatedMarkerType!): MarkerType!
@@ -278,7 +302,9 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
+  editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
+  removeSchedule(input: RemoveModel!): Marker!
   revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!

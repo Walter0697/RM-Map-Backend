@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -137,6 +138,14 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 
 	output := helper.ConvertMarker(*marker)
 	return &output, nil
+}
+
+func (r *mutationResolver) EditMarker(ctx context.Context, input model.UpdateMarker) (*model.Marker, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *mutationResolver) RemoveMarker(ctx context.Context, input model.RemoveModel) (string, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
 func (r *mutationResolver) UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error) {
@@ -390,6 +399,10 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 	return &output, nil
 }
 
+func (r *mutationResolver) EditSchedule(ctx context.Context, input model.UpdateSchedule) (*model.Schedule, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error) {
 	// USER
 	// update schedule status, will also update marker status
@@ -412,8 +425,6 @@ func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	// might add validation here
-
 	if err := helper.ValidateScheduleStatus(input); err != nil {
 		return nil, err
 	}
@@ -434,6 +445,45 @@ func (r *mutationResolver) UpdateScheduleStatus(ctx context.Context, input model
 	}
 
 	return result, nil
+}
+
+func (r *mutationResolver) RemoveSchedule(ctx context.Context, input model.RemoveModel) (*model.Marker, error) {
+	// USER
+	// remove schedule and revoke the related marker
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	transaction := database.Connection.Begin()
+	affected_marker, err := service.ResetMarkerBySchedule(transaction, input, *relation, *user)
+	if err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	if err := service.RemoveSchedule(transaction, input); err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	transaction.Commit()
+
+	result := helper.ConvertMarker(*affected_marker)
+	return &result, err
 }
 
 func (r *mutationResolver) RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error) {

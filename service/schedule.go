@@ -43,6 +43,18 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	return &schedule, nil
 }
 
+func RemoveSchedule(tx *gorm.DB, input model.RemoveModel) error {
+	var schedule dbmodel.Schedule
+
+	schedule.ID = uint(input.ID)
+
+	if err := schedule.RemoveById(tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection

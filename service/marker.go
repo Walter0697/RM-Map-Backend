@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Marker, error) {
@@ -123,6 +125,26 @@ func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User)
 	return &marker, nil
 }
 
+func ResetMarkerBySchedule(tx *gorm.DB, input model.RemoveModel, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Marker, error) {
+	var schedule dbmodel.Schedule
+
+	schedule.ID = uint(input.ID)
+	if err := schedule.GetById(tx); err != nil {
+		return nil, err
+	}
+
+	if schedule.RelationId != relation.ID {
+		return nil, &helper.InvalidRelationUpdateError{}
+	}
+
+	schedule.SelectedMarker.Status = ""
+	if err := schedule.SelectedMarker.Update(tx); err != nil {
+		return nil, err
+	}
+
+	return schedule.SelectedMarker, nil
+}
+
 func RevokeMarker(input model.UpdateModel, user dbmodel.User) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 	marker.ID = uint(input.ID)
@@ -154,7 +176,9 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 	query = query.Where("relation_id = ?", relation.ID)
 
 	// filtering non-active markers
+	current := time.Now().AddDate(0, 0, -1) // minus one to make sure time zone won't affect the funcionality
 	query = query.Where("status != ? AND status != ?", constant.Arrived, constant.Scheduled)
+	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
 
 	if err := query.Find(&markers).Error; err != nil {
 		return markers, err

@@ -110,13 +110,17 @@ type ComplexityRoot struct {
 		CreatePin            func(childComplexity int, input model.NewPin) int
 		CreateSchedule       func(childComplexity int, input model.NewSchedule) int
 		CreateUser           func(childComplexity int, input model.NewUser) int
+		EditMarker           func(childComplexity int, input model.UpdateMarker) int
 		EditMarkerType       func(childComplexity int, input model.UpdatedMarkerType) int
 		EditPin              func(childComplexity int, input model.UpdatedPin) int
+		EditSchedule         func(childComplexity int, input model.UpdateSchedule) int
 		Login                func(childComplexity int, input model.Login) int
 		Logout               func(childComplexity int, input model.Logout) int
 		PreviewPin           func(childComplexity int, input model.PreviewPinInput) int
+		RemoveMarker         func(childComplexity int, input model.RemoveModel) int
 		RemoveMarkerType     func(childComplexity int, input model.RemoveModel) int
 		RemovePin            func(childComplexity int, input model.RemoveModel) int
+		RemoveSchedule       func(childComplexity int, input model.RemoveModel) int
 		RevokeMarker         func(childComplexity int, input model.UpdateModel) int
 		UpdateDefault        func(childComplexity int, input model.UpdatedDefault) int
 		UpdateMarkerFav      func(childComplexity int, input model.UpdateMarkerFavourite) int
@@ -197,6 +201,8 @@ type MutationResolver interface {
 	UpdateRelation(ctx context.Context, input model.UpdateRelation) (string, error)
 	UpdatePreferredPin(ctx context.Context, input model.UpdatePreferredPin) (*model.UserPreference, error)
 	CreateMarker(ctx context.Context, input model.NewMarker) (*model.Marker, error)
+	EditMarker(ctx context.Context, input model.UpdateMarker) (*model.Marker, error)
+	RemoveMarker(ctx context.Context, input model.RemoveModel) (string, error)
 	UpdateMarkerFav(ctx context.Context, input model.UpdateMarkerFavourite) (*model.Marker, error)
 	CreateMarkerType(ctx context.Context, input model.NewMarkerType) (*model.MarkerType, error)
 	EditMarkerType(ctx context.Context, input model.UpdatedMarkerType) (*model.MarkerType, error)
@@ -207,7 +213,9 @@ type MutationResolver interface {
 	RemovePin(ctx context.Context, input model.RemoveModel) (string, error)
 	UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error)
 	CreateSchedule(ctx context.Context, input model.NewSchedule) (*model.Schedule, error)
+	EditSchedule(ctx context.Context, input model.UpdateSchedule) (*model.Schedule, error)
 	UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error)
+	RemoveSchedule(ctx context.Context, input model.RemoveModel) (*model.Marker, error)
 	RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 	Logout(ctx context.Context, input model.Logout) (string, error)
@@ -605,6 +613,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
 
+	case "Mutation.editMarker":
+		if e.complexity.Mutation.EditMarker == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editMarker_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditMarker(childComplexity, args["input"].(model.UpdateMarker)), true
+
 	case "Mutation.editMarkerType":
 		if e.complexity.Mutation.EditMarkerType == nil {
 			break
@@ -628,6 +648,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.EditPin(childComplexity, args["input"].(model.UpdatedPin)), true
+
+	case "Mutation.editSchedule":
+		if e.complexity.Mutation.EditSchedule == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_editSchedule_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.EditSchedule(childComplexity, args["input"].(model.UpdateSchedule)), true
 
 	case "Mutation.login":
 		if e.complexity.Mutation.Login == nil {
@@ -665,6 +697,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.PreviewPin(childComplexity, args["input"].(model.PreviewPinInput)), true
 
+	case "Mutation.removeMarker":
+		if e.complexity.Mutation.RemoveMarker == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeMarker_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveMarker(childComplexity, args["input"].(model.RemoveModel)), true
+
 	case "Mutation.removeMarkerType":
 		if e.complexity.Mutation.RemoveMarkerType == nil {
 			break
@@ -688,6 +732,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.RemovePin(childComplexity, args["input"].(model.RemoveModel)), true
+
+	case "Mutation.removeSchedule":
+		if e.complexity.Mutation.RemoveSchedule == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeSchedule_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveSchedule(childComplexity, args["input"].(model.RemoveModel)), true
 
 	case "Mutation.revokeMarker":
 		if e.complexity.Mutation.RevokeMarker == nil {
@@ -1358,6 +1414,19 @@ input NewMarker {
   price: String
 }
 
+input UpdateMarker {
+  id: Int!
+  label: String
+  address: String
+  link: String
+  type: String
+  description: String
+  to_time: String
+  from_time: String
+  estimate_time: String
+  price: String
+}
+
 input UpdateMarkerFavourite {
   id: Int!
   is_fav: Boolean!
@@ -1413,6 +1482,13 @@ input NewSchedule {
   marker_id: Int!
 }
 
+input UpdateSchedule {
+  id: Int!
+  label: String
+  description: String
+  selected_time: String
+}
+
 input ScheduleStatus {
   id: Int!
   status: String!
@@ -1456,6 +1532,8 @@ type Mutation {
   updateRelation(input: UpdateRelation!): String!
   updatePreferredPin(input: UpdatePreferredPin!): UserPreference!
   createMarker(input: NewMarker!): Marker!
+  editMarker(input: UpdateMarker!): Marker!
+  removeMarker(input: RemoveModel!): String!
   updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
   createMarkerType(input: NewMarkerType!): MarkerType!
   editMarkerType(input: UpdatedMarkerType!): MarkerType!
@@ -1466,7 +1544,9 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
+  editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
+  removeSchedule(input: RemoveModel!): Marker!
   revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
@@ -1568,6 +1648,21 @@ func (ec *executionContext) field_Mutation_editMarkerType_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_editMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateMarker
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarker(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_editPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1575,6 +1670,21 @@ func (ec *executionContext) field_Mutation_editPin_args(ctx context.Context, raw
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNUpdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_editSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.UpdateSchedule
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNUpdateSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateSchedule(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1643,7 +1753,37 @@ func (ec *executionContext) field_Mutation_removeMarkerType_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_removeMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.RemoveModel
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_removePin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.RemoveModel
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_removeSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 model.RemoveModel
@@ -3510,6 +3650,90 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_editMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editMarker_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditMarker(rctx, args["input"].(model.UpdateMarker))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeMarker_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveMarker(rctx, args["input"].(model.RemoveModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_updateMarkerFav(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3930,6 +4154,48 @@ func (ec *executionContext) _Mutation_createSchedule(ctx context.Context, field 
 	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_editSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_editSchedule_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().EditSchedule(rctx, args["input"].(model.UpdateSchedule))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_updateScheduleStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -3970,6 +4236,48 @@ func (ec *executionContext) _Mutation_updateScheduleStatus(ctx context.Context, 
 	res := resTmp.([]*model.Schedule)
 	fc.Result = res
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeSchedule_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveSchedule(rctx, args["input"].(model.RemoveModel))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_revokeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7537,6 +7845,101 @@ func (ec *executionContext) unmarshalInputScheduleStatusList(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj interface{}) (model.UpdateMarker, error) {
+	var it model.UpdateMarker
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "address":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("address"))
+			it.Address, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
+			it.Link, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "type":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("type"))
+			it.Type, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "to_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to_time"))
+			it.ToTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "from_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from_time"))
+			it.FromTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "estimate_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("estimate_time"))
+			it.EstimateTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "price":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("price"))
+			it.Price, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Context, obj interface{}) (model.UpdateMarkerFavourite, error) {
 	var it model.UpdateMarkerFavourite
 	asMap := map[string]interface{}{}
@@ -7636,6 +8039,53 @@ func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
 			it.Username, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateSchedule(ctx context.Context, obj interface{}) (model.UpdateSchedule, error) {
+	var it model.UpdateSchedule
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "selected_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selected_time"))
+			it.SelectedTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8223,6 +8673,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "editMarker":
+			out.Values[i] = ec._Mutation_editMarker(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removeMarker":
+			out.Values[i] = ec._Mutation_removeMarker(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "updateMarkerFav":
 			out.Values[i] = ec._Mutation_updateMarkerFav(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -8273,8 +8733,18 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "editSchedule":
+			out.Values[i] = ec._Mutation_editSchedule(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "updateScheduleStatus":
 			out.Values[i] = ec._Mutation_updateScheduleStatus(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removeSchedule":
+			out.Values[i] = ec._Mutation_removeSchedule(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9527,6 +9997,11 @@ func (ec *executionContext) marshalNTodayEvent2ᚖmapmarkerᚋbackendᚋgraphᚋ
 	return ec._TodayEvent(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNUpdateMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarker(ctx context.Context, v interface{}) (model.UpdateMarker, error) {
+	res, err := ec.unmarshalInputUpdateMarker(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx context.Context, v interface{}) (model.UpdateMarkerFavourite, error) {
 	res, err := ec.unmarshalInputUpdateMarkerFavourite(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -9544,6 +10019,11 @@ func (ec *executionContext) unmarshalNUpdatePreferredPin2mapmarkerᚋbackendᚋg
 
 func (ec *executionContext) unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx context.Context, v interface{}) (model.UpdateRelation, error) {
 	res, err := ec.unmarshalInputUpdateRelation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateSchedule(ctx context.Context, v interface{}) (model.UpdateSchedule, error) {
+	res, err := ec.unmarshalInputUpdateSchedule(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
