@@ -7,7 +7,6 @@ import (
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
 	"mapmarker/backend/utils"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -34,11 +33,10 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	imageFileName := ""
 
 	if input.ImageLink != nil {
-		extension := filepath.Ext(*input.ImageLink)
-		// TODO: for now we use frontend to validate if it is an image
+		// for now we use frontend to validate if it is an image
 		// maybe add that to backend in the future
 
-		filename := constant.GetImageName(constant.MarkerPreviewPath, extension)
+		filename := constant.GetImageLinkName(constant.MarkerPreviewPath, *input.ImageLink)
 		filepath := constant.BasePath + filename
 		if err := utils.SaveImageFromURL(filepath, *input.ImageLink); err != nil {
 			return nil, err
@@ -68,7 +66,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	marker.Latitude = input.Latitude
 	marker.Longitude = input.Longitude
 	marker.Address = input.Address
-	if input.ImageUpload != nil {
+	if input.ImageUpload != nil || input.ImageLink != nil {
 		marker.ImageLink = imageFileName
 	}
 	if input.Link != nil {
@@ -136,9 +134,7 @@ func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user db
 	}
 
 	if input.ImageLink != nil {
-		extension := filepath.Ext(*input.ImageLink)
-
-		filename := constant.GetImageName(constant.MarkerPreviewPath, extension)
+		filename := constant.GetImageLinkName(constant.MarkerPreviewPath, *input.ImageLink)
 		filepath := constant.BasePath + filename
 		if err := utils.SaveImageFromURL(filepath, *input.ImageLink); err != nil {
 			return nil, err
