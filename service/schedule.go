@@ -18,9 +18,12 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	schedule.Label = input.Label
 	schedule.Description = input.Description
 
-	marker.Status = constant.Scheduled
-	if err := marker.Update(tx); err != nil {
-		return nil, err
+	// 29/11/2021 : if marker is permanent, don't put it into scheduled state
+	if !marker.Permanent {
+		marker.Status = constant.Scheduled
+		if err := marker.Update(tx); err != nil {
+			return nil, err
+		}
 	}
 
 	schedule.SelectedMarker = &marker
@@ -137,27 +140,30 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 
 		schedule.Status = updateStatus.Status
 
-		// update marker based on the current status as well
-		schedule.SelectedMarker.UpdatedBy = &user
-		if updateStatus.Status == constant.Arrived {
-			schedule.SelectedMarker.Status = constant.Arrived
+		// 29/11/2021 : if the marker is permanent. don't change the state
+		if !schedule.SelectedMarker.Permanent {
+			// update marker based on the current status as well
+			if updateStatus.Status == constant.Arrived {
+				schedule.SelectedMarker.Status = constant.Arrived
 
-			if err := schedule.SelectedMarker.Update(tx); err != nil {
-				return schedules, err
-			}
-		} else if updateStatus.Status == constant.Cancelled {
-			schedule.SelectedMarker.Status = constant.Empty
+				if err := schedule.SelectedMarker.Update(tx); err != nil {
+					return schedules, err
+				}
+			} else if updateStatus.Status == constant.Cancelled {
+				schedule.SelectedMarker.Status = constant.Empty
 
-			if err := schedule.SelectedMarker.Update(tx); err != nil {
-				return schedules, err
-			}
-		} else if updateStatus.Status == constant.Empty {
-			schedule.SelectedMarker.Status = constant.Scheduled
+				if err := schedule.SelectedMarker.Update(tx); err != nil {
+					return schedules, err
+				}
+			} else if updateStatus.Status == constant.Empty {
+				schedule.SelectedMarker.Status = constant.Scheduled
 
-			if err := schedule.SelectedMarker.Update(tx); err != nil {
-				return schedules, err
+				if err := schedule.SelectedMarker.Update(tx); err != nil {
+					return schedules, err
+				}
 			}
 		}
+
 		schedule.UpdatedBy = &user
 
 		if err := schedule.Update(tx); err != nil {

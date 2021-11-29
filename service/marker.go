@@ -66,6 +66,19 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	marker.Latitude = input.Latitude
 	marker.Longitude = input.Longitude
 	marker.Address = input.Address
+
+	// 29/11/2021 : for backward compatable
+	if input.Permanent != nil {
+		marker.Permanent = *input.Permanent
+	} else {
+		marker.Permanent = false
+	}
+	if input.NeedBooking != nil {
+		marker.NeedBooking = *input.NeedBooking
+	} else {
+		marker.NeedBooking = false
+	}
+
 	if input.ImageUpload != nil || input.ImageLink != nil {
 		marker.ImageLink = imageFileName
 	}
@@ -185,6 +198,14 @@ func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user db
 
 	if input.Price != nil {
 		marker.Price = *input.Price
+	}
+
+	if input.Permanent != nil {
+		marker.Permanent = *input.Permanent
+	}
+
+	if input.NeedBooking != nil {
+		marker.NeedBooking = *input.NeedBooking
 	}
 
 	marker.UpdatedBy = &user

@@ -62,6 +62,8 @@ type Marker struct {
 	Description  *string `json:"description"`
 	EstimateTime *string `json:"estimate_time"`
 	Price        *string `json:"price"`
+	Permanent    bool    `json:"permanent"`
+	NeedBooking  bool    `json:"need_booking"`
 	Status       *string `json:"status"`
 	ToTime       *string `json:"to_time"`
 	FromTime     *string `json:"from_time"`
@@ -94,6 +96,8 @@ type NewMarker struct {
 	Link         *string         `json:"link"`
 	Type         string          `json:"type"`
 	Description  *string         `json:"description"`
+	Permanent    *bool           `json:"permanent"`
+	NeedBooking  *bool           `json:"need_booking"`
 	ToTime       *string         `json:"to_time"`
 	FromTime     *string         `json:"from_time"`
 	EstimateTime *string         `json:"estimate_time"`
@@ -192,6 +196,8 @@ type UpdateMarker struct {
 	Link         *string         `json:"link"`
 	Type         *string         `json:"type"`
 	Description  *string         `json:"description"`
+	Permanent    *bool           `json:"permanent"`
+	NeedBooking  *bool           `json:"need_booking"`
 	ToTime       *string         `json:"to_time"`
 	FromTime     *string         `json:"from_time"`
 	EstimateTime *string         `json:"estimate_time"`

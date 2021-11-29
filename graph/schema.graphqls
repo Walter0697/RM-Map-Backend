@@ -46,6 +46,8 @@ type Marker {
   description: String
   estimate_time: String
   price: String
+  permanent: Boolean!
+  need_booking: Boolean!
   status: String
   to_time: String
   from_time: String
@@ -164,6 +166,8 @@ input NewMarker {
   link: String
   type: String!
   description: String
+  permanent: Boolean
+  need_booking: Boolean
   to_time: String
   from_time: String
   estimate_time: String
@@ -179,6 +183,8 @@ input UpdateMarker {
   link: String
   type: String
   description: String
+  permanent: Boolean
+  need_booking: Boolean
   to_time: String
   from_time: String
   estimate_time: String

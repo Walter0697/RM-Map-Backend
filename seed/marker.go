@@ -61,6 +61,8 @@ func MarkerFactory(eventtypes []string, user dbmodel.User, index int) dbmodel.Ma
 	marker.Link = faker.Internet().Url()
 	marker.EstimateTime = RandomStringInList([]string{"", "short", "medium", "long"})
 	marker.Price = RandomStringInList([]string{"", "free", "cheap", "middle", "expensive"})
+	marker.Permanent = RandomBool()
+	marker.NeedBooking = RandomBool()
 	if WithChance(1, 5) {
 		tendaysbefore := now.AddDate(0, 0, -10)
 		marker.FromTime = &tendaysbefore

@@ -18,6 +18,8 @@ type Marker struct {
 	Description  string       `json:"description"` // optional fields
 	EstimateTime string       `json:"estimate"`
 	Price        string       `json:"price"`
+	Permanent    bool         `json:"permanent"`
+	NeedBooking  bool         `json:"needBooking"`
 	Status       string       `json:"status"`    // visited / scheduled / ???
 	VisitTime    *time.Time   `json:"visitTime"` // if visited
 	FromTime     *time.Time   `json:"fromTime"`  // time related

@@ -29,6 +29,8 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.Description = &marker.Description
 	item.EstimateTime = &marker.EstimateTime
 	item.Price = &marker.Price
+	item.NeedBooking = marker.NeedBooking
+	item.Permanent = marker.Permanent
 	item.Status = &marker.Status
 
 	if marker.FromTime != nil {

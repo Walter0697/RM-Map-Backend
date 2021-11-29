@@ -84,6 +84,8 @@ type ComplexityRoot struct {
 		Latitude     func(childComplexity int) int
 		Link         func(childComplexity int) int
 		Longitude    func(childComplexity int) int
+		NeedBooking  func(childComplexity int) int
+		Permanent    func(childComplexity int) int
 		Price        func(childComplexity int) int
 		Status       func(childComplexity int) int
 		ToTime       func(childComplexity int) int
@@ -447,6 +449,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Longitude(childComplexity), true
+
+	case "Marker.need_booking":
+		if e.complexity.Marker.NeedBooking == nil {
+			break
+		}
+
+		return e.complexity.Marker.NeedBooking(childComplexity), true
+
+	case "Marker.permanent":
+		if e.complexity.Marker.Permanent == nil {
+			break
+		}
+
+		return e.complexity.Marker.Permanent(childComplexity), true
 
 	case "Marker.price":
 		if e.complexity.Marker.Price == nil {
@@ -1290,6 +1306,8 @@ type Marker {
   description: String
   estimate_time: String
   price: String
+  permanent: Boolean!
+  need_booking: Boolean!
   status: String
   to_time: String
   from_time: String
@@ -1408,6 +1426,8 @@ input NewMarker {
   link: String
   type: String!
   description: String
+  permanent: Boolean
+  need_booking: Boolean
   to_time: String
   from_time: String
   estimate_time: String
@@ -1423,6 +1443,8 @@ input UpdateMarker {
   link: String
   type: String
   description: String
+  permanent: Boolean
+  need_booking: Boolean
   to_time: String
   from_time: String
   estimate_time: String
@@ -2896,6 +2918,76 @@ func (ec *executionContext) _Marker_price(ctx context.Context, field graphql.Col
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_permanent(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Permanent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_need_booking(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NeedBooking, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Marker_status(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
@@ -7473,6 +7565,22 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "permanent":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permanent"))
+			it.Permanent, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "need_booking":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("need_booking"))
+			it.NeedBooking, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "to_time":
 			var err error
 
@@ -7917,6 +8025,22 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
 			it.Description, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "permanent":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("permanent"))
+			it.Permanent, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "need_booking":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("need_booking"))
+			it.NeedBooking, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -8547,6 +8671,16 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_estimate_time(ctx, field, obj)
 		case "price":
 			out.Values[i] = ec._Marker_price(ctx, field, obj)
+		case "permanent":
+			out.Values[i] = ec._Marker_permanent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "need_booking":
+			out.Values[i] = ec._Marker_need_booking(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "status":
 			out.Values[i] = ec._Marker_status(ctx, field, obj)
 		case "to_time":
