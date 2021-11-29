@@ -163,6 +163,14 @@ func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user db
 		marker.Label = *input.Label
 	}
 
+	if input.Description != nil {
+		marker.Description = *input.Description
+	}
+
+	if input.Type != nil {
+		marker.Type = *input.Type
+	}
+
 	if input.Address != nil {
 		marker.Address = *input.Address
 	}

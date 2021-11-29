@@ -27,7 +27,7 @@ func StringInSlice(a string, list []string) bool {
 }
 
 func ConvertToOutputTime(t time.Time) string {
-	return t.Format("2006-01-02T15:04:05Z")
+	return t.Format(time.RFC3339)
 }
 
 func RecordNotFound(err error) bool {
