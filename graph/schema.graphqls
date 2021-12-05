@@ -17,6 +17,10 @@ input IdModel {
   id: Int!
 }
 
+input WebLink {
+  link: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -124,6 +128,11 @@ type TodayEvent {
   yesterday_event: [Schedule]!
 }
 
+type MetaDataOutput {
+  image_link: String!
+  title: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -138,6 +147,7 @@ type Query {
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
   markerschedules(params: IdModel!): [Schedule]!
+  scrapimage(params: WebLink!): MetaDataOutput!
   me: String!
 }
 

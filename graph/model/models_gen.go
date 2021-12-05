@@ -86,6 +86,11 @@ type MarkerType struct {
 	UpdatedBy *User  `json:"updated_by"`
 }
 
+type MetaDataOutput struct {
+	ImageLink string `json:"image_link"`
+	Title     string `json:"title"`
+}
+
 type NewMarker struct {
 	Label        string          `json:"label"`
 	Latitude     float64         `json:"latitude"`
@@ -278,4 +283,8 @@ type UserPreference struct {
 
 type UserSearch struct {
 	Username string `json:"username"`
+}
+
+type WebLink struct {
+	Link string `json:"link"`
 }

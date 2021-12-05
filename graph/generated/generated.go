@@ -106,6 +106,11 @@ type ComplexityRoot struct {
 		Value     func(childComplexity int) int
 	}
 
+	MetaDataOutput struct {
+		ImageLink func(childComplexity int) int
+		Title     func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateMarker         func(childComplexity int, input model.NewMarker) int
 		CreateMarkerType     func(childComplexity int, input model.NewMarkerType) int
@@ -158,6 +163,7 @@ type ComplexityRoot struct {
 		Preference      func(childComplexity int) int
 		Previousmarkers func(childComplexity int) int
 		Schedules       func(childComplexity int, params model.CurrentTime) int
+		Scrapimage      func(childComplexity int, params model.WebLink) int
 		Today           func(childComplexity int, params model.CurrentTime) int
 		Users           func(childComplexity int, filter *model.UserFilter) int
 		Usersearch      func(childComplexity int, filter model.UserSearch) int
@@ -236,6 +242,7 @@ type QueryResolver interface {
 	Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error)
 	Previousmarkers(ctx context.Context) ([]*model.Marker, error)
 	Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error)
+	Scrapimage(ctx context.Context, params model.WebLink) (*model.MetaDataOutput, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -568,6 +575,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.MarkerType.Value(childComplexity), true
+
+	case "MetaDataOutput.image_link":
+		if e.complexity.MetaDataOutput.ImageLink == nil {
+			break
+		}
+
+		return e.complexity.MetaDataOutput.ImageLink(childComplexity), true
+
+	case "MetaDataOutput.title":
+		if e.complexity.MetaDataOutput.Title == nil {
+			break
+		}
+
+		return e.complexity.MetaDataOutput.Title(childComplexity), true
 
 	case "Mutation.createMarker":
 		if e.complexity.Mutation.CreateMarker == nil {
@@ -1004,6 +1025,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Schedules(childComplexity, args["params"].(model.CurrentTime)), true
 
+	case "Query.scrapimage":
+		if e.complexity.Query.Scrapimage == nil {
+			break
+		}
+
+		args, err := ec.field_Query_scrapimage_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Scrapimage(childComplexity, args["params"].(model.WebLink)), true
+
 	case "Query.today":
 		if e.complexity.Query.Today == nil {
 			break
@@ -1277,6 +1310,10 @@ input IdModel {
   id: Int!
 }
 
+input WebLink {
+  link: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -1384,6 +1421,11 @@ type TodayEvent {
   yesterday_event: [Schedule]!
 }
 
+type MetaDataOutput {
+  image_link: String!
+  title: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -1398,6 +1440,7 @@ type Query {
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
   markerschedules(params: IdModel!): [Schedule]!
+  scrapimage(params: WebLink!): MetaDataOutput!
   me: String!
 }
 
@@ -1949,6 +1992,21 @@ func (ec *executionContext) field_Query_schedules_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["params"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
 		arg0, err = ec.unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_scrapimage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.WebLink
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNWebLink2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebLink(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3574,6 +3632,76 @@ func (ec *executionContext) _MarkerType_updated_by(ctx context.Context, field gr
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MetaDataOutput_image_link(ctx context.Context, field graphql.CollectedField, obj *model.MetaDataOutput) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MetaDataOutput",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageLink, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MetaDataOutput_title(ctx context.Context, field graphql.CollectedField, obj *model.MetaDataOutput) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MetaDataOutput",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Title, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -5402,6 +5530,48 @@ func (ec *executionContext) _Query_markerschedules(ctx context.Context, field gr
 	res := resTmp.([]*model.Schedule)
 	fc.Result = res
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_scrapimage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_scrapimage_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Scrapimage(rctx, args["params"].(model.WebLink))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.MetaDataOutput)
+	fc.Result = res
+	return ec.marshalNMetaDataOutput2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMetaDataOutput(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -8464,6 +8634,29 @@ func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputWebLink(ctx context.Context, obj interface{}) (model.WebLink, error) {
+	var it model.WebLink
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
+			it.Link, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -8776,6 +8969,38 @@ func (ec *executionContext) _MarkerType(ctx context.Context, sel ast.SelectionSe
 			}
 		case "updated_by":
 			out.Values[i] = ec._MarkerType_updated_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var metaDataOutputImplementors = []string{"MetaDataOutput"}
+
+func (ec *executionContext) _MetaDataOutput(ctx context.Context, sel ast.SelectionSet, obj *model.MetaDataOutput) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, metaDataOutputImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MetaDataOutput")
+		case "image_link":
+			out.Values[i] = ec._MetaDataOutput_image_link(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "title":
+			out.Values[i] = ec._MetaDataOutput_title(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9194,6 +9419,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_markerschedules(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "scrapimage":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_scrapimage(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -9955,6 +10194,20 @@ func (ec *executionContext) marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋ
 	return ec._MarkerType(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNMetaDataOutput2mapmarkerᚋbackendᚋgraphᚋmodelᚐMetaDataOutput(ctx context.Context, sel ast.SelectionSet, v model.MetaDataOutput) graphql.Marshaler {
+	return ec._MetaDataOutput(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMetaDataOutput2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMetaDataOutput(ctx context.Context, sel ast.SelectionSet, v *model.MetaDataOutput) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MetaDataOutput(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarker(ctx context.Context, v interface{}) (model.NewMarker, error) {
 	res, err := ec.unmarshalInputNewMarker(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10258,6 +10511,11 @@ func (ec *executionContext) marshalNUserPreference2ᚖmapmarkerᚋbackendᚋgrap
 
 func (ec *executionContext) unmarshalNUserSearch2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserSearch(ctx context.Context, v interface{}) (model.UserSearch, error) {
 	res, err := ec.unmarshalInputUserSearch(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNWebLink2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebLink(ctx context.Context, v interface{}) (model.WebLink, error) {
+	res, err := ec.unmarshalInputWebLink(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

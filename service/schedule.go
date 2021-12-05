@@ -197,12 +197,13 @@ func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation
 	if err != nil {
 		return schedules, err
 	}
-	yesterday := now.AddDate(0, 0, -1)
-	start := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
+
+	// 05/12 : don't restrict on just yesterday
+	//yesterday := now.AddDate(0, 0, -1)
+	//start := time.Date(yesterday.Year(), yesterday.Month(), yesterday.Day(), 0, 0, 0, 0, yesterday.Location())
 	end := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 
-	query = query.Where("selected_date >= ?", start.Format(time.RFC3339)).
-		Where("selected_date < ?", end.Format(time.RFC3339))
+	query = query.Where("selected_date < ?", end.Format(time.RFC3339))
 
 	if err := query.Find(&schedules).Error; err != nil {
 		return schedules, err

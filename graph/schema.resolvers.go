@@ -1113,6 +1113,26 @@ func (r *queryResolver) Markerschedules(ctx context.Context, params model.IDMode
 	return result, nil
 }
 
+func (r *queryResolver) Scrapimage(ctx context.Context, params model.WebLink) (*model.MetaDataOutput, error) {
+	// USER
+	// just dont allow anyone without authentication use this feature
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	image, title, err := service.GetMetaDataFromWebLink(params.Link)
+	if err != nil {
+		return nil, err
+	}
+
+	var output model.MetaDataOutput
+	output.ImageLink = image
+	output.Title = title
+
+	return &output, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {
