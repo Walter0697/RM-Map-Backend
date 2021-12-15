@@ -34,6 +34,12 @@ type LDAPSetting struct {
 	DefaultRole  string `mapstructure:"defaultrole"`
 }
 
+type MovieDBSetting struct {
+	ApiLink   string `mapstructure:"apiLink"`
+	ApiKey    string `mapstructure:"apiKey"`
+	ImageLink string `mapstructure:"imageLink"`
+}
+
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
@@ -46,10 +52,11 @@ type SeedSetting struct {
 }
 
 type Config struct {
-	DB   Database    `mapstructure:"database"`
-	App  AppEnv      `mapstructure:"app"`
-	LDAP LDAPSetting `mapstructure:"ldap"`
-	Seed SeedSetting `mapstructure:"seed"`
+	DB      Database       `mapstructure:"database"`
+	App     AppEnv         `mapstructure:"app"`
+	LDAP    LDAPSetting    `mapstructure:"ldap"`
+	MovieDB MovieDBSetting `mapstructure:"moviedb"`
+	Seed    SeedSetting    `mapstructure:"seed"`
 }
 
 func Init() {
