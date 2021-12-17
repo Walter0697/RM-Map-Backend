@@ -107,3 +107,9 @@ type InvalidStatusError struct{}
 func (n *InvalidStatusError) Error() string {
 	return "status is not valid"
 }
+
+type QueryCannotEmptyError struct{}
+
+func (n *QueryCannotEmptyError) Error() string {
+	return "query cannot be empty"
+}

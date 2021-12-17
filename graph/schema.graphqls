@@ -21,6 +21,12 @@ input WebLink {
   link: String!
 }
 
+input MovieFilter {
+  type: String!
+  location: String
+  query: String
+}
+
 type User {
   id: Int!
   username: String!
@@ -133,6 +139,12 @@ type MetaDataOutput {
   title: String!
 }
 
+type MovieOutput {
+  title: String!
+  image_link: String!
+  release_date: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -148,6 +160,7 @@ type Query {
   previousmarkers: [Marker]!
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
+  moviefetch(filter: MovieFilter!): [MovieOutput]!
   me: String!
 }
 

@@ -91,6 +91,18 @@ type MetaDataOutput struct {
 	Title     string `json:"title"`
 }
 
+type MovieFilter struct {
+	Type     string  `json:"type"`
+	Location *string `json:"location"`
+	Query    *string `json:"query"`
+}
+
+type MovieOutput struct {
+	Title       string `json:"title"`
+	ImageLink   string `json:"image_link"`
+	ReleaseDate string `json:"release_date"`
+}
+
 type NewMarker struct {
 	Label        string          `json:"label"`
 	Latitude     float64         `json:"latitude"`

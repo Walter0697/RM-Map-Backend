@@ -1133,6 +1133,22 @@ func (r *queryResolver) Scrapimage(ctx context.Context, params model.WebLink) (*
 	return &output, nil
 }
 
+func (r *queryResolver) Moviefetch(ctx context.Context, filter model.MovieFilter) ([]*model.MovieOutput, error) {
+	// USER
+	// just dont allow anyone without authentication use this feature
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	output, err := service.GetMovieList(filter)
+	if err != nil {
+		return nil, err
+	}
+
+	return output, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {
