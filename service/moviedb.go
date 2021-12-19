@@ -8,11 +8,12 @@ import (
 )
 
 type MovieDetail struct {
-	Adult       bool   `json:"adult"`
-	OriginTitle string `json:"original_title"`
-	Overview    string `json:"overview"`
-	PosterPath  string `json:"poster_path"`
-	ReleaseDate string `json:"release_date"`
+	Adult        bool   `json:"adult"`
+	OriginTitle  string `json:"original_title"`
+	Overview     string `json:"overview"`
+	PosterPath   string `json:"poster_path"`
+	BackdropPath string `json:"backdrop_path"`
+	ReleaseDate  string `json:"release_date"`
 }
 
 type MovieResponse struct {
@@ -117,7 +118,14 @@ func GetMovieList(filter model.MovieFilter) ([]*model.MovieOutput, error) {
 	for _, movieDetails := range data.Results {
 		var item model.MovieOutput
 		item.Title = movieDetails.OriginTitle
-		item.ImageLink = config.Data.MovieDB.ImageLink + movieDetails.PosterPath
+		if movieDetails.PosterPath != "" {
+			item.ImageLink = config.Data.MovieDB.ImageLink + movieDetails.PosterPath
+		} else if movieDetails.BackdropPath != "" {
+			item.ImageLink = config.Data.MovieDB.ImageLink + movieDetails.BackdropPath
+		} else {
+			item.ImageLink = ""
+		}
+
 		item.ReleaseDate = movieDetails.ReleaseDate
 		result = append(result, &item)
 	}
