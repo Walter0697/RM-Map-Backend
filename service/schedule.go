@@ -46,6 +46,43 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	return &schedule, nil
 }
 
+func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmodel.Movie, marker *dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
+	var schedule dbmodel.Schedule
+
+	schedule.Label = input.Label
+	schedule.Description = input.Description
+
+	if marker != nil {
+		if !marker.Permanent {
+			marker.Status = constant.Scheduled
+			if err := marker.Update(tx); err != nil {
+				return nil, err
+			}
+		}
+
+		schedule.SelectedMarker = marker
+	}
+
+	selectedTime, err := time.Parse(utils.StandardTime, input.SelectedTime)
+	if err != nil {
+		return nil, err
+	}
+	schedule.SelectedDate = selectedTime
+
+	schedule.SelectedMovie = &movie
+
+	schedule.Relation = relation
+	schedule.Status = ""
+	schedule.CreatedBy = &user
+	schedule.UpdatedBy = &user
+
+	if err := schedule.Create(tx); err != nil {
+		return nil, err
+	}
+
+	return &schedule, nil
+}
+
 func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
 

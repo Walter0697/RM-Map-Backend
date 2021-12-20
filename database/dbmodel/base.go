@@ -34,6 +34,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&TypePin{})
 	database.Connection.AutoMigrate(&DefaultValue{})
 	database.Connection.AutoMigrate(&Schedule{})
+	database.Connection.AutoMigrate(&Movie{})
 
 	log.Println("auto migration completed")
 }

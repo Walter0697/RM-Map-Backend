@@ -68,6 +68,17 @@ type Marker {
   updated_by: User!
 }
 
+type Movie {
+  id: Int!
+  label: String!
+  release_date: String
+  marker: Marker
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type MarkerType {
   id: Int!
   label: String!
@@ -124,6 +135,7 @@ type Schedule {
   status: String!
   selected_date: String!
   marker: Marker!
+  movie: Movie!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -276,6 +288,16 @@ input UpdateSchedule {
   selected_time: String
 }
 
+input NewMovieSchedule {
+  label: String!
+  description: String!
+  selected_time: String!
+  movie_name: String!
+  movie_release: String
+  movie_image: String
+  marker_id: Int
+}
+
 input ScheduleStatus {
   id: Int!
   status: String!
@@ -331,6 +353,7 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
+  createMovieSchedule(input: NewMovieSchedule!): Schedule!
   editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
   removeSchedule(input: RemoveModel!): Marker!

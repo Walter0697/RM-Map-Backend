@@ -91,6 +91,17 @@ type MetaDataOutput struct {
 	Title     string `json:"title"`
 }
 
+type Movie struct {
+	ID          int     `json:"id"`
+	Label       string  `json:"label"`
+	ReleaseDate *string `json:"release_date"`
+	Marker      *Marker `json:"marker"`
+	CreatedAt   string  `json:"created_at"`
+	CreatedBy   *User   `json:"created_by"`
+	UpdatedAt   string  `json:"updated_at"`
+	UpdatedBy   *User   `json:"updated_by"`
+}
+
 type MovieFilter struct {
 	Type     string  `json:"type"`
 	Location *string `json:"location"`
@@ -126,6 +137,16 @@ type NewMarkerType struct {
 	Value      string          `json:"value"`
 	Priority   int             `json:"priority"`
 	IconUpload *graphql.Upload `json:"icon_upload"`
+}
+
+type NewMovieSchedule struct {
+	Label        string  `json:"label"`
+	Description  string  `json:"description"`
+	SelectedTime string  `json:"selected_time"`
+	MovieName    string  `json:"movie_name"`
+	MovieRelease *string `json:"movie_release"`
+	MovieImage   *string `json:"movie_image"`
+	MarkerID     *int    `json:"marker_id"`
 }
 
 type NewPin struct {
@@ -185,6 +206,7 @@ type Schedule struct {
 	Status       string  `json:"status"`
 	SelectedDate string  `json:"selected_date"`
 	Marker       *Marker `json:"marker"`
+	Movie        *Movie  `json:"movie"`
 	CreatedAt    string  `json:"created_at"`
 	CreatedBy    *User   `json:"created_by"`
 	UpdatedAt    string  `json:"updated_at"`

@@ -451,6 +451,56 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 	return &output, nil
 }
 
+func (r *mutationResolver) CreateMovieSchedule(ctx context.Context, input model.NewMovieSchedule) (*model.Schedule, error) {
+	// USER
+	// Create movie schedule by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	transaction := database.Connection.Begin()
+
+	movie, err := service.CreateMovie(transaction, input, *user, *relation)
+	if err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	var marker *dbmodel.Marker
+	if input.MarkerID != nil {
+		marker.ID = uint(*input.MarkerID)
+		if err := marker.GetById(transaction); err != nil {
+			transaction.Rollback()
+			return nil, helper.CheckDatabaseError(err, &helper.MarkerNotFound{})
+		}
+	}
+
+	schedule, err := service.CreateMovieSchedule(transaction, input, *movie, marker, *user, *relation)
+	if err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	transaction.Commit()
+
+	output := helper.ConvertSchedule(*schedule)
+	return &output, nil
+}
+
 func (r *mutationResolver) EditSchedule(ctx context.Context, input model.UpdateSchedule) (*model.Schedule, error) {
 	// USER
 	// Edit schedule

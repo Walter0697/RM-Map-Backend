@@ -111,6 +111,17 @@ type ComplexityRoot struct {
 		Title     func(childComplexity int) int
 	}
 
+	Movie struct {
+		CreatedAt   func(childComplexity int) int
+		CreatedBy   func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Label       func(childComplexity int) int
+		Marker      func(childComplexity int) int
+		ReleaseDate func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
+		UpdatedBy   func(childComplexity int) int
+	}
+
 	MovieOutput struct {
 		ImageLink   func(childComplexity int) int
 		ReleaseDate func(childComplexity int) int
@@ -120,6 +131,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		CreateMarker         func(childComplexity int, input model.NewMarker) int
 		CreateMarkerType     func(childComplexity int, input model.NewMarkerType) int
+		CreateMovieSchedule  func(childComplexity int, input model.NewMovieSchedule) int
 		CreatePin            func(childComplexity int, input model.NewPin) int
 		CreateSchedule       func(childComplexity int, input model.NewSchedule) int
 		CreateUser           func(childComplexity int, input model.NewUser) int
@@ -183,6 +195,7 @@ type ComplexityRoot struct {
 		ID           func(childComplexity int) int
 		Label        func(childComplexity int) int
 		Marker       func(childComplexity int) int
+		Movie        func(childComplexity int) int
 		SelectedDate func(childComplexity int) int
 		Status       func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
@@ -228,6 +241,7 @@ type MutationResolver interface {
 	RemovePin(ctx context.Context, input model.RemoveModel) (string, error)
 	UpdateDefault(ctx context.Context, input model.UpdatedDefault) (string, error)
 	CreateSchedule(ctx context.Context, input model.NewSchedule) (*model.Schedule, error)
+	CreateMovieSchedule(ctx context.Context, input model.NewMovieSchedule) (*model.Schedule, error)
 	EditSchedule(ctx context.Context, input model.UpdateSchedule) (*model.Schedule, error)
 	UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error)
 	RemoveSchedule(ctx context.Context, input model.RemoveModel) (*model.Marker, error)
@@ -598,6 +612,62 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MetaDataOutput.Title(childComplexity), true
 
+	case "Movie.created_at":
+		if e.complexity.Movie.CreatedAt == nil {
+			break
+		}
+
+		return e.complexity.Movie.CreatedAt(childComplexity), true
+
+	case "Movie.created_by":
+		if e.complexity.Movie.CreatedBy == nil {
+			break
+		}
+
+		return e.complexity.Movie.CreatedBy(childComplexity), true
+
+	case "Movie.id":
+		if e.complexity.Movie.ID == nil {
+			break
+		}
+
+		return e.complexity.Movie.ID(childComplexity), true
+
+	case "Movie.label":
+		if e.complexity.Movie.Label == nil {
+			break
+		}
+
+		return e.complexity.Movie.Label(childComplexity), true
+
+	case "Movie.marker":
+		if e.complexity.Movie.Marker == nil {
+			break
+		}
+
+		return e.complexity.Movie.Marker(childComplexity), true
+
+	case "Movie.release_date":
+		if e.complexity.Movie.ReleaseDate == nil {
+			break
+		}
+
+		return e.complexity.Movie.ReleaseDate(childComplexity), true
+
+	case "Movie.updated_at":
+		if e.complexity.Movie.UpdatedAt == nil {
+			break
+		}
+
+		return e.complexity.Movie.UpdatedAt(childComplexity), true
+
+	case "Movie.updated_by":
+		if e.complexity.Movie.UpdatedBy == nil {
+			break
+		}
+
+		return e.complexity.Movie.UpdatedBy(childComplexity), true
+
 	case "MovieOutput.image_link":
 		if e.complexity.MovieOutput.ImageLink == nil {
 			break
@@ -642,6 +712,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.CreateMarkerType(childComplexity, args["input"].(model.NewMarkerType)), true
+
+	case "Mutation.createMovieSchedule":
+		if e.complexity.Mutation.CreateMovieSchedule == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createMovieSchedule_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateMovieSchedule(childComplexity, args["input"].(model.NewMovieSchedule)), true
 
 	case "Mutation.createPin":
 		if e.complexity.Mutation.CreatePin == nil {
@@ -1156,6 +1238,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Schedule.Marker(childComplexity), true
 
+	case "Schedule.movie":
+		if e.complexity.Schedule.Movie == nil {
+			break
+		}
+
+		return e.complexity.Schedule.Movie(childComplexity), true
+
 	case "Schedule.selected_date":
 		if e.complexity.Schedule.SelectedDate == nil {
 			break
@@ -1402,6 +1491,17 @@ type Marker {
   updated_by: User!
 }
 
+type Movie {
+  id: Int!
+  label: String!
+  release_date: String
+  marker: Marker
+  created_at: String!
+  created_by: User!
+  updated_at: String!
+  updated_by: User!
+}
+
 type MarkerType {
   id: Int!
   label: String!
@@ -1458,6 +1558,7 @@ type Schedule {
   status: String!
   selected_date: String!
   marker: Marker!
+  movie: Movie!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -1610,6 +1711,16 @@ input UpdateSchedule {
   selected_time: String
 }
 
+input NewMovieSchedule {
+  label: String!
+  description: String!
+  selected_time: String!
+  movie_name: String!
+  movie_release: String
+  movie_image: String
+  marker_id: Int
+}
+
 input ScheduleStatus {
   id: Int!
   status: String!
@@ -1665,6 +1776,7 @@ type Mutation {
   removePin(input: RemoveModel!): String!
   updateDefault(input: UpdatedDefault!): String!
   createSchedule(input: NewSchedule!): Schedule!
+  createMovieSchedule(input: NewMovieSchedule!): Schedule!
   editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
   removeSchedule(input: RemoveModel!): Marker!
@@ -1701,6 +1813,21 @@ func (ec *executionContext) field_Mutation_createMarker_args(ctx context.Context
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarker(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createMovieSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewMovieSchedule
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewMovieSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMovieSchedule(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3773,6 +3900,280 @@ func (ec *executionContext) _MetaDataOutput_title(ctx context.Context, field gra
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Movie_id(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_label(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_release_date(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReleaseDate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_marker(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Marker, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_created_by(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CreatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedAt, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Movie_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Movie",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.UpdatedBy, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _MovieOutput_title(ctx context.Context, field graphql.CollectedField, obj *model.MovieOutput) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -4534,6 +4935,48 @@ func (ec *executionContext) _Mutation_createSchedule(ctx context.Context, field 
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().CreateSchedule(rctx, args["input"].(model.NewSchedule))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createMovieSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createMovieSchedule_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateMovieSchedule(rctx, args["input"].(model.NewMovieSchedule))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -6104,6 +6547,41 @@ func (ec *executionContext) _Schedule_marker(ctx context.Context, field graphql.
 	res := resTmp.(*model.Marker)
 	fc.Result = res
 	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Schedule_movie(ctx context.Context, field graphql.CollectedField, obj *model.Schedule) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Schedule",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Movie, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Movie)
+	fc.Result = res
+	return ec.marshalNMovie2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMovie(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Schedule_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Schedule) (ret graphql.Marshaler) {
@@ -8091,6 +8569,77 @@ func (ec *executionContext) unmarshalInputNewMarkerType(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewMovieSchedule(ctx context.Context, obj interface{}) (model.NewMovieSchedule, error) {
+	var it model.NewMovieSchedule
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "description":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			it.Description, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "selected_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("selected_time"))
+			it.SelectedTime, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "movie_name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movie_name"))
+			it.MovieName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "movie_release":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movie_release"))
+			it.MovieRelease, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "movie_image":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("movie_image"))
+			it.MovieImage, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "marker_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("marker_id"))
+			it.MarkerID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewPin(ctx context.Context, obj interface{}) (model.NewPin, error) {
 	var it model.NewPin
 	asMap := map[string]interface{}{}
@@ -9270,6 +9819,62 @@ func (ec *executionContext) _MetaDataOutput(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var movieImplementors = []string{"Movie"}
+
+func (ec *executionContext) _Movie(ctx context.Context, sel ast.SelectionSet, obj *model.Movie) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, movieImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Movie")
+		case "id":
+			out.Values[i] = ec._Movie_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._Movie_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "release_date":
+			out.Values[i] = ec._Movie_release_date(ctx, field, obj)
+		case "marker":
+			out.Values[i] = ec._Movie_marker(ctx, field, obj)
+		case "created_at":
+			out.Values[i] = ec._Movie_created_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "created_by":
+			out.Values[i] = ec._Movie_created_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_at":
+			out.Values[i] = ec._Movie_updated_at(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updated_by":
+			out.Values[i] = ec._Movie_updated_by(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var movieOutputImplementors = []string{"MovieOutput"}
 
 func (ec *executionContext) _MovieOutput(ctx context.Context, sel ast.SelectionSet, obj *model.MovieOutput) graphql.Marshaler {
@@ -9399,6 +10004,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "createSchedule":
 			out.Values[i] = ec._Mutation_createSchedule(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createMovieSchedule":
+			out.Values[i] = ec._Mutation_createMovieSchedule(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -9811,6 +10421,11 @@ func (ec *executionContext) _Schedule(ctx context.Context, sel ast.SelectionSet,
 			}
 		case "marker":
 			out.Values[i] = ec._Schedule_marker(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "movie":
+			out.Values[i] = ec._Schedule_movie(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -10514,6 +11129,16 @@ func (ec *executionContext) marshalNMetaDataOutput2ᚖmapmarkerᚋbackendᚋgrap
 	return ec._MetaDataOutput(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNMovie2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMovie(ctx context.Context, sel ast.SelectionSet, v *model.Movie) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Movie(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNMovieFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐMovieFilter(ctx context.Context, v interface{}) (model.MovieFilter, error) {
 	res, err := ec.unmarshalInputMovieFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10564,6 +11189,11 @@ func (ec *executionContext) unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmo
 
 func (ec *executionContext) unmarshalNNewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx context.Context, v interface{}) (model.NewMarkerType, error) {
 	res, err := ec.unmarshalInputNewMarkerType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewMovieSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMovieSchedule(ctx context.Context, v interface{}) (model.NewMovieSchedule, error) {
+	res, err := ec.unmarshalInputNewMovieSchedule(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 

@@ -58,6 +58,14 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	return item
 }
 
+func ConvertMovie(movie dbmodel.Movie) model.Movie {
+	var item model.Movie
+	item.ID = int(movie.ID)
+	item.Label = movie.Label
+	item.ReleaseDate = movie.ReleaseDate
+	return item
+}
+
 func ConvertSchedule(schedule dbmodel.Schedule) model.Schedule {
 	var item model.Schedule
 	item.ID = int(schedule.ID)
@@ -68,6 +76,10 @@ func ConvertSchedule(schedule dbmodel.Schedule) model.Schedule {
 	if schedule.SelectedMarker != nil {
 		marker := ConvertMarker(*schedule.SelectedMarker)
 		item.Marker = &marker
+	}
+	if schedule.SelectedMovie != nil {
+		movie := ConvertMovie(*schedule.SelectedMovie)
+		item.Movie = &movie
 	}
 
 	item.CreatedAt = utils.ConvertToOutputTime(schedule.CreatedAt)

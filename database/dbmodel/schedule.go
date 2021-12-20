@@ -14,6 +14,8 @@ type Schedule struct {
 	SelectedDate   time.Time `json:"selectedDate"`
 	SelectedMarker *Marker   `gorm:"foreignKey:marker_id;reference:id"`
 	MarkerId       *uint
+	SelectedMovie  *Movie `gorm:"foreignKey:movie_id;referenece:id"`
+	MovieId        *uint
 	Relation       UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId     uint
 }
@@ -35,7 +37,7 @@ func (schedule *Schedule) Update(db *gorm.DB) error {
 }
 
 func (schedule *Schedule) GetById(db *gorm.DB) error {
-	if err := db.Preload("SelectedMarker").Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
+	if err := db.Preload("SelectedMarker").Preload("SelectedMovie").Where("id = ?", schedule.ID).First(schedule).Error; err != nil {
 		return err
 	}
 

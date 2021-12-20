@@ -10,6 +10,7 @@ import (
 const (
 	BasePath          string = "./uploads"
 	MarkerPreviewPath string = "/markers/"
+	MovieImagePath    string = "/movies/"
 	TypeIconPath      string = "/types/"
 	PinImagePath      string = "/pins/"
 	PreviewImagePath  string = "/previews/"
