@@ -615,8 +615,13 @@ func (r *mutationResolver) RemoveSchedule(ctx context.Context, input model.Remov
 
 	transaction.Commit()
 
-	result := helper.ConvertMarker(*affected_marker)
-	return &result, err
+	// 22/12/2021 : a movie schedule can have no marker
+	if affected_marker != nil {
+		result := helper.ConvertMarker(*affected_marker)
+		return &result, nil
+	}
+
+	return nil, nil
 }
 
 func (r *mutationResolver) RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error) {

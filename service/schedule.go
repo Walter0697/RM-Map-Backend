@@ -181,7 +181,8 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 		schedule.Status = updateStatus.Status
 
 		// 29/11/2021 : if the marker is permanent. don't change the state
-		if !schedule.SelectedMarker.Permanent {
+		// 22/12/2021 : if the schedule is related to movie not marker, then don't change the state as well
+		if schedule.SelectedMarker != nil && !schedule.SelectedMarker.Permanent {
 			// update marker based on the current status as well
 			if updateStatus.Status == constant.Arrived {
 				schedule.SelectedMarker.Status = constant.Arrived

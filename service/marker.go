@@ -269,12 +269,17 @@ func ResetMarkerBySchedule(tx *gorm.DB, input model.RemoveModel, relation dbmode
 		return nil, &helper.InvalidRelationUpdateError{}
 	}
 
-	schedule.SelectedMarker.Status = ""
-	if err := schedule.SelectedMarker.Update(tx); err != nil {
-		return nil, err
+	// 22/12/2021 : a movie schedule can have no marker
+	if schedule.SelectedMarker != nil {
+		schedule.SelectedMarker.Status = ""
+		if err := schedule.SelectedMarker.Update(tx); err != nil {
+			return nil, err
+		}
+
+		return schedule.SelectedMarker, nil
 	}
 
-	return schedule.SelectedMarker, nil
+	return nil, nil
 }
 
 func RevokeMarker(input model.UpdateModel, user dbmodel.User) (*dbmodel.Marker, error) {

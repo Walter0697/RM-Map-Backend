@@ -1779,7 +1779,7 @@ type Mutation {
   createMovieSchedule(input: NewMovieSchedule!): Schedule!
   editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
-  removeSchedule(input: RemoveModel!): Marker!
+  removeSchedule(input: RemoveModel!): Marker
   revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
@@ -5109,14 +5109,11 @@ func (ec *executionContext) _Mutation_removeSchedule(ctx context.Context, field 
 		return graphql.Null
 	}
 	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
 		return graphql.Null
 	}
 	res := resTmp.(*model.Marker)
 	fc.Result = res
-	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+	return ec.marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_revokeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10018,9 +10015,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "removeSchedule":
 			out.Values[i] = ec._Mutation_removeSchedule(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "revokeMarker":
 			out.Values[i] = ec._Mutation_revokeMarker(ctx, field)
 			if out.Values[i] == graphql.Null {

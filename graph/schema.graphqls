@@ -356,7 +356,7 @@ type Mutation {
   createMovieSchedule(input: NewMovieSchedule!): Schedule!
   editSchedule(input: UpdateSchedule!): Schedule!
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
-  removeSchedule(input: RemoveModel!): Marker!
+  removeSchedule(input: RemoveModel!): Marker
   revokeMarker(input: UpdateModel!): Marker!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
