@@ -72,7 +72,7 @@ type Movie {
   id: Int!
   label: String!
   release_date: String
-  marker: Marker
+  image_path: String
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -134,8 +134,8 @@ type Schedule {
   description: String!
   status: String!
   selected_date: String!
-  marker: Marker!
-  movie: Movie!
+  marker: Marker
+  movie: Movie
   created_at: String!
   created_by: User!
   updated_at: String!

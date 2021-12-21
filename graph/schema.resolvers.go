@@ -480,16 +480,20 @@ func (r *mutationResolver) CreateMovieSchedule(ctx context.Context, input model.
 		return nil, err
 	}
 
-	var marker *dbmodel.Marker
+	var markerPtr *dbmodel.Marker
 	if input.MarkerID != nil {
+		var marker dbmodel.Marker
 		marker.ID = uint(*input.MarkerID)
 		if err := marker.GetById(transaction); err != nil {
 			transaction.Rollback()
 			return nil, helper.CheckDatabaseError(err, &helper.MarkerNotFound{})
 		}
+		markerPtr = &marker
+	} else {
+		markerPtr = nil
 	}
 
-	schedule, err := service.CreateMovieSchedule(transaction, input, *movie, marker, *user, *relation)
+	schedule, err := service.CreateMovieSchedule(transaction, input, *movie, markerPtr, *user, *relation)
 	if err != nil {
 		transaction.Rollback()
 		return nil, err

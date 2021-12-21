@@ -63,6 +63,19 @@ func ConvertMovie(movie dbmodel.Movie) model.Movie {
 	item.ID = int(movie.ID)
 	item.Label = movie.Label
 	item.ReleaseDate = movie.ReleaseDate
+	item.ImagePath = &movie.ImageLink
+
+	item.CreatedAt = utils.ConvertToOutputTime(movie.CreatedAt)
+	item.UpdatedAt = utils.ConvertToOutputTime(movie.UpdatedAt)
+	if movie.CreatedBy != nil {
+		createdBy := ConvertUser(*movie.CreatedBy)
+		item.CreatedBy = &createdBy
+	}
+	if movie.UpdatedBy != nil {
+		updatedBy := ConvertUser(*movie.UpdatedBy)
+		item.UpdatedBy = &updatedBy
+	}
+
 	return item
 }
 

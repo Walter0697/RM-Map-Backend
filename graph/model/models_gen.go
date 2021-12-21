@@ -95,7 +95,7 @@ type Movie struct {
 	ID          int     `json:"id"`
 	Label       string  `json:"label"`
 	ReleaseDate *string `json:"release_date"`
-	Marker      *Marker `json:"marker"`
+	ImagePath   *string `json:"image_path"`
 	CreatedAt   string  `json:"created_at"`
 	CreatedBy   *User   `json:"created_by"`
 	UpdatedAt   string  `json:"updated_at"`

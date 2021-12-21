@@ -144,6 +144,9 @@ func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmode
 	if utils.StringInSlice("marker", requested) {
 		query = query.Preload("SelectedMarker")
 	}
+	if utils.StringInSlice("movie", requested) {
+		query = query.Preload("SelectedMovie")
+	}
 
 	query = query.Where("relation_id = ?", relation.ID)
 
