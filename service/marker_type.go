@@ -16,6 +16,7 @@ func CreateMarkerType(input model.NewMarkerType, user dbmodel.User) (*dbmodel.Ma
 	markertype.Label = input.Label
 	markertype.Value = input.Value
 	markertype.Priority = input.Priority
+	markertype.Hidden = input.Hidden
 
 	if input.IconUpload != nil {
 		typeInfo := strings.Split(input.IconUpload.ContentType, "/")
@@ -64,6 +65,10 @@ func EditMarkerType(input model.UpdatedMarkerType, user dbmodel.User) (*dbmodel.
 
 	if input.Priority != nil {
 		markertype.Priority = *input.Priority
+	}
+
+	if input.Hidden != nil {
+		markertype.Hidden = *input.Hidden
 	}
 
 	if input.IconUpload != nil {

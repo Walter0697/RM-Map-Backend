@@ -116,6 +116,7 @@ func ConvertMarkerType(markertype dbmodel.MarkerType) model.MarkerType {
 	item.Value = markertype.Value
 	item.Priority = markertype.Priority
 	item.IconPath = markertype.IconPath
+	item.Hidden = markertype.Hidden
 
 	item.CreatedAt = utils.ConvertToOutputTime(markertype.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(markertype.UpdatedAt)
@@ -137,6 +138,7 @@ func ConvertMarkerTypeToEventType(markertype dbmodel.MarkerType) model.EventType
 	item.Value = markertype.Value
 	item.Priority = markertype.Priority
 	item.IconPath = markertype.IconPath
+	item.Hidden = markertype.Hidden
 
 	return item
 }

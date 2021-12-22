@@ -10,6 +10,7 @@ type MarkerType struct {
 	Value    string `json:"value"`
 	Priority int    `json:"priority"`
 	IconPath string `json:"iconPath"`
+	Hidden   bool   `json:"hidden"`
 }
 
 func (marker_type *MarkerType) Create(db *gorm.DB) error {

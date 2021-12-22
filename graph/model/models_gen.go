@@ -24,6 +24,7 @@ type EventType struct {
 	Value    string `json:"value"`
 	Priority int    `json:"priority"`
 	IconPath string `json:"icon_path"`
+	Hidden   bool   `json:"hidden"`
 }
 
 type IDModel struct {
@@ -79,6 +80,7 @@ type MarkerType struct {
 	Label     string `json:"label"`
 	Value     string `json:"value"`
 	Priority  int    `json:"priority"`
+	Hidden    bool   `json:"hidden"`
 	IconPath  string `json:"icon_path"`
 	CreatedAt string `json:"created_at"`
 	CreatedBy *User  `json:"created_by"`
@@ -137,6 +139,7 @@ type NewMarkerType struct {
 	Value      string          `json:"value"`
 	Priority   int             `json:"priority"`
 	IconUpload *graphql.Upload `json:"icon_upload"`
+	Hidden     bool            `json:"hidden"`
 }
 
 type NewMovieSchedule struct {
@@ -281,6 +284,7 @@ type UpdatedMarkerType struct {
 	Value      *string         `json:"value"`
 	Priority   *int            `json:"priority"`
 	IconUpload *graphql.Upload `json:"icon_upload"`
+	Hidden     *bool           `json:"hidden"`
 }
 
 type UpdatedPin struct {

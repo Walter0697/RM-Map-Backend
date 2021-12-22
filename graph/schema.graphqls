@@ -84,6 +84,7 @@ type MarkerType {
   label: String!
   value: String!
   priority: Int!
+  hidden: Boolean!
   icon_path: String!
   created_at: String!
   created_by: User!
@@ -96,6 +97,7 @@ type EventType {
   value: String!
   priority: Int!
   icon_path: String!
+  hidden: Boolean!
 }
 
 type Pin {
@@ -236,6 +238,7 @@ input NewMarkerType {
   value: String!
   priority: Int!
   icon_upload: Upload
+  hidden: Boolean!
 }
 
 input UpdatedMarkerType {
@@ -244,6 +247,7 @@ input UpdatedMarkerType {
   value: String
   priority: Int
   icon_upload: Upload
+  hidden: Boolean
 }
 
 input NewPin {

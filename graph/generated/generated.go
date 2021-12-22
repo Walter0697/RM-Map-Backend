@@ -53,6 +53,7 @@ type ComplexityRoot struct {
 	}
 
 	EventType struct {
+		Hidden   func(childComplexity int) int
 		IconPath func(childComplexity int) int
 		Label    func(childComplexity int) int
 		Priority func(childComplexity int) int
@@ -97,6 +98,7 @@ type ComplexityRoot struct {
 	MarkerType struct {
 		CreatedAt func(childComplexity int) int
 		CreatedBy func(childComplexity int) int
+		Hidden    func(childComplexity int) int
 		ID        func(childComplexity int) int
 		IconPath  func(childComplexity int) int
 		Label     func(childComplexity int) int
@@ -325,6 +327,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DefaultPin.UpdatedBy(childComplexity), true
 
+	case "EventType.hidden":
+		if e.complexity.EventType.Hidden == nil {
+			break
+		}
+
+		return e.complexity.EventType.Hidden(childComplexity), true
+
 	case "EventType.icon_path":
 		if e.complexity.EventType.IconPath == nil {
 			break
@@ -548,6 +557,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.MarkerType.CreatedBy(childComplexity), true
+
+	case "MarkerType.hidden":
+		if e.complexity.MarkerType.Hidden == nil {
+			break
+		}
+
+		return e.complexity.MarkerType.Hidden(childComplexity), true
 
 	case "MarkerType.id":
 		if e.complexity.MarkerType.ID == nil {
@@ -1507,6 +1523,7 @@ type MarkerType {
   label: String!
   value: String!
   priority: Int!
+  hidden: Boolean!
   icon_path: String!
   created_at: String!
   created_by: User!
@@ -1519,6 +1536,7 @@ type EventType {
   value: String!
   priority: Int!
   icon_path: String!
+  hidden: Boolean!
 }
 
 type Pin {
@@ -1659,6 +1677,7 @@ input NewMarkerType {
   value: String!
   priority: Int!
   icon_upload: Upload
+  hidden: Boolean!
 }
 
 input UpdatedMarkerType {
@@ -1667,6 +1686,7 @@ input UpdatedMarkerType {
   value: String
   priority: Int
   icon_upload: Upload
+  hidden: Boolean
 }
 
 input NewPin {
@@ -2627,6 +2647,41 @@ func (ec *executionContext) _EventType_icon_path(ctx context.Context, field grap
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _EventType_hidden(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "EventType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hidden, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _LoginResult_jwt(ctx context.Context, field graphql.CollectedField, obj *model.LoginResult) (ret graphql.Marshaler) {
@@ -3653,6 +3708,41 @@ func (ec *executionContext) _MarkerType_priority(ctx context.Context, field grap
 	res := resTmp.(int)
 	fc.Result = res
 	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarkerType_hidden(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarkerType",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hidden, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _MarkerType_icon_path(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
@@ -8554,6 +8644,14 @@ func (ec *executionContext) unmarshalInputNewMarkerType(ctx context.Context, obj
 			if err != nil {
 				return it, err
 			}
+		case "hidden":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
+			it.Hidden, err = ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -9298,6 +9396,14 @@ func (ec *executionContext) unmarshalInputUpdatedMarkerType(ctx context.Context,
 			if err != nil {
 				return it, err
 			}
+		case "hidden":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
+			it.Hidden, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		}
 	}
 
@@ -9528,6 +9634,11 @@ func (ec *executionContext) _EventType(ctx context.Context, sel ast.SelectionSet
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "hidden":
+			out.Values[i] = ec._EventType_hidden(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9739,6 +9850,11 @@ func (ec *executionContext) _MarkerType(ctx context.Context, sel ast.SelectionSe
 			}
 		case "priority":
 			out.Values[i] = ec._MarkerType_priority(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hidden":
+			out.Values[i] = ec._MarkerType_hidden(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
