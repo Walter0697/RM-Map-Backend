@@ -42,14 +42,16 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.0.0"
+	current_version := "2.0.1"
 	notes := []string{"[b]New Feature:",
-		"Adding Movie Searching Page to create Movie Schedule",
-		"Hidden Marker Type",
-		"[b]Quality Of Life:",
-		"Changing FilterBox to separate label search and type search, also support address now",
+		"Adding Release Note!",
+		"[b]Quality Of Life",
+		"Scheduled marker can now be seen in the marker list",
+		"Center map button also available in Marker Page",
+		"Today Schedule without status can be edited now!",
 		"[b]Bug Fixed:",
-		"Status of Schedule Changed even user clicked Cancel"}
+		"Filtering in previous marker list not working",
+	}
 
 	log.Println("Current version " + current_version)
 	exist := service.CheckReleaseNoteAdded(current_version)

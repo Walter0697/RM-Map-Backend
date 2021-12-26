@@ -314,7 +314,8 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 
 	// filtering non-active markers
 	current := time.Now().AddDate(0, 0, -1) // minus one to make sure time zone won't affect the funcionality
-	query = query.Where("status = ?", "")
+	// 26/12/2021: Also want scheduled marker to be shown
+	query = query.Where("status != ?", constant.Arrived)
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
 
 	if err := query.Find(&markers).Error; err != nil {
