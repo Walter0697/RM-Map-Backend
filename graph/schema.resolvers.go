@@ -1208,6 +1208,65 @@ func (r *queryResolver) Moviefetch(ctx context.Context, filter model.MovieFilter
 	return output, nil
 }
 
+func (r *queryResolver) Latestreleasenote(ctx context.Context) (*model.ReleaseNote, error) {
+	// USER
+	// just dont allow anyone without authentication use this feature
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	note, err := service.GetLatestReleaseNote()
+	if err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	output := helper.ConvertToReleaseNote(*note)
+
+	return &output, nil
+}
+
+func (r *queryResolver) Specificreleasenote(ctx context.Context, filter model.ReleaseNoteFilter) (*model.ReleaseNote, error) {
+	// USER
+	// just dont allow anyone without authentication use this feature
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	note, err := service.GetReleaseNoteByVersion(filter)
+	if err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	output := helper.ConvertToReleaseNote(*note)
+
+	return &output, nil
+}
+
+func (r *queryResolver) Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error) {
+	// USER
+	// just dont allow anyone without authentication use this feature
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	notes, err := service.GetAllReleaseNote()
+	if err != nil {
+		return nil, helper.GetDatabaseError(err)
+	}
+
+	var result []*model.ReleaseNote
+
+	for _, note := range notes {
+		item := helper.ConvertToPreviewRelease(note)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {

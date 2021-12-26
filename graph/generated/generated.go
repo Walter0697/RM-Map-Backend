@@ -172,22 +172,31 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
-		Defaultpins     func(childComplexity int) int
-		Eventtypes      func(childComplexity int) int
-		Mappins         func(childComplexity int) int
-		Markers         func(childComplexity int) int
-		Markerschedules func(childComplexity int, params model.IDModel) int
-		Markertypes     func(childComplexity int) int
-		Me              func(childComplexity int) int
-		Moviefetch      func(childComplexity int, filter model.MovieFilter) int
-		Pins            func(childComplexity int) int
-		Preference      func(childComplexity int) int
-		Previousmarkers func(childComplexity int) int
-		Schedules       func(childComplexity int, params model.CurrentTime) int
-		Scrapimage      func(childComplexity int, params model.WebLink) int
-		Today           func(childComplexity int, params model.CurrentTime) int
-		Users           func(childComplexity int, filter *model.UserFilter) int
-		Usersearch      func(childComplexity int, filter model.UserSearch) int
+		Defaultpins         func(childComplexity int) int
+		Eventtypes          func(childComplexity int) int
+		Latestreleasenote   func(childComplexity int) int
+		Mappins             func(childComplexity int) int
+		Markers             func(childComplexity int) int
+		Markerschedules     func(childComplexity int, params model.IDModel) int
+		Markertypes         func(childComplexity int) int
+		Me                  func(childComplexity int) int
+		Moviefetch          func(childComplexity int, filter model.MovieFilter) int
+		Pins                func(childComplexity int) int
+		Preference          func(childComplexity int) int
+		Previousmarkers     func(childComplexity int) int
+		Releasenotes        func(childComplexity int) int
+		Schedules           func(childComplexity int, params model.CurrentTime) int
+		Scrapimage          func(childComplexity int, params model.WebLink) int
+		Specificreleasenote func(childComplexity int, filter model.ReleaseNoteFilter) int
+		Today               func(childComplexity int, params model.CurrentTime) int
+		Users               func(childComplexity int, filter *model.UserFilter) int
+		Usersearch          func(childComplexity int, filter model.UserSearch) int
+	}
+
+	ReleaseNote struct {
+		Date    func(childComplexity int) int
+		Notes   func(childComplexity int) int
+		Version func(childComplexity int) int
 	}
 
 	Schedule struct {
@@ -267,6 +276,9 @@ type QueryResolver interface {
 	Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error)
 	Scrapimage(ctx context.Context, params model.WebLink) (*model.MetaDataOutput, error)
 	Moviefetch(ctx context.Context, filter model.MovieFilter) ([]*model.MovieOutput, error)
+	Latestreleasenote(ctx context.Context) (*model.ReleaseNote, error)
+	Specificreleasenote(ctx context.Context, filter model.ReleaseNoteFilter) (*model.ReleaseNote, error)
+	Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -1079,6 +1091,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Eventtypes(childComplexity), true
 
+	case "Query.latestreleasenote":
+		if e.complexity.Query.Latestreleasenote == nil {
+			break
+		}
+
+		return e.complexity.Query.Latestreleasenote(childComplexity), true
+
 	case "Query.mappins":
 		if e.complexity.Query.Mappins == nil {
 			break
@@ -1152,6 +1171,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Previousmarkers(childComplexity), true
 
+	case "Query.releasenotes":
+		if e.complexity.Query.Releasenotes == nil {
+			break
+		}
+
+		return e.complexity.Query.Releasenotes(childComplexity), true
+
 	case "Query.schedules":
 		if e.complexity.Query.Schedules == nil {
 			break
@@ -1175,6 +1201,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Scrapimage(childComplexity, args["params"].(model.WebLink)), true
+
+	case "Query.specificreleasenote":
+		if e.complexity.Query.Specificreleasenote == nil {
+			break
+		}
+
+		args, err := ec.field_Query_specificreleasenote_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Specificreleasenote(childComplexity, args["filter"].(model.ReleaseNoteFilter)), true
 
 	case "Query.today":
 		if e.complexity.Query.Today == nil {
@@ -1211,6 +1249,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Usersearch(childComplexity, args["filter"].(model.UserSearch)), true
+
+	case "ReleaseNote.date":
+		if e.complexity.ReleaseNote.Date == nil {
+			break
+		}
+
+		return e.complexity.ReleaseNote.Date(childComplexity), true
+
+	case "ReleaseNote.notes":
+		if e.complexity.ReleaseNote.Notes == nil {
+			break
+		}
+
+		return e.complexity.ReleaseNote.Notes(childComplexity), true
+
+	case "ReleaseNote.version":
+		if e.complexity.ReleaseNote.Version == nil {
+			break
+		}
+
+		return e.complexity.ReleaseNote.Version(childComplexity), true
 
 	case "Schedule.created_at":
 		if e.complexity.Schedule.CreatedAt == nil {
@@ -1466,6 +1525,10 @@ input MovieFilter {
   query: String
 }
 
+input ReleaseNoteFilter {
+  version: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -1598,6 +1661,12 @@ type MovieOutput {
   release_date: String!
 }
 
+type ReleaseNote {
+  version: String!
+  notes: String
+  date: String
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -1614,6 +1683,9 @@ type Query {
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!
+  latestreleasenote: ReleaseNote!
+  specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
+  releasenotes: [ReleaseNote]!
   me: String!
 }
 
@@ -2228,6 +2300,21 @@ func (ec *executionContext) field_Query_scrapimage_args(ctx context.Context, raw
 		}
 	}
 	args["params"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_specificreleasenote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.ReleaseNoteFilter
+	if tmp, ok := rawArgs["filter"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
+		arg0, err = ec.unmarshalNReleaseNoteFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNoteFilter(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["filter"] = arg0
 	return args, nil
 }
 
@@ -6320,6 +6407,118 @@ func (ec *executionContext) _Query_moviefetch(ctx context.Context, field graphql
 	return ec.marshalNMovieOutput2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMovieOutput(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_latestreleasenote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Latestreleasenote(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ReleaseNote)
+	fc.Result = res
+	return ec.marshalNReleaseNote2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_specificreleasenote(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_specificreleasenote_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Specificreleasenote(rctx, args["filter"].(model.ReleaseNoteFilter))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.ReleaseNote)
+	fc.Result = res
+	return ec.marshalNReleaseNote2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_releasenotes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Releasenotes(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.ReleaseNote)
+	fc.Result = res
+	return ec.marshalNReleaseNote2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6424,6 +6623,105 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseNote_version(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseNote) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseNote",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Version, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseNote_notes(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseNote) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseNote",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Notes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _ReleaseNote_date(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseNote) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseNote",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Date, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Schedule_id(ctx context.Context, field graphql.CollectedField, obj *model.Schedule) (ret graphql.Marshaler) {
@@ -8941,6 +9239,29 @@ func (ec *executionContext) unmarshalInputPreviewPinInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputReleaseNoteFilter(ctx context.Context, obj interface{}) (model.ReleaseNoteFilter, error) {
+	var it model.ReleaseNoteFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "version":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("version"))
+			it.Version, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
 	var it model.RemoveModel
 	asMap := map[string]interface{}{}
@@ -10458,6 +10779,48 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "latestreleasenote":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_latestreleasenote(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "specificreleasenote":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_specificreleasenote(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "releasenotes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_releasenotes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "me":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -10476,6 +10839,37 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var releaseNoteImplementors = []string{"ReleaseNote"}
+
+func (ec *executionContext) _ReleaseNote(ctx context.Context, sel ast.SelectionSet, obj *model.ReleaseNote) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, releaseNoteImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReleaseNote")
+		case "version":
+			out.Values[i] = ec._ReleaseNote_version(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "notes":
+			out.Values[i] = ec._ReleaseNote_notes(ctx, field, obj)
+		case "date":
+			out.Values[i] = ec._ReleaseNote_date(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -11357,6 +11751,63 @@ func (ec *executionContext) unmarshalNPreviewPinInput2mapmarkerᚋbackendᚋgrap
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalNReleaseNote2mapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx context.Context, sel ast.SelectionSet, v model.ReleaseNote) graphql.Marshaler {
+	return ec._ReleaseNote(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReleaseNote2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx context.Context, sel ast.SelectionSet, v []*model.ReleaseNote) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOReleaseNote2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalNReleaseNote2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseNote) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._ReleaseNote(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNReleaseNoteFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNoteFilter(ctx context.Context, v interface{}) (model.ReleaseNoteFilter, error) {
+	res, err := ec.unmarshalInputReleaseNoteFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
 	res, err := ec.unmarshalInputRemoveModel(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -11936,6 +12387,13 @@ func (ec *executionContext) marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodel�
 		return graphql.Null
 	}
 	return ec._Pin(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOReleaseNote2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNote(ctx context.Context, sel ast.SelectionSet, v *model.ReleaseNote) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._ReleaseNote(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx context.Context, sel ast.SelectionSet, v *model.Schedule) graphql.Marshaler {

@@ -305,3 +305,21 @@ func ConvertPinToMapPin(input dbmodel.Pin, pintype string) model.MapPin {
 
 	return item
 }
+
+// release note related
+func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
+	var item model.ReleaseNote
+	item.Version = input.Version
+	item.Notes = &input.Notes
+	createTime := utils.ConvertToOutputTime(input.CreatedAt)
+	item.Date = &createTime
+
+	return item
+}
+
+func ConvertToPreviewRelease(input dbmodel.ReleaseNote) model.ReleaseNote {
+	var item model.ReleaseNote
+	item.Version = input.Version
+
+	return item
+}

@@ -198,6 +198,16 @@ type PreviewPinInput struct {
 	TypeID       int             `json:"type_id"`
 }
 
+type ReleaseNote struct {
+	Version string  `json:"version"`
+	Notes   *string `json:"notes"`
+	Date    *string `json:"date"`
+}
+
+type ReleaseNoteFilter struct {
+	Version string `json:"version"`
+}
+
 type RemoveModel struct {
 	ID int `json:"id"`
 }

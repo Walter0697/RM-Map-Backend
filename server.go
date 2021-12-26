@@ -9,6 +9,7 @@ import (
 	"mapmarker/backend/graph/generated"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/seed"
+	"mapmarker/backend/service"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -34,7 +35,31 @@ func main() {
 		}
 	}
 
+	prepareReleaseNote()
 	startServer()
+}
+
+// if there is release note to add, add it
+// if there isn't, don't
+func prepareReleaseNote() {
+	current_version := "2.0.0"
+	notes := []string{"[b]New Feature:",
+		"Adding Movie Searching Page to create Movie Schedule",
+		"Hidden Marker Type",
+		"[b]Quality Of Life:",
+		"Changing FilterBox to separate label search and type search, also support address now",
+		"[b]Bug Fixed:",
+		"Status of Schedule Changed even user clicked Cancel"}
+
+	log.Println("Current version " + current_version)
+	exist := service.CheckReleaseNoteAdded(current_version)
+	if !exist {
+		log.Println("Release note not exist! Adding...")
+		if err := service.CreateReleaseNote(current_version, notes); err != nil {
+			panic(err)
+		}
+		log.Println("New Release note added!")
+	}
 }
 
 // start the server

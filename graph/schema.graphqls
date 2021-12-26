@@ -27,6 +27,10 @@ input MovieFilter {
   query: String
 }
 
+input ReleaseNoteFilter {
+  version: String!
+}
+
 type User {
   id: Int!
   username: String!
@@ -159,6 +163,12 @@ type MovieOutput {
   release_date: String!
 }
 
+type ReleaseNote {
+  version: String!
+  notes: String
+  date: String
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -175,6 +185,9 @@ type Query {
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!
+  latestreleasenote: ReleaseNote!
+  specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
+  releasenotes: [ReleaseNote]!
   me: String!
 }
 
