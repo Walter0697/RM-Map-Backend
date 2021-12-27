@@ -42,15 +42,14 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.0.1"
-	notes := []string{"[b]New Feature:",
-		"Adding Release Note!",
-		"[b]Quality Of Life",
-		"Scheduled marker can now be seen in the marker list",
-		"Center map button also available in Marker Page",
-		"Today Schedule without status can be edited now!",
+	current_version := "2.0.2"
+	notes := []string{
 		"[b]Bug Fixed:",
-		"Filtering in previous marker list not working",
+		"Update yesterday schedule status will crash, fixed.",
+		"Also fixed the text since it is not only for yesterday anymore.",
+		"Home page featured markers should have no markers that are scheduled or arrived now.",
+		"[b]Quality Of Life:",
+		"Image preview should now be better, most will be in square unless on detail screen",
 	}
 
 	log.Println("Current version " + current_version)
