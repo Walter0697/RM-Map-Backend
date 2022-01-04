@@ -171,6 +171,10 @@ func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user db
 		marker.ImageLink = filename
 	}
 
+	if input.NoImage {
+		marker.ImageLink = ""
+	}
+
 	// now, edit the value inside the variable
 	if input.Label != nil {
 		marker.Label = *input.Label

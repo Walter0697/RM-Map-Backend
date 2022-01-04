@@ -1728,6 +1728,7 @@ input UpdateMarker {
   address: String
   image_link: String
   image_upload: Upload
+  no_image: Boolean!
   link: String
   type: String
   description: String
@@ -9385,6 +9386,14 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
 			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "no_image":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("no_image"))
+			it.NoImage, err = ec.unmarshalNBoolean2bool(ctx, v)
 			if err != nil {
 				return it, err
 			}

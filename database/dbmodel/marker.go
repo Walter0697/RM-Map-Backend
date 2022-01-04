@@ -20,8 +20,8 @@ type Marker struct {
 	Price        string       `json:"price"`
 	Permanent    bool         `json:"permanent"`
 	NeedBooking  bool         `json:"needBooking"`
-	Status       string       `json:"status"`    // visited / scheduled / ???
-	VisitTime    *time.Time   `json:"visitTime"` // if visited
+	Status       string       `json:"status"`    // arrived / scheduled / ???
+	VisitTime    *time.Time   `json:"visitTime"` // DEPRECATED FIELD
 	FromTime     *time.Time   `json:"fromTime"`  // time related
 	ToTime       *time.Time   `json:"toTime"`
 	IsFavourite  bool         `json:"isFavourite"` // pre defined value

@@ -245,6 +245,7 @@ type UpdateMarker struct {
 	Address      *string         `json:"address"`
 	ImageLink    *string         `json:"image_link"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
+	NoImage      bool            `json:"no_image"`
 	Link         *string         `json:"link"`
 	Type         *string         `json:"type"`
 	Description  *string         `json:"description"`

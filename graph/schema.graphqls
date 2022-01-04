@@ -230,6 +230,7 @@ input UpdateMarker {
   address: String
   image_link: String
   image_upload: Upload
+  no_image: Boolean!
   link: String
   type: String
   description: String
