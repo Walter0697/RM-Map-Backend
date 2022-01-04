@@ -42,14 +42,15 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.0.2"
+	current_version := "2.1.0"
 	notes := []string{
 		"[b]Bug Fixed:",
-		"Update yesterday schedule status will crash, fixed.",
-		"Also fixed the text since it is not only for yesterday anymore.",
-		"Home page featured markers should have no markers that are scheduled or arrived now.",
+		"Marker image didn't update after editting.",
+		"Prevent image overlapping in schedule list and today list.",
+		"Marker will not created successfully if image size is too big, fixed",
 		"[b]Quality Of Life:",
-		"Image preview should now be better, most will be in square unless on detail screen",
+		"You can remove image in marker form and marker edit form.",
+		"For that, you can preview the existing image when editting marker.",
 	}
 
 	log.Println("Current version " + current_version)
