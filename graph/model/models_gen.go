@@ -212,6 +212,25 @@ type RemoveModel struct {
 	ID int `json:"id"`
 }
 
+type Restaurant struct {
+	ID             int     `json:"id"`
+	Name           string  `json:"name"`
+	Source         string  `json:"source"`
+	SourceID       string  `json:"source_id"`
+	PriceRange     *string `json:"price_range"`
+	RestaurantType *string `json:"restaurant_type"`
+	Address        *string `json:"address"`
+	Rating         *string `json:"rating"`
+	Direction      *string `json:"direction"`
+	Telephone      *string `json:"telephone"`
+	Introduction   *string `json:"introduction"`
+	OpeningHours   *string `json:"opening_hours"`
+	PaymentMethod  *string `json:"payment_method"`
+	SeatNumber     *string `json:"seat_number"`
+	Website        *string `json:"website"`
+	OtherInfo      *string `json:"other_info"`
+}
+
 type Schedule struct {
 	ID           int     `json:"id"`
 	Label        string  `json:"label"`
@@ -336,4 +355,13 @@ type UserSearch struct {
 
 type WebLink struct {
 	Link string `json:"link"`
+}
+
+type WebsiteScrapInput struct {
+	Source   string `json:"source"`
+	SourceID string `json:"source_id"`
+}
+
+type WebsiteScrapResult struct {
+	Restaurant *Restaurant `json:"restaurant"`
 }

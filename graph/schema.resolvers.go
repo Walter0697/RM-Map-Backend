@@ -14,6 +14,7 @@ import (
 	"mapmarker/backend/helper"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/service"
+	"mapmarker/backend/service/scrapper"
 	"mapmarker/backend/utils"
 )
 
@@ -651,6 +652,34 @@ func (r *mutationResolver) RevokeMarker(ctx context.Context, input model.UpdateM
 	}
 
 	output := helper.ConvertMarker(*marker)
+
+	return &output, nil
+}
+
+func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.WebsiteScrapInput) (*model.WebsiteScrapResult, error) {
+	// USER
+	// scrap website data and return information
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	var output model.WebsiteScrapResult
+	if input.Source == constant.Openrice {
+		restaurant, err := scrapper.GetDataFromOpenrice(input.SourceID)
+		if err != nil {
+			return nil, err
+		}
+		restaurant.Source = constant.Openrice
+		restaurant.SourceId = input.SourceID
+		resModel := helper.ConvertRestaurant(*restaurant)
+		output.Restaurant = &resModel
+	}
 
 	return &output, nil
 }

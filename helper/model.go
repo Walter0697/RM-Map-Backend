@@ -323,3 +323,25 @@ func ConvertToPreviewRelease(input dbmodel.ReleaseNote) model.ReleaseNote {
 
 	return item
 }
+
+func ConvertRestaurant(input dbmodel.Restaurant) model.Restaurant {
+	var item model.Restaurant
+	item.ID = int(input.ID)
+	item.Name = input.Name
+	item.Source = input.Source
+	item.SourceID = input.SourceId
+	item.PriceRange = &input.PriceRange
+	item.RestaurantType = &input.RestaurantType
+	item.Address = &input.Address
+	item.Rating = &input.Rating
+	item.Direction = &input.Direction
+	item.Telephone = &input.Telephone
+	item.Introduction = &input.Introduction
+	item.OpeningHours = &input.OpeningHours
+	item.PaymentMethod = &input.PaymentMethod
+	item.SeatNumber = &input.SeatNo
+	item.Website = &input.Website
+	item.OtherInfo = &input.OtherInfo
+
+	return item
+}

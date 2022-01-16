@@ -10,6 +10,24 @@ import (
 	"golang.org/x/net/html"
 )
 
+// func ScrapSupportWebsite(input model.WebsiteScrapInput) (*model.WebsiteScrapResult, error) {
+// 	var output model.WebsiteScrapResult
+// 	if input.Source == constant.Openrice {
+// 		restaurant, err := scrapper.GetDataFromOpenrice(input.SourceID)
+// 		if err != nil {
+// 			return nil, err
+// 		}
+// 		restaurant.Source = constant.Openrice
+// 		restaurant.SourceId = input.SourceID
+// 		// maybe create the restaurant to database first
+// 		resModel := helper.ConvertRestaurant(*restaurant)
+// 		output.Restaurant = &resModel
+// 	} else {
+// 		return nil, nil
+// 	}
+// 	return &output, nil
+// }
+
 // first the image, then the title if any
 func GetMetaDataFromWebLink(link string) (string, string, error) {
 	// if it is not a valid link, then reject it in the beginning

@@ -169,6 +169,29 @@ type ReleaseNote {
   date: String
 }
 
+type Restaurant {
+  id: Int!
+  name: String!
+  source: String!
+  source_id: String!
+  price_range: String
+  restaurant_type: String
+  address: String
+  rating: String
+  direction: String
+  telephone: String
+  introduction: String
+  opening_hours: String
+  payment_method: String
+  seat_number: String
+  website: String
+  other_info: String
+}
+
+type WebsiteScrapResult {
+  restaurant: Restaurant
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -340,6 +363,11 @@ input UpdatedDefault {
   string_value: String
 }
 
+input WebsiteScrapInput {
+  source: String!
+  source_id: String!
+}
+
 input Login {
   username: String!
   password: String!
@@ -376,6 +404,7 @@ type Mutation {
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
   removeSchedule(input: RemoveModel!): Marker
   revokeMarker(input: UpdateModel!): Marker!
+  websiteScrap(input: WebsiteScrapInput!): WebsiteScrapResult!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

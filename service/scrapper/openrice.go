@@ -2,7 +2,6 @@ package scrapper
 
 import (
 	"encoding/json"
-	"fmt"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/service"
 	"net/http"
@@ -151,19 +150,5 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 		restaurantModel.Website = service.ImmediateText(urlTag)
 	})
 
-	fmt.Println("Name : " + restaurantModel.Name)
-	fmt.Println("Price : " + restaurantModel.PriceRange)
-	fmt.Println("Payment : " + restaurantModel.PaymentMethod)
-	fmt.Println("Type : " + restaurantModel.RestaurantType)
-	fmt.Println("Address : " + restaurantModel.Address)
-	fmt.Println("Rating : " + restaurantModel.Rating)
-	fmt.Println("Direction : " + restaurantModel.Direction)
-	fmt.Println("Telephone : " + restaurantModel.Telephone)
-	fmt.Println("Introduction : " + restaurantModel.Introduction)
-	fmt.Println("Opening : " + restaurantModel.OpeningHours)
-	fmt.Println("SeatNo : " + restaurantModel.SeatNo)
-	fmt.Println("Website: " + restaurantModel.Website)
-	fmt.Println("OtherInfo : " + restaurantModel.OtherInfo)
-
-	return nil, nil
+	return &restaurantModel, nil
 }

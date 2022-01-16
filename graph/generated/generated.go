@@ -154,6 +154,7 @@ type ComplexityRoot struct {
 		UpdatePreferredPin   func(childComplexity int, input model.UpdatePreferredPin) int
 		UpdateRelation       func(childComplexity int, input model.UpdateRelation) int
 		UpdateScheduleStatus func(childComplexity int, input model.ScheduleStatusList) int
+		WebsiteScrap         func(childComplexity int, input model.WebsiteScrapInput) int
 	}
 
 	Pin struct {
@@ -199,6 +200,25 @@ type ComplexityRoot struct {
 		Version func(childComplexity int) int
 	}
 
+	Restaurant struct {
+		Address        func(childComplexity int) int
+		Direction      func(childComplexity int) int
+		ID             func(childComplexity int) int
+		Introduction   func(childComplexity int) int
+		Name           func(childComplexity int) int
+		OpeningHours   func(childComplexity int) int
+		OtherInfo      func(childComplexity int) int
+		PaymentMethod  func(childComplexity int) int
+		PriceRange     func(childComplexity int) int
+		Rating         func(childComplexity int) int
+		RestaurantType func(childComplexity int) int
+		SeatNumber     func(childComplexity int) int
+		Source         func(childComplexity int) int
+		SourceID       func(childComplexity int) int
+		Telephone      func(childComplexity int) int
+		Website        func(childComplexity int) int
+	}
+
 	Schedule struct {
 		CreatedAt    func(childComplexity int) int
 		CreatedBy    func(childComplexity int) int
@@ -233,6 +253,10 @@ type ComplexityRoot struct {
 		SelectedPin  func(childComplexity int) int
 		User         func(childComplexity int) int
 	}
+
+	WebsiteScrapResult struct {
+		Restaurant func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -257,6 +281,7 @@ type MutationResolver interface {
 	UpdateScheduleStatus(ctx context.Context, input model.ScheduleStatusList) ([]*model.Schedule, error)
 	RemoveSchedule(ctx context.Context, input model.RemoveModel) (*model.Marker, error)
 	RevokeMarker(ctx context.Context, input model.UpdateModel) (*model.Marker, error)
+	WebsiteScrap(ctx context.Context, input model.WebsiteScrapInput) (*model.WebsiteScrapResult, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 	Logout(ctx context.Context, input model.Logout) (string, error)
 }
@@ -993,6 +1018,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateScheduleStatus(childComplexity, args["input"].(model.ScheduleStatusList)), true
 
+	case "Mutation.websiteScrap":
+		if e.complexity.Mutation.WebsiteScrap == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_websiteScrap_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.WebsiteScrap(childComplexity, args["input"].(model.WebsiteScrapInput)), true
+
 	case "Pin.bottom_right_x":
 		if e.complexity.Pin.BottomRightX == nil {
 			break
@@ -1271,6 +1308,118 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReleaseNote.Version(childComplexity), true
 
+	case "Restaurant.address":
+		if e.complexity.Restaurant.Address == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Address(childComplexity), true
+
+	case "Restaurant.direction":
+		if e.complexity.Restaurant.Direction == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Direction(childComplexity), true
+
+	case "Restaurant.id":
+		if e.complexity.Restaurant.ID == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.ID(childComplexity), true
+
+	case "Restaurant.introduction":
+		if e.complexity.Restaurant.Introduction == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Introduction(childComplexity), true
+
+	case "Restaurant.name":
+		if e.complexity.Restaurant.Name == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Name(childComplexity), true
+
+	case "Restaurant.opening_hours":
+		if e.complexity.Restaurant.OpeningHours == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.OpeningHours(childComplexity), true
+
+	case "Restaurant.other_info":
+		if e.complexity.Restaurant.OtherInfo == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.OtherInfo(childComplexity), true
+
+	case "Restaurant.payment_method":
+		if e.complexity.Restaurant.PaymentMethod == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.PaymentMethod(childComplexity), true
+
+	case "Restaurant.price_range":
+		if e.complexity.Restaurant.PriceRange == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.PriceRange(childComplexity), true
+
+	case "Restaurant.rating":
+		if e.complexity.Restaurant.Rating == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Rating(childComplexity), true
+
+	case "Restaurant.restaurant_type":
+		if e.complexity.Restaurant.RestaurantType == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.RestaurantType(childComplexity), true
+
+	case "Restaurant.seat_number":
+		if e.complexity.Restaurant.SeatNumber == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.SeatNumber(childComplexity), true
+
+	case "Restaurant.source":
+		if e.complexity.Restaurant.Source == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Source(childComplexity), true
+
+	case "Restaurant.source_id":
+		if e.complexity.Restaurant.SourceID == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.SourceID(childComplexity), true
+
+	case "Restaurant.telephone":
+		if e.complexity.Restaurant.Telephone == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Telephone(childComplexity), true
+
+	case "Restaurant.website":
+		if e.complexity.Restaurant.Website == nil {
+			break
+		}
+
+		return e.complexity.Restaurant.Website(childComplexity), true
+
 	case "Schedule.created_at":
 		if e.complexity.Schedule.CreatedAt == nil {
 			break
@@ -1431,6 +1580,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.UserPreference.User(childComplexity), true
+
+	case "WebsiteScrapResult.restaurant":
+		if e.complexity.WebsiteScrapResult.Restaurant == nil {
+			break
+		}
+
+		return e.complexity.WebsiteScrapResult.Restaurant(childComplexity), true
 
 	}
 	return 0, false
@@ -1667,6 +1823,29 @@ type ReleaseNote {
   date: String
 }
 
+type Restaurant {
+  id: Int!
+  name: String!
+  source: String!
+  source_id: String!
+  price_range: String
+  restaurant_type: String
+  address: String
+  rating: String
+  direction: String
+  telephone: String
+  introduction: String
+  opening_hours: String
+  payment_method: String
+  seat_number: String
+  website: String
+  other_info: String
+}
+
+type WebsiteScrapResult {
+  restaurant: Restaurant
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -1838,6 +2017,11 @@ input UpdatedDefault {
   string_value: String
 }
 
+input WebsiteScrapInput {
+  source: String!
+  source_id: String!
+}
+
 input Login {
   username: String!
   password: String!
@@ -1874,6 +2058,7 @@ type Mutation {
   updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
   removeSchedule(input: RemoveModel!): Marker
   revokeMarker(input: UpdateModel!): Marker!
+  websiteScrap(input: WebsiteScrapInput!): WebsiteScrapResult!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }`, BuiltIn: false},
@@ -2221,6 +2406,21 @@ func (ec *executionContext) field_Mutation_updateScheduleStatus_args(ctx context
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNScheduleStatusList2mapmarkerᚋbackendᚋgraphᚋmodelᚐScheduleStatusList(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_websiteScrap_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.WebsiteScrapInput
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNWebsiteScrapInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -5336,6 +5536,48 @@ func (ec *executionContext) _Mutation_revokeMarker(ctx context.Context, field gr
 	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_websiteScrap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_websiteScrap_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().WebsiteScrap(rctx, args["input"].(model.WebsiteScrapInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.WebsiteScrapResult)
+	fc.Result = res
+	return ec.marshalNWebsiteScrapResult2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapResult(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -6725,6 +6967,530 @@ func (ec *executionContext) _ReleaseNote_date(ctx context.Context, field graphql
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Restaurant_id(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_name(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_source(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Source, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_source_id(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SourceID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_price_range(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PriceRange, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_restaurant_type(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.RestaurantType, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_address(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Address, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_rating(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Rating, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_direction(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Direction, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_telephone(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Telephone, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_introduction(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Introduction, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_opening_hours(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OpeningHours, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_payment_method(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PaymentMethod, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_seat_number(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SeatNumber, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_website(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Website, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Restaurant_other_info(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Restaurant",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.OtherInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Schedule_id(ctx context.Context, field graphql.CollectedField, obj *model.Schedule) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7504,6 +8270,38 @@ func (ec *executionContext) _UserPreference_hurry_pin(ctx context.Context, field
 	res := resTmp.(*model.Pin)
 	fc.Result = res
 	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _WebsiteScrapResult_restaurant(ctx context.Context, field graphql.CollectedField, obj *model.WebsiteScrapResult) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "WebsiteScrapResult",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Restaurant, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Restaurant)
+	fc.Result = res
+	return ec.marshalORestaurant2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRestaurant(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -9888,6 +10686,37 @@ func (ec *executionContext) unmarshalInputWebLink(ctx context.Context, obj inter
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputWebsiteScrapInput(ctx context.Context, obj interface{}) (model.WebsiteScrapInput, error) {
+	var it model.WebsiteScrapInput
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "source":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("source"))
+			it.Source, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "source_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("source_id"))
+			it.SourceID, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -10466,6 +11295,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "websiteScrap":
+			out.Values[i] = ec._Mutation_websiteScrap(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -10890,6 +11724,72 @@ func (ec *executionContext) _ReleaseNote(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var restaurantImplementors = []string{"Restaurant"}
+
+func (ec *executionContext) _Restaurant(ctx context.Context, sel ast.SelectionSet, obj *model.Restaurant) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, restaurantImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Restaurant")
+		case "id":
+			out.Values[i] = ec._Restaurant_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Restaurant_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "source":
+			out.Values[i] = ec._Restaurant_source(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "source_id":
+			out.Values[i] = ec._Restaurant_source_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "price_range":
+			out.Values[i] = ec._Restaurant_price_range(ctx, field, obj)
+		case "restaurant_type":
+			out.Values[i] = ec._Restaurant_restaurant_type(ctx, field, obj)
+		case "address":
+			out.Values[i] = ec._Restaurant_address(ctx, field, obj)
+		case "rating":
+			out.Values[i] = ec._Restaurant_rating(ctx, field, obj)
+		case "direction":
+			out.Values[i] = ec._Restaurant_direction(ctx, field, obj)
+		case "telephone":
+			out.Values[i] = ec._Restaurant_telephone(ctx, field, obj)
+		case "introduction":
+			out.Values[i] = ec._Restaurant_introduction(ctx, field, obj)
+		case "opening_hours":
+			out.Values[i] = ec._Restaurant_opening_hours(ctx, field, obj)
+		case "payment_method":
+			out.Values[i] = ec._Restaurant_payment_method(ctx, field, obj)
+		case "seat_number":
+			out.Values[i] = ec._Restaurant_seat_number(ctx, field, obj)
+		case "website":
+			out.Values[i] = ec._Restaurant_website(ctx, field, obj)
+		case "other_info":
+			out.Values[i] = ec._Restaurant_other_info(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var scheduleImplementors = []string{"Schedule"}
 
 func (ec *executionContext) _Schedule(ctx context.Context, sel ast.SelectionSet, obj *model.Schedule) graphql.Marshaler {
@@ -11058,6 +11958,30 @@ func (ec *executionContext) _UserPreference(ctx context.Context, sel ast.Selecti
 			out.Values[i] = ec._UserPreference_selected_pin(ctx, field, obj)
 		case "hurry_pin":
 			out.Values[i] = ec._UserPreference_hurry_pin(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var websiteScrapResultImplementors = []string{"WebsiteScrapResult"}
+
+func (ec *executionContext) _WebsiteScrapResult(ctx context.Context, sel ast.SelectionSet, obj *model.WebsiteScrapResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, websiteScrapResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("WebsiteScrapResult")
+		case "restaurant":
+			out.Values[i] = ec._WebsiteScrapResult_restaurant(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12046,6 +12970,25 @@ func (ec *executionContext) unmarshalNWebLink2mapmarkerᚋbackendᚋgraphᚋmode
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) unmarshalNWebsiteScrapInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapInput(ctx context.Context, v interface{}) (model.WebsiteScrapInput, error) {
+	res, err := ec.unmarshalInputWebsiteScrapInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNWebsiteScrapResult2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapResult(ctx context.Context, sel ast.SelectionSet, v model.WebsiteScrapResult) graphql.Marshaler {
+	return ec._WebsiteScrapResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNWebsiteScrapResult2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapResult(ctx context.Context, sel ast.SelectionSet, v *model.WebsiteScrapResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._WebsiteScrapResult(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
 	return ec.___Directive(ctx, sel, &v)
 }
@@ -12403,6 +13346,13 @@ func (ec *executionContext) marshalOReleaseNote2ᚖmapmarkerᚋbackendᚋgraph�
 		return graphql.Null
 	}
 	return ec._ReleaseNote(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalORestaurant2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRestaurant(ctx context.Context, sel ast.SelectionSet, v *model.Restaurant) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Restaurant(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx context.Context, sel ast.SelectionSet, v *model.Schedule) graphql.Marshaler {
