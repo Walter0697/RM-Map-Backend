@@ -1,11 +1,13 @@
 package service
 
 import (
+	"bytes"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"golang.org/x/net/html"
 )
 
 // first the image, then the title if any
@@ -64,4 +66,19 @@ func GetMetaDataFromWebLink(link string) (string, string, error) {
 	})
 
 	return image, title, nil
+}
+
+func ImmediateText(s *goquery.Selection) string {
+	var buf bytes.Buffer
+
+	for _, node := range s.Nodes {
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			if child.Type == html.TextNode {
+				buf.WriteString(child.Data)
+			}
+		}
+	}
+
+	final := buf.String()
+	return strings.TrimSpace(final)
 }

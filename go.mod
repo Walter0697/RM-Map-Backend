@@ -15,6 +15,7 @@ require (
 	github.com/spf13/viper v1.9.0
 	github.com/vektah/gqlparser/v2 v2.2.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
+	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
 	gorm.io/driver/postgres v1.1.2
 	gorm.io/gorm v1.21.15
 	syreclabs.com/go/faker v1.2.3

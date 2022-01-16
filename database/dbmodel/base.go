@@ -36,6 +36,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&DefaultValue{})
 	database.Connection.AutoMigrate(&Schedule{})
 	database.Connection.AutoMigrate(&Movie{})
+	database.Connection.AutoMigrate(&Restaurant{})
 
 	log.Println("auto migration completed")
 }
