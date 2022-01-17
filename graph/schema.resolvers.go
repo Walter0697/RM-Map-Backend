@@ -671,13 +671,30 @@ func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.Website
 
 	var output model.WebsiteScrapResult
 	if input.Source == constant.Openrice {
-		restaurant, err := scrapper.GetDataFromOpenrice(input.SourceID)
-		if err != nil {
-			return nil, err
-		}
+		var restaurant dbmodel.Restaurant
 		restaurant.Source = constant.Openrice
 		restaurant.SourceId = input.SourceID
-		resModel := helper.ConvertRestaurant(*restaurant)
+		notfound := false
+		err := restaurant.GetBySourceIdAndSource(database.Connection)
+		if err != nil {
+			if utils.RecordNotFound(err) {
+				notfound = true
+			} else {
+				return nil, err
+			}
+		}
+
+		if notfound {
+			err := scrapper.GetDataFromOpenrice(&restaurant)
+			if err != nil {
+				return nil, err
+			}
+			if createerr := restaurant.Create(database.Connection); createerr != nil {
+				return nil, err
+			}
+		}
+
+		resModel := helper.ConvertRestaurant(restaurant)
 		output.Restaurant = &resModel
 	}
 

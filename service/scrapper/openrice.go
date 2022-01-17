@@ -21,22 +21,20 @@ type OpenriceOpening struct {
 	Time string `json:"time"`
 }
 
-func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
+func GetDataFromOpenrice(restaurant *dbmodel.Restaurant) error {
 	baseUrl := "https://s.openrice.com/"
-	link := baseUrl + id
+	link := baseUrl + restaurant.SourceId
 
 	res, err := http.Get(link)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
-
-	var restaurantModel dbmodel.Restaurant
 
 	doc.Find(".breadcrumb").Each(func(x int, banner *goquery.Selection) {
 		banner.Find("li").Each(func(y int, li *goquery.Selection) {
@@ -44,7 +42,7 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 				property, _ := s.Attr("itemprop")
 				if strings.EqualFold(property, "name") {
 					content, _ := s.Attr("content")
-					restaurantModel.Name = content
+					restaurant.Name = content
 				}
 			})
 		})
@@ -52,17 +50,17 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 
 	doc.Find(".header-poi-price.dot-separator").Each(func(i int, s *goquery.Selection) {
 		priceTag := s.Find("a")
-		restaurantModel.PriceRange = service.ImmediateText(priceTag)
+		restaurant.PriceRange = service.ImmediateText(priceTag)
 	})
 
 	doc.Find(".introduction-section").Each(func(i int, s *goquery.Selection) {
 		introductionTag := s.Find(".content.js-text-wrapper")
-		restaurantModel.Introduction = service.ImmediateText(introductionTag)
+		restaurant.Introduction = service.ImmediateText(introductionTag)
 	})
 
 	doc.Find(".header-poi-categories.dot-separator").Each(func(i int, s *goquery.Selection) {
 		categoryTag := s.Find("a")
-		restaurantModel.RestaurantType = service.ImmediateText(categoryTag)
+		restaurant.RestaurantType = service.ImmediateText(categoryTag)
 	})
 
 	var scoreRating OpenriceRating
@@ -82,19 +80,24 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 	})
 	scoreStr, err := json.Marshal(scoreRating)
 	if err == nil {
-		restaurantModel.Rating = string(scoreStr)
+		restaurant.Rating = string(scoreStr)
 	}
 
 	doc.Find(".address-info-section").Each(func(i int, s *goquery.Selection) {
 		content := s.Find(".content")
 		address := content.Find("a")
-		restaurantModel.Address = service.ImmediateText(address)
+		restaurant.Address = service.ImmediateText(address)
 	})
 
+	var phone []string
 	doc.Find(".telephone-section").Each(func(i int, s *goquery.Selection) {
-		content := s.Find(".content")
-		restaurantModel.Telephone = service.ImmediateText(content)
+		s.Find(".content").Each(func(j int, content *goquery.Selection) {
+			phone = append(phone, service.ImmediateText(content))
+		})
 	})
+	if len(phone) != 0 {
+		restaurant.Telephone = strings.Join(phone, "/")
+	}
 
 	var payment []string
 	var condition []string
@@ -111,13 +114,13 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 		})
 
 		content := s.Find(".content")
-		restaurantModel.SeatNo = service.ImmediateText(content)
+		restaurant.SeatNo = service.ImmediateText(content)
 	})
 	if len(payment) != 0 {
-		restaurantModel.PaymentMethod = strings.Join(payment, "/")
+		restaurant.PaymentMethod = strings.Join(payment, "/")
 	}
 	if len(condition) != 0 {
-		restaurantModel.OtherInfo = strings.Join(condition, "/")
+		restaurant.OtherInfo = strings.Join(condition, "/")
 	}
 
 	var openingTime []OpenriceOpening
@@ -136,19 +139,19 @@ func GetDataFromOpenrice(id string) (*dbmodel.Restaurant, error) {
 	if len(openingTime) != 0 {
 		openingStr, err := json.Marshal(openingTime)
 		if err == nil {
-			restaurantModel.OpeningHours = string(openingStr)
+			restaurant.OpeningHours = string(openingStr)
 		}
 	}
 
 	doc.Find(".transport-section").Each(func(i int, s *goquery.Selection) {
 		transportTag := s.Find("div")
-		restaurantModel.Direction = service.ImmediateText(transportTag)
+		restaurant.Direction = service.ImmediateText(transportTag)
 	})
 
 	doc.Find(".restaurant-url-section").Each(func(i int, s *goquery.Selection) {
 		urlTag := s.Find("a")
-		restaurantModel.Website = service.ImmediateText(urlTag)
+		restaurant.Website = service.ImmediateText(urlTag)
 	})
 
-	return &restaurantModel, nil
+	return nil
 }
