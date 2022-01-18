@@ -53,6 +53,10 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 		updatedBy := ConvertUser(*marker.UpdatedBy)
 		item.UpdatedBy = &updatedBy
 	}
+	if marker.RestaurantInfo != nil {
+		restaurant := ConvertRestaurant(*marker.RestaurantInfo)
+		item.Restaurant = &restaurant
+	}
 
 	item.IsFav = marker.IsFavourite
 	return item

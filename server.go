@@ -36,21 +36,21 @@ func main() {
 	}
 
 	prepareReleaseNote()
+
 	startServer()
 }
 
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.1.0"
+	current_version := "2.2.0"
 	notes := []string{
+		"[b]New Feature:",
+		"(Beta) Search By Street Name allows you to have more accurate location when setting marker",
+		"Simply type the street name and number like '123 Main St.' then the system will parse the data and try its best!",
+		"OpenRice Scrapper: allows you to paste the 'share' button from Openrice and get the restaurant information",
 		"[b]Bug Fixed:",
-		"Marker image didn't update after editting.",
-		"Prevent image overlapping in schedule list and today list.",
-		"Marker will not created successfully if image size is too big, fixed",
-		"[b]Quality Of Life:",
-		"You can remove image in marker form and marker edit form.",
-		"For that, you can preview the existing image when editting marker.",
+		"Avoid user from selecting previous date for schedule date and marker expiry date",
 	}
 
 	log.Println("Current version " + current_version)

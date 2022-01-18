@@ -142,7 +142,7 @@ func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmode
 		query = query.Preload("UpdatedBy")
 	}
 	if utils.StringInSlice("marker", requested) {
-		query = query.Preload("SelectedMarker")
+		query = query.Preload("SelectedMarker.RestaurantInfo")
 	}
 	if utils.StringInSlice("movie", requested) {
 		query = query.Preload("SelectedMovie")

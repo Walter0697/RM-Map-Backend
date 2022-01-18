@@ -113,3 +113,9 @@ type QueryCannotEmptyError struct{}
 func (n *QueryCannotEmptyError) Error() string {
 	return "query cannot be empty"
 }
+
+type RestaurantNotFound struct{}
+
+func (n *RestaurantNotFound) Error() string {
+	return "restaurant not found"
+}

@@ -21,6 +21,7 @@ input WebLink {
   link: String!
 }
 
+
 input MovieFilter {
   type: String!
   location: String
@@ -48,6 +49,25 @@ type UserPreference {
   hurry_pin: Pin
 }
 
+type Restaurant {
+  id: Int!
+  name: String!
+  source: String!
+  source_id: String!
+  price_range: String
+  restaurant_type: String
+  address: String
+  rating: String
+  direction: String
+  telephone: String
+  introduction: String
+  opening_hours: String
+  payment_method: String
+  seat_number: String
+  website: String
+  other_info: String
+}
+
 type Marker {
   id: Int!
   label: String!
@@ -65,6 +85,7 @@ type Marker {
   status: String
   to_time: String
   from_time: String
+  restaurant: Restaurant
   is_fav: Boolean!
   created_at: String!
   created_by: User!
@@ -169,25 +190,6 @@ type ReleaseNote {
   date: String
 }
 
-type Restaurant {
-  id: Int!
-  name: String!
-  source: String!
-  source_id: String!
-  price_range: String
-  restaurant_type: String
-  address: String
-  rating: String
-  direction: String
-  telephone: String
-  introduction: String
-  opening_hours: String
-  payment_method: String
-  seat_number: String
-  website: String
-  other_info: String
-}
-
 type WebsiteScrapResult {
   restaurant: Restaurant
 }
@@ -244,6 +246,7 @@ input NewMarker {
   to_time: String
   from_time: String
   estimate_time: String
+  restaurant_id: Int
   price: String
 }
 
@@ -262,6 +265,7 @@ input UpdateMarker {
   to_time: String
   from_time: String
   estimate_time: String
+  restaurant_id: Int
   price: String
 }
 

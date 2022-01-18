@@ -88,6 +88,7 @@ type ComplexityRoot struct {
 		NeedBooking  func(childComplexity int) int
 		Permanent    func(childComplexity int) int
 		Price        func(childComplexity int) int
+		Restaurant   func(childComplexity int) int
 		Status       func(childComplexity int) int
 		ToTime       func(childComplexity int) int
 		Type         func(childComplexity int) int
@@ -545,6 +546,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Price(childComplexity), true
+
+	case "Marker.restaurant":
+		if e.complexity.Marker.Restaurant == nil {
+			break
+		}
+
+		return e.complexity.Marker.Restaurant(childComplexity), true
 
 	case "Marker.status":
 		if e.complexity.Marker.Status == nil {
@@ -1675,6 +1683,7 @@ input WebLink {
   link: String!
 }
 
+
 input MovieFilter {
   type: String!
   location: String
@@ -1702,6 +1711,25 @@ type UserPreference {
   hurry_pin: Pin
 }
 
+type Restaurant {
+  id: Int!
+  name: String!
+  source: String!
+  source_id: String!
+  price_range: String
+  restaurant_type: String
+  address: String
+  rating: String
+  direction: String
+  telephone: String
+  introduction: String
+  opening_hours: String
+  payment_method: String
+  seat_number: String
+  website: String
+  other_info: String
+}
+
 type Marker {
   id: Int!
   label: String!
@@ -1719,6 +1747,7 @@ type Marker {
   status: String
   to_time: String
   from_time: String
+  restaurant: Restaurant
   is_fav: Boolean!
   created_at: String!
   created_by: User!
@@ -1823,25 +1852,6 @@ type ReleaseNote {
   date: String
 }
 
-type Restaurant {
-  id: Int!
-  name: String!
-  source: String!
-  source_id: String!
-  price_range: String
-  restaurant_type: String
-  address: String
-  rating: String
-  direction: String
-  telephone: String
-  introduction: String
-  opening_hours: String
-  payment_method: String
-  seat_number: String
-  website: String
-  other_info: String
-}
-
 type WebsiteScrapResult {
   restaurant: Restaurant
 }
@@ -1898,6 +1908,7 @@ input NewMarker {
   to_time: String
   from_time: String
   estimate_time: String
+  restaurant_id: Int
   price: String
 }
 
@@ -1916,6 +1927,7 @@ input UpdateMarker {
   to_time: String
   from_time: String
   estimate_time: String
+  restaurant_id: Int
   price: String
 }
 
@@ -3681,6 +3693,38 @@ func (ec *executionContext) _Marker_from_time(ctx context.Context, field graphql
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_restaurant(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Restaurant, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Restaurant)
+	fc.Result = res
+	return ec.marshalORestaurant2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRestaurant(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Marker_is_fav(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
@@ -9686,6 +9730,14 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "restaurant_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("restaurant_id"))
+			it.RestaurantID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "price":
 			var err error
 
@@ -10256,6 +10308,14 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("estimate_time"))
 			it.EstimateTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "restaurant_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("restaurant_id"))
+			it.RestaurantID, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -10945,6 +11005,8 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_to_time(ctx, field, obj)
 		case "from_time":
 			out.Values[i] = ec._Marker_from_time(ctx, field, obj)
+		case "restaurant":
+			out.Values[i] = ec._Marker_restaurant(ctx, field, obj)
 		case "is_fav":
 			out.Values[i] = ec._Marker_is_fav(ctx, field, obj)
 			if out.Values[i] == graphql.Null {

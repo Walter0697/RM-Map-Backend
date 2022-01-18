@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Marker, error) {
+func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Marker, error) {
 	var fromTime time.Time
 	var toTime time.Time
 	var err error
@@ -101,6 +101,9 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	if input.ToTime != nil {
 		marker.ToTime = &toTime
 	}
+	if restaurant != nil {
+		marker.RestaurantInfo = restaurant
+	}
 
 	marker.Relation = relation
 
@@ -118,7 +121,7 @@ func CreateMarker(input model.NewMarker, user dbmodel.User, relation dbmodel.Use
 	return &marker, nil
 }
 
-func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Marker, error) {
+func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 
 	marker.ID = uint(input.ID)
@@ -144,6 +147,10 @@ func EditMarker(input model.UpdateMarker, relation dbmodel.UserRelation, user db
 			return nil, err
 		}
 		marker.ToTime = &toTime
+	}
+
+	if restaurant != nil {
+		marker.RestaurantInfo = restaurant
 	}
 
 	if input.ImageLink != nil {
@@ -313,6 +320,9 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 	if utils.StringInSlice("updated_by", requested) {
 		query = query.Preload("UpdatedBy")
 	}
+	if utils.StringInSlice("restaurant", requested) {
+		query = query.Preload("RestaurantInfo")
+	}
 
 	query = query.Where("relation_id = ?", relation.ID)
 
@@ -336,6 +346,9 @@ func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]
 	}
 	if utils.StringInSlice("updated_by", requested) {
 		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("restaurant", requested) {
+		query = query.Preload("RestaurantInfo")
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)

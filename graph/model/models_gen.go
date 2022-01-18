@@ -52,27 +52,28 @@ type MapPin struct {
 }
 
 type Marker struct {
-	ID           int     `json:"id"`
-	Label        string  `json:"label"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	Address      string  `json:"address"`
-	ImageLink    *string `json:"image_link"`
-	Link         *string `json:"link"`
-	Type         string  `json:"type"`
-	Description  *string `json:"description"`
-	EstimateTime *string `json:"estimate_time"`
-	Price        *string `json:"price"`
-	Permanent    bool    `json:"permanent"`
-	NeedBooking  bool    `json:"need_booking"`
-	Status       *string `json:"status"`
-	ToTime       *string `json:"to_time"`
-	FromTime     *string `json:"from_time"`
-	IsFav        bool    `json:"is_fav"`
-	CreatedAt    string  `json:"created_at"`
-	CreatedBy    *User   `json:"created_by"`
-	UpdatedAt    string  `json:"updated_at"`
-	UpdatedBy    *User   `json:"updated_by"`
+	ID           int         `json:"id"`
+	Label        string      `json:"label"`
+	Latitude     float64     `json:"latitude"`
+	Longitude    float64     `json:"longitude"`
+	Address      string      `json:"address"`
+	ImageLink    *string     `json:"image_link"`
+	Link         *string     `json:"link"`
+	Type         string      `json:"type"`
+	Description  *string     `json:"description"`
+	EstimateTime *string     `json:"estimate_time"`
+	Price        *string     `json:"price"`
+	Permanent    bool        `json:"permanent"`
+	NeedBooking  bool        `json:"need_booking"`
+	Status       *string     `json:"status"`
+	ToTime       *string     `json:"to_time"`
+	FromTime     *string     `json:"from_time"`
+	Restaurant   *Restaurant `json:"restaurant"`
+	IsFav        bool        `json:"is_fav"`
+	CreatedAt    string      `json:"created_at"`
+	CreatedBy    *User       `json:"created_by"`
+	UpdatedAt    string      `json:"updated_at"`
+	UpdatedBy    *User       `json:"updated_by"`
 }
 
 type MarkerType struct {
@@ -131,6 +132,7 @@ type NewMarker struct {
 	ToTime       *string         `json:"to_time"`
 	FromTime     *string         `json:"from_time"`
 	EstimateTime *string         `json:"estimate_time"`
+	RestaurantID *int            `json:"restaurant_id"`
 	Price        *string         `json:"price"`
 }
 
@@ -273,6 +275,7 @@ type UpdateMarker struct {
 	ToTime       *string         `json:"to_time"`
 	FromTime     *string         `json:"from_time"`
 	EstimateTime *string         `json:"estimate_time"`
+	RestaurantID *int            `json:"restaurant_id"`
 	Price        *string         `json:"price"`
 }
 

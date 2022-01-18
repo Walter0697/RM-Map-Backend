@@ -131,7 +131,17 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	marker, err := service.CreateMarker(input, *user, *relation)
+	var restaurant dbmodel.Restaurant
+	var restaurantPtr *dbmodel.Restaurant = nil
+	if input.RestaurantID != nil {
+		restaurant.ID = uint(*input.RestaurantID)
+		if err := restaurant.GetById(database.Connection); err != nil {
+			return nil, err
+		}
+		restaurantPtr = &restaurant
+	}
+
+	marker, err := service.CreateMarker(input, restaurantPtr, *user, *relation)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +171,17 @@ func (r *mutationResolver) EditMarker(ctx context.Context, input model.UpdateMar
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	marker, err := service.EditMarker(input, *relation, *user)
+	var restaurant dbmodel.Restaurant
+	var restaurantPtr *dbmodel.Restaurant = nil
+	if input.RestaurantID != nil {
+		restaurant.ID = uint(*input.RestaurantID)
+		if err := restaurant.GetById(database.Connection); err != nil {
+			return nil, err
+		}
+		restaurantPtr = &restaurant
+	}
+
+	marker, err := service.EditMarker(input, restaurantPtr, *relation, *user)
 	if err != nil {
 		return nil, err
 	}
@@ -446,6 +466,15 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 		return nil, err
 	}
 
+	// retrieve the restaurant information
+	if marker.RestaurantId != nil {
+		var restaurant dbmodel.Restaurant
+		restaurant.ID = *marker.RestaurantId
+		if err := restaurant.GetById(database.Connection); err == nil {
+			schedule.SelectedMarker.RestaurantInfo = &restaurant
+		}
+	}
+
 	transaction.Commit()
 
 	output := helper.ConvertSchedule(*schedule)
@@ -530,6 +559,22 @@ func (r *mutationResolver) EditSchedule(ctx context.Context, input model.UpdateS
 	schedule, err := service.EditSchedule(input, *relation, *user)
 	if err != nil {
 		return nil, err
+	}
+
+	// retrieve the marker information as well as the restaurant information
+	if schedule.MarkerId != nil {
+		var marker dbmodel.Marker
+		marker.ID = *schedule.MarkerId
+		if err := marker.GetById(database.Connection); err == nil {
+			if marker.RestaurantId != nil {
+				var restaurant dbmodel.Restaurant
+				restaurant.ID = *marker.RestaurantId
+				if err2 := restaurant.GetById(database.Connection); err2 == nil {
+					marker.RestaurantInfo = &restaurant
+				}
+			}
+			schedule.SelectedMarker = &marker
+		}
 	}
 
 	output := helper.ConvertSchedule(*schedule)
@@ -649,6 +694,15 @@ func (r *mutationResolver) RevokeMarker(ctx context.Context, input model.UpdateM
 	marker, err := service.RevokeMarker(input, *user)
 	if err != nil {
 		return nil, err
+	}
+
+	// retrieve the restaurant information as well
+	if marker.RestaurantId != nil {
+		var restaurant dbmodel.Restaurant
+		restaurant.ID = *marker.RestaurantId
+		if err := restaurant.GetById(database.Connection); err != nil {
+			marker.RestaurantInfo = &restaurant
+		}
 	}
 
 	output := helper.ConvertMarker(*marker)
