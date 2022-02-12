@@ -51,6 +51,8 @@ func prepareReleaseNote() {
 		"OpenRice Scrapper: allows you to paste the 'share' button from Openrice and get the restaurant information",
 		"[b]Bug Fixed:",
 		"Avoid user from selecting previous date for schedule date and marker expiry date",
+		"[b]Quality Of Life:",
+		"Filter bar is no longer case sensitive",
 	}
 
 	log.Println("Current version " + current_version)
