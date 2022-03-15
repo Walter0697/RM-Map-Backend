@@ -315,6 +315,7 @@ func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
 	item.Notes = &input.Notes
+	item.Icon = input.Icon
 	createTime := utils.ConvertToOutputTime(input.CreatedAt)
 	item.Date = &createTime
 
@@ -324,6 +325,7 @@ func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 func ConvertToPreviewRelease(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
+	item.Icon = input.Icon
 
 	return item
 }

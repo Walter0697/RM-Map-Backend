@@ -43,9 +43,10 @@ func CheckReleaseNoteAdded(version string) bool {
 	return release_note.CheckReleaseRecordExist(database.Connection)
 }
 
-func CreateReleaseNote(version string, note []string) error {
+func CreateReleaseNote(version string, note []string, icon *string) error {
 	var release_note dbmodel.ReleaseNote
 	release_note.Version = version
+	release_note.Icon = icon
 
 	combined_notes, err := json.Marshal(note)
 	if err != nil {

@@ -4,8 +4,9 @@ import "gorm.io/gorm"
 
 type ReleaseNote struct {
 	BaseModel
-	Version string `json:"version"`
-	Notes   string `json:"notes"`
+	Version string  `json:"version"`
+	Notes   string  `json:"notes"`
+	Icon    *string `json:"icon"`
 }
 
 func (note *ReleaseNote) Create(db *gorm.DB) error {

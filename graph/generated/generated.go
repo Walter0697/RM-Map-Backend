@@ -197,6 +197,7 @@ type ComplexityRoot struct {
 
 	ReleaseNote struct {
 		Date    func(childComplexity int) int
+		Icon    func(childComplexity int) int
 		Notes   func(childComplexity int) int
 		Version func(childComplexity int) int
 	}
@@ -1302,6 +1303,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReleaseNote.Date(childComplexity), true
 
+	case "ReleaseNote.icon":
+		if e.complexity.ReleaseNote.Icon == nil {
+			break
+		}
+
+		return e.complexity.ReleaseNote.Icon(childComplexity), true
+
 	case "ReleaseNote.notes":
 		if e.complexity.ReleaseNote.Notes == nil {
 			break
@@ -1850,6 +1858,7 @@ type ReleaseNote {
   version: String!
   notes: String
   date: String
+  icon: String
 }
 
 type WebsiteScrapResult {
@@ -7011,6 +7020,38 @@ func (ec *executionContext) _ReleaseNote_date(ctx context.Context, field graphql
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _ReleaseNote_icon(ctx context.Context, field graphql.CollectedField, obj *model.ReleaseNote) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "ReleaseNote",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Icon, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Restaurant_id(ctx context.Context, field graphql.CollectedField, obj *model.Restaurant) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -11775,6 +11816,8 @@ func (ec *executionContext) _ReleaseNote(ctx context.Context, sel ast.SelectionS
 			out.Values[i] = ec._ReleaseNote_notes(ctx, field, obj)
 		case "date":
 			out.Values[i] = ec._ReleaseNote_date(ctx, field, obj)
+		case "icon":
+			out.Values[i] = ec._ReleaseNote_icon(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

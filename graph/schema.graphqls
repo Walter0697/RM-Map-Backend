@@ -188,6 +188,7 @@ type ReleaseNote {
   version: String!
   notes: String
   date: String
+  icon: String
 }
 
 type WebsiteScrapResult {

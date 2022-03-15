@@ -204,6 +204,7 @@ type ReleaseNote struct {
 	Version string  `json:"version"`
 	Notes   *string `json:"notes"`
 	Date    *string `json:"date"`
+	Icon    *string `json:"icon"`
 }
 
 type ReleaseNoteFilter struct {
