@@ -7,6 +7,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph"
 	"mapmarker/backend/graph/generated"
+	"mapmarker/backend/init"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/seed"
 	"mapmarker/backend/service"
@@ -26,6 +27,10 @@ func main() {
 	config.SetupGoGuardian()
 	database.Init()
 	dbmodel.AutoMigration()
+
+	if err := init.InitDatabaseValue(); err != nil {
+		panic(err)
+	}
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -59,7 +64,8 @@ func prepareReleaseNote() {
 	exist := service.CheckReleaseNoteAdded(current_version)
 	if !exist {
 		log.Println("Release note not exist! Adding...")
-		if err := service.CreateReleaseNote(current_version, notes); err != nil {
+		icon := "birthday"
+		if err := service.CreateReleaseNote(current_version, notes, &icon); err != nil {
 			panic(err)
 		}
 		log.Println("New Release note added!")
