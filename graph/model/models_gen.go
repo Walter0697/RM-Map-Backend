@@ -257,6 +257,18 @@ type ScheduleStatusList struct {
 	Ids []*ScheduleStatus `json:"ids"`
 }
 
+type Station struct {
+	Identifier string  `json:"identifier"`
+	Label      string  `json:"label"`
+	LocalName  string  `json:"local_name"`
+	PhotoX     float64 `json:"photo_x"`
+	PhotoY     float64 `json:"photo_y"`
+	MapX       float64 `json:"map_x"`
+	MapY       float64 `json:"map_y"`
+	Active     bool    `json:"active"`
+	MapName    string  `json:"map_name"`
+}
+
 type TodayEvent struct {
 	YesterdayEvent []*Schedule `json:"yesterday_event"`
 }
@@ -303,6 +315,12 @@ type UpdateSchedule struct {
 	Label        *string `json:"label"`
 	Description  *string `json:"description"`
 	SelectedTime *string `json:"selected_time"`
+}
+
+type UpdateStation struct {
+	MapName    string `json:"map_name"`
+	Identifier string `json:"identifier"`
+	Active     bool   `json:"active"`
 }
 
 type UpdatedDefault struct {

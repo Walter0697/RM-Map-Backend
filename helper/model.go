@@ -351,3 +351,18 @@ func ConvertRestaurant(input dbmodel.Restaurant) model.Restaurant {
 
 	return item
 }
+
+func ConvertTrainStation(input dbmodel.TrainStation) model.Station {
+	var item model.Station
+
+	item.Label = input.Label
+	item.Identifier = input.Identifier
+	item.LocalName = input.StationLocalName
+	item.MapName = input.MapName
+	item.PhotoX = input.PhotoX
+	item.PhotoY = input.PhotoY
+	item.MapX = input.MapX
+	item.MapY = input.MapY
+
+	return item
+}

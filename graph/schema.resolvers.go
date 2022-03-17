@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -755,6 +756,10 @@ func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.Website
 	return &output, nil
 }
 
+func (r *mutationResolver) UpdateStation(ctx context.Context, input model.UpdateStation) (*model.Station, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -1361,6 +1366,29 @@ func (r *queryResolver) Releasenotes(ctx context.Context) ([]*model.ReleaseNote,
 
 	for _, note := range notes {
 		item := helper.ConvertToPreviewRelease(note)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Stations(ctx context.Context) ([]*model.Station, error) {
+	// USER
+	// get all trainstations for testing
+	var result []*model.Station
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	stations, err := service.GetAllTrainStationByMapName(constant.HKMTR)
+	if err != nil {
+		return result, err
+	}
+
+	for _, station := range stations {
+		item := helper.ConvertTrainStation(station)
+		item.Active = false
 		result = append(result, &item)
 	}
 

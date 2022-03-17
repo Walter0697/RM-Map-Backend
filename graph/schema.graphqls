@@ -21,7 +21,6 @@ input WebLink {
   link: String!
 }
 
-
 input MovieFilter {
   type: String!
   location: String
@@ -195,6 +194,18 @@ type WebsiteScrapResult {
   restaurant: Restaurant
 }
 
+type Station {
+  identifier: String!
+  label: String!
+  local_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float!
+  map_y: Float!
+  active: Boolean!
+  map_name: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -214,6 +225,7 @@ type Query {
   latestreleasenote: ReleaseNote!
   specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
   releasenotes: [ReleaseNote]!
+  stations: [Station]!
   me: String!
 }
 
@@ -373,6 +385,12 @@ input WebsiteScrapInput {
   source_id: String!
 }
 
+input UpdateStation {
+  map_name: String!
+  identifier: String!
+  active: Boolean!
+}
+
 input Login {
   username: String!
   password: String!
@@ -410,6 +428,7 @@ type Mutation {
   removeSchedule(input: RemoveModel!): Marker
   revokeMarker(input: UpdateModel!): Marker!
   websiteScrap(input: WebsiteScrapInput!): WebsiteScrapResult!
+  updateStation(input: UpdateStation!): Station!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

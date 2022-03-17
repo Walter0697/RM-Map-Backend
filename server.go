@@ -7,7 +7,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph"
 	"mapmarker/backend/graph/generated"
-	"mapmarker/backend/init"
+	"mapmarker/backend/initdb"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/seed"
 	"mapmarker/backend/service"
@@ -28,7 +28,7 @@ func main() {
 	database.Init()
 	dbmodel.AutoMigration()
 
-	if err := init.InitDatabaseValue(); err != nil {
+	if err := initdb.InitDatabaseValue(); err != nil {
 		panic(err)
 	}
 

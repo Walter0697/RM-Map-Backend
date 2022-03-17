@@ -8,6 +8,7 @@ type TrainRecord struct {
 	StationId       uint
 	Relation        UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId      uint
+	Active          bool
 }
 
 func (record *TrainRecord) Create(db *gorm.DB) error {

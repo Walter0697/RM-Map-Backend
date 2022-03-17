@@ -1,0 +1,1581 @@
+{
+    "version": 1,
+    "type": "train_station",
+    "name": "HK_MTR",
+    "data": [
+        {
+            "label": "Tuen Mun",
+            "localName": "屯門",
+            "identifier": "TuenMun",
+            "photo": {
+                "x": 213,
+                "y": 448
+            },
+            "map": {
+                "x": 22.39559,
+                "y": 113.97309
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 1 }
+            ]
+        },
+        {
+            "label": "Siu Hong",
+            "localName": "兆康",
+            "identifier": "SiuHong",
+            "photo": {
+                "x": 213,
+                "y": 353
+            },
+            "map": {
+                "x": 22.41199,
+                "y": 113.97882
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 2 }
+            ]
+        },
+        {
+            "label": "Tin Shui Wai",
+            "localName": "天水圍",
+            "identifier": "TinShuiWai",
+            "photo": {
+                "x": 246,
+                "y": 233
+            },
+            "map": {
+                "x": 22.44832,
+                "y": 114.00475
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 3 }
+            ]
+        },
+        {
+            "label": "Long Ping",
+            "localName": "朗屏",
+            "identifier": "LongPing",
+            "photo": {
+                "x": 279,
+                "y": 293
+            },
+            "map": {
+                "x": 22.44790,
+                "y": 114.02546
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 4 }
+            ]
+        },
+        {
+            "label": "Yuen Long",
+            "localName": "元朗",
+            "identifier": "YuenLong",
+            "photo": {
+                "x": 279,
+                "y": 353
+            },
+            "map": {
+                "x": 22.44688,
+                "y": 114.03460
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 5 }
+            ]
+        },
+        {
+            "label": "Kam Sheung Road",
+            "localName": "錦上路",
+            "identifier": "KamSheungRoad",
+            "photo": {
+                "x": 279,
+                "y": 421
+            },
+            "map": {
+                "x": 22.43483,
+                "y": 114.06355
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 6 }
+            ]
+        },
+        {
+            "label": "Tsuen Wan West",
+            "localName": "荃灣西",
+            "identifier": "TsuenWanWest",
+            "photo": {
+                "x": 312,
+                "y": 499
+            },
+            "map": {
+                "x": 22.36925,
+                "y": 114.10956
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 7 }
+            ]
+        },
+        {
+            "label": "Mei Foo",
+            "localName": "美孚",
+            "identifier": "MeiFoo",
+            "photo": {
+                "x": 730,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33834,
+                "y": 114.13807
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 8 },
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 6 }
+            ]
+        },
+        {
+            "label": "Nam Cheong",
+            "localName": "南昌",
+            "identifier": "NamCheong",
+            "photo": {
+                "x": 730,
+                "y": 651
+            },
+            "map": {
+                "x": 22.32737,
+                "y": 114.15359
+            },
+           "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 9 },
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 5 }
+            ]
+        },
+        {
+            "label": "Austin",
+            "localName": "柯士甸",
+            "identifier": "Austin",
+            "photo": {
+                "x": 910,
+                "y": 852
+            },
+            "map": {
+                "x": 22.30629,
+                "y": 114.16580
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 10 }
+            ]
+        },
+        {
+            "label": "East Tsim Sha Tsui",
+            "localName": "尖東",
+            "identifier": "EastTsimShaTsui",
+            "photo": {
+                "x": 1065,
+                "y": 900
+            },
+            "map": {
+                "x": 22.29569,
+                "y": 114.17456
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 11 }
+            ]
+        },
+        {
+            "label": "Hung Hom",
+            "localName": "紅磡",
+            "identifier": "HungHom",
+            "photo": {
+                "x": 1146,
+                "y": 869
+            },
+            "map": {
+                "x": 22.30414,
+                "y": 114.18175
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 12 },
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 1 }
+            ]
+        },
+        {
+            "label": "Ho Man Tin",
+            "localName": "何文田",
+            "identifier": "HoManTin",
+            "photo": {
+                "x": 1235,
+                "y": 797
+            },
+            "map": {
+                "x": 22.30999,
+                "y": 114.18277
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 13 },
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 2 }
+            ]
+        },
+        {
+            "label": "To Kwa Wan",
+            "localName": "土瓜灣",
+            "identifier": "ToKwaWan",
+            "photo": {
+                "x": 1361,
+                "y": 760
+            },
+            "map": {
+                "x": 22.31783,
+                "y": 114.18762
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 14 }
+            ]
+        },
+        {
+            "label": "Sung Wong Toi",
+            "localName": "宋皇臺",
+            "identifier": "SungWongToi",
+            "photo": {
+                "x": 1412,
+                "y": 709
+            },
+            "map": {
+                "x": 22.32666,
+                "y": 114.19113
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 15 }
+            ]
+        },
+        {
+            "label": "Kai Tak",
+            "localName": "啟德",
+            "identifier": "KaiTak",
+            "photo": {
+                "x": 1447,
+                "y": 635
+            },
+            "map": {
+                "x": 22.33140,
+                "y": 114.19972
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 16 }
+            ]
+        },
+        {
+            "label": "Diamond Hill",
+            "localName": "鑽石山",
+            "identifier": "DiamondHill",
+            "photo": {
+                "x": 1447,
+                "y": 570
+            },
+            "map": {
+                "x": 22.34090,
+                "y": 114.20176
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 17 },
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 10 }
+            ]
+        },
+        {
+            "label": "Hin Keng",
+            "localName": "顯徑",
+            "identifier": "HinKeng",
+            "photo": {
+                "x": 1304,
+                "y": 506
+            },
+            "map": {
+                "x": 22.36463,
+                "y": 114.17113
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 18 }
+            ]
+        },
+        {
+            "label": "Tai Wai",
+            "localName": "大圍",
+            "identifier": "TaiWai",
+            "photo": {
+                "x": 1199,
+                "y": 473
+            },
+            "map": {
+                "x": 22.37340,
+                "y": 114.17861
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 19 },
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 4 }
+            ]
+        },
+        {
+            "label": "Che Kung Template",
+            "localName": "車公廟",
+            "identifier": "CheKungTemplate",
+            "photo": {
+                "x": 1333,
+                "y": 403
+            },
+            "map": {
+                "x": 22.37528,
+                "y": 114.18608
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 20 }
+            ]
+        },
+        {
+            "label": "Sha Tin Wai",
+            "localName": "沙田圍",
+            "identifier": "ShaTinWai",
+            "photo": {
+                "x": 1333,
+                "y": 333
+            },
+            "map": {
+                "x": 22.37778,
+                "y": 114.19528
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 21 }
+            ]
+        },
+        {
+            "label": "City One",
+            "localName": "第一城",
+            "identifier": "CityOne",
+            "photo": {
+                "x": 1383,
+                "y": 240
+            },
+            "map": {
+                "x": 22.38309,
+                "y": 114.20353
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 22 }
+            ]
+        },
+        {
+            "label": "Shek Mun",
+            "localName": "石門",
+            "identifier": "ShekMun",
+            "photo": {
+                "x": 1473,
+                "y": 240
+            },
+            "map": {
+                "x": 22.38857,
+                "y": 114.20835
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 23 }
+            ]
+        },
+        {
+            "label": "Tai Shui Hang",
+            "localName": "大水坑",
+            "identifier": "TaiShuiHang",
+            "photo": {
+                "x": 1564,
+                "y": 240
+            },
+            "map": {
+                "x": 22.40914,
+                "y": 114.22276
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 24 }
+            ]
+        },
+        {
+            "label": "Heng On",
+            "localName": "恆安",
+            "identifier": "HengOn",
+            "photo": {
+                "x": 1654,
+                "y": 240
+            },
+            "map": {
+                "x": 22.41784,
+                "y": 114.22579
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 25 }
+            ]
+        },
+        {
+            "label": "Ma On Shan",
+            "localName": "馬鞍山",
+            "identifier": "MaOnShan",
+            "photo": {
+                "x": 1744,
+                "y": 240
+            },
+            "map": {
+                "x": 22.42575,
+                "y": 114.23193
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 26 }
+            ]
+        },
+        {
+            "label": "Wu Kai Sha",
+            "localName": "烏溪沙",
+            "identifier": "WuKaiSha",
+            "photo": {
+                "x": 1834,
+                "y": 240
+            },
+            "map": {
+                "x": 22.42995,
+                "y": 114.24399
+            },
+            "line": [
+                { "name": "Tuen Ma Line", "localName": "屯馬綫", "colour": "#934b3a", "position": 27 }
+            ]
+        },
+        {
+            "label": "Tsuen Wan",
+            "localName": "荃灣",
+            "identifier": "TsuenWan",
+            "photo": {
+                "x": 312,
+                "y": 570
+            },
+            "map": {
+                "x": 22.37462,
+                "y": 114.11801
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 1 }
+            ]
+        },
+        {
+            "label": "Tai Wo Hai",
+            "localName": "大窩口",
+            "identifier": "TaiWoHai",
+            "photo": {
+                "x": 408,
+                "y": 570
+            },
+            "map": {
+                "x": 22.37171,
+                "y": 114.12497
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 2 }
+            ]
+        },
+        {
+            "label": "Kwai Hing",
+            "localName": "葵興",
+            "identifier": "KwaiHing",
+            "photo": {
+                "x": 492,
+                "y": 570
+            },
+            "map": {
+                "x": 22.36319,
+                "y": 114.13121
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 3 }
+            ]
+        },
+        {
+            "label": "Kwai Fong",
+            "localName": "葵芳",
+            "identifier": "KwaiFong",
+            "photo": {
+                "x": 576,
+                "y": 570
+            },
+            "map": {
+                "x": 22.35725,
+                "y": 114.12778
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 4 }
+            ]
+        },
+        {
+            "label": "Lai King",
+            "localName": "荔景",
+            "identifier": "LaiKing",
+            "photo": {
+                "x": 653,
+                "y": 570
+            },
+            "map": {
+                "x": 22.34933,
+                "y": 114.12633
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 5 },
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 4 }
+            ]
+        },
+        {
+            "label": "Lai Chi Kok",
+            "localName": "荔枝角",
+            "identifier": "LaiChiKok",
+            "photo": {
+                "x": 806,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33759,
+                "y": 114.14805
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 7 }
+            ]
+        },
+        {
+            "label": "Cheung Sha Wan",
+            "localName": "長沙灣",
+            "identifier": "CheungShaWan",
+            "photo": {
+                "x": 887,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33591,
+                "y": 114.15602
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 8 }
+            ]
+        },
+        {
+            "label": "Sham Shui Po",
+            "localName": "深水埗",
+            "identifier": "ShamShuiPo",
+            "photo": {
+                "x": 969,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33185,
+                "y": 114.16222
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 9 }
+            ]
+        },
+        {
+            "label": "Prince Edward",
+            "localName": "太子",
+            "identifier": "PrinceEdward",
+            "photo": {
+                "x": 1018,
+                "y": 625
+            },
+            "map": {
+                "x": 22.32551,
+                "y": 114.16811
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 10 },
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 5 }
+            ]
+        },
+        {
+            "label": "Mong Kok",
+            "localName": "旺角",
+            "identifier": "MongKok",
+            "photo": {
+                "x": 1018,
+                "y": 682
+            },
+            "map": {
+                "x": 22.32023,
+                "y": 114.16922
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 11 },
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 4 }
+            ]
+        },
+        {
+            "label": "Yau Ma Tei",
+            "localName": "油麻地",
+            "identifier": "YauMaTei",
+            "photo": {
+                "x": 1018,
+                "y": 739
+            },
+            "map": {
+                "x": 22.31374,
+                "y": 114.17077
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 12 },
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 3 }
+            ]
+        },
+        {
+            "label": "Jordan",
+            "localName": "佐敦",
+            "identifier": "Jordan",
+            "photo": {
+                "x": 1018,
+                "y": 796
+            },
+            "map": {
+                "x": 22.30570,
+                "y": 114.17187
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 13 }
+            ]
+        },
+        {
+            "label": "Tsim Sha Tsui",
+            "localName": "尖沙咀",
+            "identifier": "TsimShaTsui",
+            "photo": {
+                "x": 1018,
+                "y": 853
+            },
+            "map": {
+                "x": 22.29832,
+                "y": 114.17235
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 14 }
+            ]
+        },
+        {
+            "label": "Admiralty",
+            "localName": "金鐘",
+            "identifier": "Admiralty",
+            "photo": {
+                "x": 960,
+                "y": 1006
+            },
+            "map": {
+                "x": 22.27956,
+                "y": 114.16453
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 15 },
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 6 },
+                { "name": "South Island Line", "localName": "南港島綫", "colour": "#c0ce1f", "position": 5 }
+            ]
+        },
+        {
+            "label": "Central",
+            "localName": "中環",
+            "identifier": "Central",
+            "photo": {
+                "x": 865,
+                "y": 1006
+            },
+            "map": {
+                "x": 22.28297,
+                "y": 114.15778
+            },
+            "line": [
+                { "name": "Tsuen Wan Line", "localName": "荃灣綫", "colour": "#da0614", "position": 16 },
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 5 }
+            ]
+        },
+        {
+            "label": "Tung Chung",
+            "localName": "東涌",
+            "identifier": "TungChung",
+            "photo": {
+                "x": 343,
+                "y": 854
+            },
+            "map": {
+                "x": 22.29009,
+                "y": 113.94092
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 1 }
+            ]
+        },
+        {
+            "label": "Sunny Bay",
+            "localName": "欣澳",
+            "identifier": "SunnyBay",
+            "photo": {
+                "x": 463,
+                "y": 733
+            },
+            "map": {
+                "x": 22.33249,
+                "y": 114.02884
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 2 },
+                { "name": "Disneyland Resort Line", "localName": "迪士尼綫", "colour": "#d55eba", "position": 1 }
+            ]
+        },
+        {
+            "label": "Tsing Yi",
+            "localName": "青衣",
+            "identifier": "TsingYi",
+            "photo": {
+                "x": 552,
+                "y": 639
+            },
+            "map": {
+                "x": 22.35933,
+                "y": 114.10741
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 3 },
+                { "name": "Airport Express", "localName": "機場快綫", "colour": "#02624d", "position": 3 }
+            ]
+        },
+        {
+            "label": "Olympic",
+            "localName": "奧運",
+            "identifier": "Olympic",
+            "photo": {
+                "x": 722,
+                "y": 761
+            },
+            "map": {
+                "x": 22.31853,
+                "y": 114.16005
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 5 }
+            ]
+        },
+        {
+            "label": "Kowloon",
+            "localName": "九龍",
+            "identifier": "Kowloon",
+            "photo": {
+                "x": 722,
+                "y": 851
+            },
+            "map": {
+                "x": 22.30473,
+                "y": 114.16148
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 6 },
+                { "name": "Airport Express", "localName": "機場快綫", "colour": "#02624d", "position": 4 }
+            ]
+        },
+        {
+            "label": "Hong Kong",
+            "localName": "香港",
+            "identifier": "HongKong",
+            "photo": {
+                "x": 865,
+                "y": 982
+            },
+            "map": {
+                "x": 22.28663,
+                "y": 114.15704
+            },
+            "line": [
+                { "name": "Tung Chung Line", "localName": "東涌綫", "colour": "#e57000", "position": 7 },
+                { "name": "Airport Express", "localName": "機場快綫", "colour": "#02624d", "position": 5 }
+            ]
+        },
+        {
+            "label": "AsiaWorld-Expo",
+            "localName": "博覽館",
+            "identifier": "AsiaWorldExpo",
+            "photo": {
+                "x": 357,
+                "y": 720
+            },
+            "map": {
+                "x": 22.32143,
+                "y": 113.94160
+            },
+            "line": [
+                { "name": "Airport Express", "localName": "機場快綫", "colour": "#02624d", "position": 1 }
+            ]
+        },
+        {
+            "label": "Airport",
+            "localName": "機場",
+            "identifier": "Airport",
+            "photo": {
+                "x": 304,
+                "y": 795
+            },
+            "map": {
+                "x": 22.31658,
+                "y": 113.93660
+            },
+            "line": [
+                { "name": "Airport Express", "localName": "機場快綫", "colour": "#02624d", "position": 2 }
+            ]
+        },
+        {
+            "label": "Disneyland Resort",
+            "localName": "迪士尼",
+            "identifier": "DisneylandResort",
+            "photo": {
+                "x": 524,
+                "y": 805
+            },
+            "map": {
+                "x": 22.31623,
+                "y": 114.04519
+            },
+            "line": [
+                { "name": "Disneyland Resort Line", "localName": "迪士尼綫", "colour": "#d55eba", "position": 2 }
+            ]
+        },
+        {
+            "label": "Whampoa",
+            "localName": "黃埔",
+            "identifier": "Whampoa",
+            "photo": {
+                "x": 1313,
+                "y": 823
+            },
+            "map": {
+                "x": 22.30594,
+                "y": 114.18951
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 1 }
+            ]
+        },
+        {
+            "label": "Shek Kip Mei",
+            "localName": "石硤尾",
+            "identifier": "ShekKipMei",
+            "photo": {
+                "x": 1075,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33307,
+                "y": 114.16876
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 6 }
+            ]
+        },
+        {
+            "label": "Kowloon Tong",
+            "localName": "九龍塘",
+            "identifier": "KowloonTong",
+            "photo": {
+                "x": 1191,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33718,
+                "y": 114.17602
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 7 },
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 3 }
+            ]
+        },
+        {
+            "label": "Lok Fu",
+            "localName": "樂富",
+            "identifier": "LokFu",
+            "photo": {
+                "x": 1251,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33874,
+                "y": 114.18685
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 8 }
+            ]
+        },
+        {
+            "label": "Wong Tai Sin",
+            "localName": "黃大仙",
+            "identifier": "WongTaiSin",
+            "photo": {
+                "x": 1316,
+                "y": 570
+            },
+            "map": {
+                "x": 22.34218,
+                "y": 114.19398
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 9 }
+            ]
+        },
+        {
+            "label": "Choi Hung",
+            "localName": "彩虹",
+            "identifier": "ChoiHung",
+            "photo": {
+                "x": 1510,
+                "y": 570
+            },
+            "map": {
+                "x": 22.33528,
+                "y": 114.20903
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 11 }
+            ]
+        },
+        {
+            "label": "Kowloon Bay",
+            "localName": "九龍灣",
+            "identifier": "KowloonBay",
+            "photo": {
+                "x": 1572,
+                "y": 584
+            },
+            "map": {
+                "x": 22.32422,
+                "y": 114.21403
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 12 }
+            ]
+        },
+        {
+            "label": "Ngau Tau Kok",
+            "localName": "牛頭角",
+            "identifier": "NgauTauKok",
+            "photo": {
+                "x": 1585,
+                "y": 634
+            },
+            "map": {
+                "x": 22.31639,
+                "y": 114.21908
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 13 }
+            ]
+        },
+        {
+            "label": "Kwun Tong",
+            "localName": "觀塘",
+            "identifier": "KwunTong",
+            "photo": {
+                "x": 1585,
+                "y": 698
+            },
+            "map": {
+                "x": 22.31296,
+                "y": 114.22647
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 14 }
+            ]
+        },
+        {
+            "label": "Lam Tin",
+            "localName": "藍田",
+            "identifier": "LamTin",
+            "photo": {
+                "x": 1585,
+                "y": 761
+            },
+            "map": {
+                "x": 22.30777,
+                "y": 114.23269
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 15 }
+            ]
+        },
+        {
+            "label": "Yau Tong",
+            "localName": "油塘",
+            "identifier": "YauTong",
+            "photo": {
+                "x": 1631,
+                "y": 817
+            },
+            "map": {
+                "x": 22.29916,
+                "y": 114.23655
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 16 },
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 3 }
+            ]
+        },
+        {
+            "label": "Tiu Keng Leng",
+            "localName": "調景嶺",
+            "identifier": "TiuKengLeng",
+            "photo": {
+                "x": 1711,
+                "y": 817
+            },
+            "map": {
+                "x": 22.30565,
+                "y": 114.25295
+            },
+            "line": [
+                { "name": "Kwun Tong Line", "localName": "觀塘綫", "colour": "#06a330", "position": 17 },
+                { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 4 }
+            ]
+        },
+        {
+            "label": "Po Lam",
+            "localName": "寶琳",
+            "identifier": "PoLam",
+            "photo": {
+                "x": 1840,
+                "y": 634
+            },
+            "map": {
+                "x": 22.32362,
+                "y": 114.25792
+            },
+            "line": [
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 7 }
+            ]
+        },
+        {
+            "label": "Hang Hau",
+            "localName": "坑口",
+            "identifier": "HangHau",
+            "photo": {
+                "x": 1840,
+                "y": 715
+            },
+            "map": {
+                "x": 22.31671,
+                "y": 114.26439
+            },
+            "line": [
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 6 }
+            ]
+        },
+        {
+            "label": "Tseung Kwan O",
+            "localName": "將軍澳",
+            "identifier": "TseungKwanO",
+            "photo": {
+                "x": 1792,
+                "y": 824
+            },
+            "map": {
+                "x": 22.30799,
+                "y": 114.25989
+            },
+            "line": [
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 5 }
+            ]
+        },
+        {
+            "label": "LOHAS Park",
+            "localName": "康城",
+            "identifier": "LOHASPark",
+            "photo": {
+                "x": 1840,
+                "y": 891
+            },
+            "map": {
+                "x": 22.29725,
+                "y": 114.26972
+            },
+            "line": [
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 6 }
+            ]
+        },
+        {
+            "label": "Quarry Bay",
+            "localName": "鰂魚涌",
+            "identifier": "QuarryBay",
+            "photo": {
+                "x": 1523,
+                "y": 1011
+            },
+            "map": {
+                "x": 22.28900,
+                "y": 114.20971
+            },
+            "line": [
+                 { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 2 },
+                 { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 12 }
+            ]
+        },
+        {
+            "label": "North Point",
+            "localName": "北角",
+            "identifier": "NorthPoint",
+            "photo": {
+                "x": 1430,
+                "y": 1011
+            },
+            "map": {
+                "x": 22.29195,
+                "y": 114.20028
+            },
+            "line": [
+                { "name": "Tseung Kwan O Line", "localName": "將軍澳綫", "colour": "#8648a9", "position": 1 },
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 11 }
+            ]
+        },
+        {
+            "label": "Kennedy Town",
+            "localName": "堅尼地城",
+            "identifier": "KennedyTown",
+            "photo": {
+                "x": 485,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28189,
+                "y": 114.12890
+            },
+            "line": [
+                 { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 1 }
+            ]
+        },
+        {
+            "label": "HKU",
+            "localName": "香港大學",
+            "identifier": "HKU",
+            "photo": {
+                "x": 582,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28478,
+                "y": 114.13504
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 2 }
+            ]
+        },
+        {
+            "label": "Sai Ying Pun",
+            "localName": "西營盤",
+            "identifier": "SaiYingPun",
+            "photo": {
+                "x": 675,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28613,
+                "y": 114.14256
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 3 }
+            ]
+        },
+        {
+            "label": "Sheung Wan",
+            "localName": "上環",
+            "identifier": "SheungWan",
+            "photo": {
+                "x": 771,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28759,
+                "y": 114.15179
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 4 }
+            ]
+        },
+        {
+            "label": "Wan Chai",
+            "localName": "灣仔",
+            "identifier": "WanChai",
+            "photo": {
+                "x": 1053,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.27806,
+                "y": 114.17294
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 7 }
+            ]
+        },
+        {
+            "label": "Causeway Bay",
+            "localName": "銅鑼灣",
+            "identifier": "CausewayBay",
+            "photo": {
+                "x": 1148,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28121,
+                "y": 114.18474
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 8 }
+            ]
+        },
+        {
+            "label": "Tin Hau",
+            "localName": "天后",
+            "identifier": "TinHau",
+            "photo": {
+                "x": 1241,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28298,
+                "y": 114.19181
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 9 }
+            ]
+        },
+        {
+            "label": "Fortress Hill",
+            "localName": "炮台山",
+            "identifier": "FortressHill",
+            "photo": {
+                "x": 1335,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28839,
+                "y": 114.19352
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 10 }
+            ]
+        },
+        {
+            "label": "Tai Koo",
+            "localName": "太古",
+            "identifier": "TaiKoo",
+            "photo": {
+                "x": 1617,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28547,
+                "y": 114.21633
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 13 }
+            ]
+        },
+        {
+            "label": "Sai Wan Ho",
+            "localName": "西灣河",
+            "identifier": "SaiWanHo",
+            "photo": {
+                "x": 1771,
+                "y": 1014
+            },
+            "map": {
+                "x": 22.28325,
+                "y": 114.22201
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 14 }
+            ]
+        },
+        {
+            "label": "Shau Kei Wan",
+            "localName": "筲箕灣",
+            "identifier": "ShauKeiWan",
+            "photo": {
+                "x": 1799,
+                "y": 1080
+            },
+            "map": {
+                "x": 22.27968,
+                "y": 114.22849
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 15 }
+            ]
+        },
+        {
+            "label": "Heng Fa Chuen",
+            "localName": "杏花邨",
+            "identifier": "HengFaChuen",
+            "photo": {
+                "x": 1840,
+                "y": 1166
+            },
+            "map": {
+                "x": 22.27742,
+                "y": 114.23985
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 16 }
+            ]
+        },
+        {
+            "label": "Chai Wan",
+            "localName": "柴灣",
+            "identifier": "ChaiWan",
+            "photo": {
+                "x": 1840,
+                "y": 1247
+            },
+            "map": {
+                "x": 22.26520,
+                "y": 114.23730
+            },
+            "line": [
+                { "name": "Island Line", "localName": "港島綫", "colour": "#0061bc", "position": 17 }
+            ]
+        },
+        {
+            "label": "South Horizons",
+            "localName": "海治半島",
+            "identifier": "SouthHorizons",
+            "photo": {
+                "x": 636,
+                "y": 1223
+            },
+            "map": {
+                "x": 22.24350,
+                "y": 114.14896
+            },
+            "line": [
+                { "name": "South Island Line", "localName": "南港島綫", "colour": "#c0ce1f", "position": 1 }
+            ]
+        },
+        {
+            "label": "Lei Tung",
+            "localName": "利東",
+            "identifier": "LeiTung",
+            "photo": {
+                "x": 761,
+                "y": 1223
+            },
+            "map": {
+                "x": 22.24247,
+                "y": 114.15606
+            },
+            "line": [
+                { "name": "South Island Line", "localName": "南港島綫", "colour": "#c0ce1f", "position": 2 }
+            ]
+        },
+        {
+            "label": "Wong Chuk Hang",
+            "localName": "黃竹坑",
+            "identifier": "WongChukHang",
+            "photo": {
+                "x": 904,
+                "y": 1163
+            },
+            "map": {
+                "x": 22.24826,
+                "y": 114.16803
+            },
+            "line": [
+                { "name": "South Island Line", "localName": "南港島綫", "colour": "#c0ce1f", "position": 3 }
+            ]
+        },
+        {
+            "label": "Ocean Park",
+            "localName": "海洋公園",
+            "identifier": "OceanPark",
+            "photo": {
+                "x": 1018,
+                "y": 1114
+            },
+            "map": {
+                "x": 22.24887,
+                "y": 114.17430
+            },
+            "line": [
+                { "name": "South Island Line", "localName": "南港島綫", "colour": "#c0ce1f", "position": 4 }
+            ]
+        },
+        {
+            "label": "Lo Wu",
+            "localName": "羅湖",
+            "identifier": "LoWu",
+            "photo": {
+                "x": 699,
+                "y": 240
+            },
+            "map": {
+                "x": 22.52908,
+                "y": 114.11330
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 12 }
+            ]
+        },
+        {
+            "label": "Lok Ma Chau",
+            "localName": "落馬洲",
+            "identifier": "LokMaChau",
+            "photo": {
+                "x": 642,
+                "y": 273
+            },
+            "map": {
+                "x": 22.51557,
+                "y": 114.06544
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 12 }
+            ]
+        },
+        {
+            "label": "Sheung Shui",
+            "localName": "上水",
+            "identifier": "SheungShui",
+            "photo": {
+                "x": 788,
+                "y": 240
+            },
+            "map": {
+                "x": 22.50213,
+                "y": 114.12803
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 11 }
+            ]
+        },
+        {
+            "label": "Fanling",
+            "localName": "粉嶺",
+            "identifier": "Fanling",
+            "photo": {
+                "x": 874,
+                "y": 240
+            },
+            "map": {
+                "x": 22.49324,
+                "y": 114.13886
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 10 }
+            ]
+        },
+        {
+            "label": "Tai Wo",
+            "localName": "太和",
+            "identifier": "TaiWo",
+            "photo": {
+                "x": 962,
+                "y": 240
+            },
+            "map": {
+                "x": 22.45188,
+                "y": 114.16118
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 9 }
+            ]
+        },
+        {
+            "label": "Tai Po Market",
+            "localName": "大埔墟",
+            "identifier": "TaiPoMarket",
+            "photo": {
+                "x": 1049,
+                "y": 240
+            },
+            "map": {
+                "x": 22.44547,
+                "y": 114.17049
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 8 }
+            ]
+        },
+        {
+            "label": "University",
+            "localName": "大學",
+            "identifier": "University",
+            "photo": {
+                "x": 1150,
+                "y": 240
+            },
+            "map": {
+                "x": 22.41449,
+                "y": 114.21021
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 7 }
+            ]
+        },
+        {
+            "label": "Fo Tan",
+            "localName": "火炭",
+            "identifier": "FoTan",
+            "photo": {
+                "x": 1191,
+                "y": 332
+            },
+            "map": {
+                "x": 22.39589,
+                "y": 114.19801
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 6 }
+            ]
+        },
+        {
+            "label": "Racecourse",
+            "localName": "馬場",
+            "identifier": "Racecourse",
+            "photo": {
+                "x": 1223,
+                "y": 332
+            },
+            "map": {
+                "x": 22.40192,
+                "y": 114.20327
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 6 }
+            ]
+        },
+        {
+            "label": "Sha Tin",
+            "localName": "沙田",
+            "identifier": "ShaTin",
+            "photo": {
+                "x": 1191,
+                "y": 404
+            },
+            "map": {
+                "x": 22.38312,
+                "y": 114.18698
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 5 }
+            ]
+        },
+        {
+            "label": "Mong Kok East",
+            "localName": "旺角東",
+            "identifier": "MongKokEast",
+            "photo": {
+                "x": 1191,
+                "y": 687
+            },
+            "map": {
+                "x": 22.32278,
+                "y": 114.17284
+            },
+            "line": [
+                { "name": "East Rail Line", "localName": "東鐵綫", "colour": "#46a6e0", "position": 2 }
+            ]
+        }
+    ]
+}
