@@ -267,6 +267,7 @@ type Station struct {
 	MapY       float64 `json:"map_y"`
 	Active     bool    `json:"active"`
 	MapName    string  `json:"map_name"`
+	LineInfo   string  `json:"line_info"`
 }
 
 type TodayEvent struct {

@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -757,7 +756,58 @@ func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.Website
 }
 
 func (r *mutationResolver) UpdateStation(ctx context.Context, input model.UpdateStation) (*model.Station, error) {
-	panic(fmt.Errorf("not implemented"))
+	// USER
+	// update station
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	var station dbmodel.TrainStation
+	station.Identifier = input.Identifier
+	station.MapName = input.MapName
+
+	if err := station.GetByMapAndIdentifier(database.Connection); err != nil {
+		return nil, err
+	}
+
+	var record dbmodel.TrainRecord
+	record.SelectedStation = station
+	record.Relation = *relation
+
+	transaction := database.Connection.Begin()
+
+	if err := record.GetOrCreate(transaction); err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	record.Active = input.Active
+
+	if err := record.Update(transaction); err != nil {
+		transaction.Rollback()
+		return nil, err
+	}
+
+	transaction.Commit()
+
+	output := helper.ConvertTrainStation(station)
+	output.Active = record.Active
+
+	return &output, nil
 }
 
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
@@ -1381,14 +1431,28 @@ func (r *queryResolver) Stations(ctx context.Context) ([]*model.Station, error) 
 		return result, &helper.PermissionDeniedError{}
 	}
 
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return result, &helper.RelationNotFoundError{}
+		}
+		return result, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
 	stations, err := service.GetAllTrainStationByMapName(constant.HKMTR)
+	if err != nil {
+		return result, err
+	}
+
+	records, err := service.GetAllStationRecord(*relation)
 	if err != nil {
 		return result, err
 	}
 
 	for _, station := range stations {
 		item := helper.ConvertTrainStation(station)
-		item.Active = false
+		isActive := service.IsStationActive(records, item.Identifier, item.MapName)
+		item.Active = isActive
 		result = append(result, &item)
 	}
 

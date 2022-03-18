@@ -241,6 +241,7 @@ type ComplexityRoot struct {
 		Active     func(childComplexity int) int
 		Identifier func(childComplexity int) int
 		Label      func(childComplexity int) int
+		LineInfo   func(childComplexity int) int
 		LocalName  func(childComplexity int) int
 		MapName    func(childComplexity int) int
 		MapX       func(childComplexity int) int
@@ -1569,6 +1570,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Station.Label(childComplexity), true
 
+	case "Station.line_info":
+		if e.complexity.Station.LineInfo == nil {
+			break
+		}
+
+		return e.complexity.Station.LineInfo(childComplexity), true
+
 	case "Station.local_name":
 		if e.complexity.Station.LocalName == nil {
 			break
@@ -1972,6 +1980,7 @@ type Station {
   map_y: Float!
   active: Boolean!
   map_name: String!
+  line_info: String!
 }
 
 type Query {
@@ -8479,6 +8488,41 @@ func (ec *executionContext) _Station_map_name(ctx context.Context, field graphql
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Station_line_info(ctx context.Context, field graphql.CollectedField, obj *model.Station) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Station",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.LineInfo, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _TodayEvent_yesterday_event(ctx context.Context, field graphql.CollectedField, obj *model.TodayEvent) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -12601,6 +12645,11 @@ func (ec *executionContext) _Station(ctx context.Context, sel ast.SelectionSet, 
 			}
 		case "map_name":
 			out.Values[i] = ec._Station_map_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "line_info":
+			out.Values[i] = ec._Station_line_info(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

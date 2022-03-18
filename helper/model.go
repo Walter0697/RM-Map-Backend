@@ -363,6 +363,7 @@ func ConvertTrainStation(input dbmodel.TrainStation) model.Station {
 	item.PhotoY = input.PhotoY
 	item.MapX = input.MapX
 	item.MapY = input.MapY
+	item.LineInfo = input.LineInfo
 
 	return item
 }

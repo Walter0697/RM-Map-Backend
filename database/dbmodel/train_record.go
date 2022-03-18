@@ -19,6 +19,14 @@ func (record *TrainRecord) Create(db *gorm.DB) error {
 	return nil
 }
 
+func (record *TrainRecord) GetOrCreate(db *gorm.DB) error {
+	if err := db.Where("station_id = ? AND relation_id = ?", record.SelectedStation.ID, record.Relation.ID).FirstOrCreate(record).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (record *TrainRecord) Update(db *gorm.DB) error {
 	if err := db.Save(record).Error; err != nil {
 		return err

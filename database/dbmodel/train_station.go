@@ -43,6 +43,14 @@ func (station *TrainStation) GetById(db *gorm.DB) error {
 	return nil
 }
 
+func (station *TrainStation) GetByMapAndIdentifier(db *gorm.DB) error {
+	if err := db.Where("identifier = ? AND map_name = ?", station.Identifier, station.MapName).First(&station).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (station *TrainStation) UpdateByMapAndIdentifier(db *gorm.DB) error {
 	var temp TrainStation
 	temp.Identifier = station.Identifier

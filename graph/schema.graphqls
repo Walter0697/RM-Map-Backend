@@ -204,6 +204,7 @@ type Station {
   map_y: Float!
   active: Boolean!
   map_name: String!
+  line_info: String!
 }
 
 type Query {
