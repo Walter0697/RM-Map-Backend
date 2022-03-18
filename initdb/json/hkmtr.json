@@ -659,7 +659,7 @@
             "identifier": "Admiralty",
             "photo": {
                 "x": 960,
-                "y": 1006
+                "y": 1014
             },
             "map": {
                 "x": 22.27956,
@@ -677,7 +677,7 @@
             "identifier": "Central",
             "photo": {
                 "x": 865,
-                "y": 1006
+                "y": 1014
             },
             "map": {
                 "x": 22.28297,
@@ -1278,7 +1278,7 @@
             "localName": "西灣河",
             "identifier": "SaiWanHo",
             "photo": {
-                "x": 1771,
+                "x": 1711,
                 "y": 1014
             },
             "map": {
