@@ -48,16 +48,24 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.2.0"
+	current_version := "2.3.0"
+	// notes := []string{
+	// 	"[b]New Feature:",
+	// 	"(Beta) Search By Street Name allows you to have more accurate location when setting marker",
+	// 	"Simply type the street name and number like '123 Main St.' then the system will parse the data and try its best!",
+	// 	"OpenRice Scrapper: allows you to paste the 'share' button from Openrice and get the restaurant information",
+	// 	"[b]Bug Fixed:",
+	// 	"Avoid user from selecting previous date for schedule date and marker expiry date",
+	// 	"[b]Quality Of Life:",
+	// 	"Filter bar is no longer case sensitive",
+	// }
 	notes := []string{
 		"[b]New Feature:",
-		"(Beta) Search By Street Name allows you to have more accurate location when setting marker",
-		"Simply type the street name and number like '123 Main St.' then the system will parse the data and try its best!",
-		"OpenRice Scrapper: allows you to paste the 'share' button from Openrice and get the restaurant information",
-		"[b]Bug Fixed:",
-		"Avoid user from selecting previous date for schedule date and marker expiry date",
-		"[b]Quality Of Life:",
-		"Filter bar is no longer case sensitive",
+		"Release Note now has icon!",
+		"Station Page for recording the MTR station that we had visited!",
+		"Station page setting allows you to configurate MTR overlay on map, so that you can see things more clear when comparing different locations!",
+		"[b]Bug Fixed",
+		"Marker icon won't update after user set it as favourite in marker map",
 	}
 
 	log.Println("Current version " + current_version)
