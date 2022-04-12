@@ -100,7 +100,7 @@ func ReadTrainJson(path string) (*initmodel.TrainStationList, error) {
 	if err != nil {
 		return nil, err
 	}
-	prefix := pwd + "/initdb/json/"
+	prefix := pwd + "/json/"
 	jsonFile, err := os.Open(prefix + path)
 	if err != nil {
 		return nil, err
