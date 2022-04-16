@@ -361,3 +361,33 @@ func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]
 	}
 	return markers, nil
 }
+
+func GetAllExpiredMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
+	var markers []dbmodel.Marker
+	query := database.Connection
+	if utils.StringInSlice("created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("restaurant", requested) {
+		query = query.Preload("RestaurantInfo")
+	}
+
+	query = query.Where("relation_id = ?", relation.ID)
+
+	// getting all markers without schedule
+	query = query.Where("status = ?", constant.Empty)
+
+	// only expired markers
+	current := time.Now().AddDate(0, 0, -1)
+
+	query = query.Where("to_time IS NOT NULL AND to_time < ?", current.Format(time.RFC3339))
+
+	if err := query.Find(&markers).Error; err != nil {
+		return markers, err
+	}
+
+	return markers, nil
+}

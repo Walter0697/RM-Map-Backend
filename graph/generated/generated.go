@@ -177,6 +177,7 @@ type ComplexityRoot struct {
 	Query struct {
 		Defaultpins         func(childComplexity int) int
 		Eventtypes          func(childComplexity int) int
+		Expiredmarkers      func(childComplexity int) int
 		Latestreleasenote   func(childComplexity int) int
 		Mappins             func(childComplexity int) int
 		Markers             func(childComplexity int) int
@@ -316,6 +317,7 @@ type QueryResolver interface {
 	Schedules(ctx context.Context, params model.CurrentTime) ([]*model.Schedule, error)
 	Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error)
 	Previousmarkers(ctx context.Context) ([]*model.Marker, error)
+	Expiredmarkers(ctx context.Context) ([]*model.Marker, error)
 	Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error)
 	Scrapimage(ctx context.Context, params model.WebLink) (*model.MetaDataOutput, error)
 	Moviefetch(ctx context.Context, filter model.MovieFilter) ([]*model.MovieOutput, error)
@@ -1166,6 +1168,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Eventtypes(childComplexity), true
 
+	case "Query.expiredmarkers":
+		if e.complexity.Query.Expiredmarkers == nil {
+			break
+		}
+
+		return e.complexity.Query.Expiredmarkers(childComplexity), true
+
 	case "Query.latestreleasenote":
 		if e.complexity.Query.Latestreleasenote == nil {
 			break
@@ -1996,6 +2005,7 @@ type Query {
   schedules(params: CurrentTime!): [Schedule]!
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
+  expiredmarkers: [Marker]!
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!
@@ -6744,6 +6754,41 @@ func (ec *executionContext) _Query_previousmarkers(ctx context.Context, field gr
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Query().Previousmarkers(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_expiredmarkers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Expiredmarkers(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12290,6 +12335,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_previousmarkers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "expiredmarkers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_expiredmarkers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

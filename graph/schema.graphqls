@@ -220,6 +220,7 @@ type Query {
   schedules(params: CurrentTime!): [Schedule]!
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
+  expiredmarkers: [Marker]!
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!

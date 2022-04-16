@@ -1290,6 +1290,43 @@ func (r *queryResolver) Previousmarkers(ctx context.Context) ([]*model.Marker, e
 	return result, nil
 }
 
+func (r *queryResolver) Expiredmarkers(ctx context.Context) ([]*model.Marker, error) {
+	// USER
+	// get expired markers
+
+	var result []*model.Marker
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	markers, err := service.GetAllExpiredMarker(requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, marker := range markers {
+		item := helper.ConvertMarker(marker)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
 func (r *queryResolver) Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error) {
 	// USER
 	// get all schedules assiocated with this marker
