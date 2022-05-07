@@ -2066,6 +2066,7 @@ input UpdateMarker {
   from_time: String
   estimate_time: String
   restaurant_id: Int
+  remove_restaurant: Boolean
   price: String
 }
 
@@ -10970,6 +10971,14 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("restaurant_id"))
 			it.RestaurantID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "remove_restaurant":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("remove_restaurant"))
+			it.RemoveRestaurant, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}

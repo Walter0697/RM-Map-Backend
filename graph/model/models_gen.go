@@ -275,22 +275,23 @@ type TodayEvent struct {
 }
 
 type UpdateMarker struct {
-	ID           int             `json:"id"`
-	Label        *string         `json:"label"`
-	Address      *string         `json:"address"`
-	ImageLink    *string         `json:"image_link"`
-	ImageUpload  *graphql.Upload `json:"image_upload"`
-	NoImage      bool            `json:"no_image"`
-	Link         *string         `json:"link"`
-	Type         *string         `json:"type"`
-	Description  *string         `json:"description"`
-	Permanent    *bool           `json:"permanent"`
-	NeedBooking  *bool           `json:"need_booking"`
-	ToTime       *string         `json:"to_time"`
-	FromTime     *string         `json:"from_time"`
-	EstimateTime *string         `json:"estimate_time"`
-	RestaurantID *int            `json:"restaurant_id"`
-	Price        *string         `json:"price"`
+	ID               int             `json:"id"`
+	Label            *string         `json:"label"`
+	Address          *string         `json:"address"`
+	ImageLink        *string         `json:"image_link"`
+	ImageUpload      *graphql.Upload `json:"image_upload"`
+	NoImage          bool            `json:"no_image"`
+	Link             *string         `json:"link"`
+	Type             *string         `json:"type"`
+	Description      *string         `json:"description"`
+	Permanent        *bool           `json:"permanent"`
+	NeedBooking      *bool           `json:"need_booking"`
+	ToTime           *string         `json:"to_time"`
+	FromTime         *string         `json:"from_time"`
+	EstimateTime     *string         `json:"estimate_time"`
+	RestaurantID     *int            `json:"restaurant_id"`
+	RemoveRestaurant *bool           `json:"remove_restaurant"`
+	Price            *string         `json:"price"`
 }
 
 type UpdateMarkerFavourite struct {

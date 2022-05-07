@@ -153,6 +153,10 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 		marker.RestaurantInfo = restaurant
 	}
 
+	if input.RemoveRestaurant != nil && *input.RemoveRestaurant == true {
+		marker.RestaurantInfo = nil
+	}
+
 	if input.ImageLink != nil {
 		filename := constant.GetImageLinkName(constant.MarkerPreviewPath, *input.ImageLink)
 		filepath := constant.BasePath + filename
