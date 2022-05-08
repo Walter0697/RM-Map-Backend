@@ -48,26 +48,27 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.3.1"
+	current_version := "2.4.0"
 	// notes := []string{
 	// 	"[b]New Feature:",
-	// 	"Release Note now has icon!",
-	// 	"Station Page for recording the MTR station that we had visited!",
-	// 	"Station page setting allows you to configurate MTR overlay on map, so that you can see things more clear when comparing different locations!",
-	// 	"[b]Bug Fixed",
-	// 	"Marker icon won't update after user set it as favourite in marker map",
+	// 	"Adding a new page: Expired Page",
+	// 	"So that we can edit marker after it expired!",
 	// }
 	notes := []string{
 		"[b]New Feature:",
-		"Adding a new page: Expired Page",
-		"So that we can edit marker after it expired!",
+		"Keep in Center functionality so that the map should now sync with your current location",
+		"Filter remake! Adding a new page for filtering markers, with more options to choose for!",
+		"Hashtag! You can now add hashtag in the description, it can be used as a filtering option!",
+		"Script Filter! Adding a new type of filtering method. Type a SQL-like query following the format 'SELECT markers WHERE condition' to filter your markers with a more dynamic way!",
+		"[b]Quality Of Life Changes:",
+		"Able to remove restaurant data for new or edited marker!",
 	}
 
 	log.Println("Current version " + current_version)
 	exist := service.CheckReleaseNoteAdded(current_version)
 	if !exist {
 		log.Println("Release note not exist! Adding...")
-		icon := ""
+		icon := "anniversary"
 		if err := service.CreateReleaseNote(current_version, notes, &icon); err != nil {
 			panic(err)
 		}
