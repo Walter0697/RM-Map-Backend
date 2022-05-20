@@ -62,6 +62,9 @@ func prepareReleaseNote() {
 		"Script Filter! Adding a new type of filtering method. Type a SQL-like query following the format 'SELECT markers WHERE condition' to filter your markers with a more dynamic way!",
 		"[b]Quality Of Life Changes:",
 		"Able to remove restaurant data for new or edited marker!",
+		"[b]Update:",
+		"HK MTR Map Updated to fit the updated data",
+		"Updated Station location to be more accurate",
 	}
 
 	log.Println("Current version " + current_version)
