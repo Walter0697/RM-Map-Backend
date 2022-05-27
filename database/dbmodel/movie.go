@@ -4,6 +4,7 @@ import "gorm.io/gorm"
 
 type Movie struct {
 	ObjectBase
+	RefId       int          `json:"ref_id"`
 	Label       string       `json:"label"`
 	ReleaseDate *string      `json:"release_date"`
 	ImageLink   string       `json:"imageLink"`
