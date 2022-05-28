@@ -112,6 +112,7 @@ type MovieFilter struct {
 }
 
 type MovieOutput struct {
+	RefID       int    `json:"ref_id"`
 	Title       string `json:"title"`
 	ImageLink   string `json:"image_link"`
 	ReleaseDate string `json:"release_date"`
@@ -145,13 +146,11 @@ type NewMarkerType struct {
 }
 
 type NewMovieSchedule struct {
-	Label        string  `json:"label"`
-	Description  string  `json:"description"`
-	SelectedTime string  `json:"selected_time"`
-	MovieName    string  `json:"movie_name"`
-	MovieRelease *string `json:"movie_release"`
-	MovieImage   *string `json:"movie_image"`
-	MarkerID     *int    `json:"marker_id"`
+	Label        string `json:"label"`
+	Description  string `json:"description"`
+	SelectedTime string `json:"selected_time"`
+	MovieRid     int    `json:"movie_rid"`
+	MarkerID     *int   `json:"marker_id"`
 }
 
 type NewPin struct {

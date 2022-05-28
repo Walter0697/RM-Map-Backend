@@ -8,6 +8,7 @@ type Movie struct {
 	Label       string       `json:"label"`
 	ReleaseDate *string      `json:"release_date"`
 	ImageLink   string       `json:"imageLink"`
+	IsFav       bool         `json:"is_fav"`
 	Relation    UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId  uint
 }
@@ -25,5 +26,12 @@ func (movie *Movie) GetById(db *gorm.DB) error {
 		return err
 	}
 
+	return nil
+}
+
+func (movie *Movie) GetByRid(db *gorm.DB) error {
+	if err := db.Where("ref_id = ?", movie.RefId).Where("relation_id", movie.RelationId).First(movie).Error; err != nil {
+		return err
+	}
 	return nil
 }

@@ -504,10 +504,17 @@ func (r *mutationResolver) CreateMovieSchedule(ctx context.Context, input model.
 
 	transaction := database.Connection.Begin()
 
-	movie, err := service.CreateMovie(transaction, input, *user, *relation)
+	movie, err := service.GetMovieByRid(input.MovieRid, *relation)
 	if err != nil {
-		transaction.Rollback()
-		return nil, err
+		if utils.RecordNotFound(err) {
+			created_movie, create_err := service.CreateMovie(transaction, input.MovieRid, false, *user, *relation)
+			if create_err != nil {
+				return nil, create_err
+			}
+			movie = created_movie
+		} else {
+			return nil, err
+		}
 	}
 
 	var markerPtr *dbmodel.Marker

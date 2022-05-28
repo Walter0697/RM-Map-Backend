@@ -2,25 +2,30 @@ package service
 
 import (
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
-	"mapmarker/backend/graph/model"
 	"mapmarker/backend/utils"
 
 	"gorm.io/gorm"
 )
 
-func CreateMovie(tx *gorm.DB, input model.NewMovieSchedule, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Movie, error) {
-	var movie dbmodel.Movie
-
-	movie.Label = input.Label
-	if input.MovieRelease != nil {
-		movie.ReleaseDate = input.MovieRelease
+func CreateMovie(tx *gorm.DB, movie_rid int, is_fav bool, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Movie, error) {
+	input_movie, err := FetchMovieByRid(int64(movie_rid))
+	if err != nil {
+		return nil, err
 	}
 
-	if input.MovieImage != nil {
-		filename := constant.GetImageLinkName(constant.MovieImagePath, *input.MovieImage)
+	var movie dbmodel.Movie
+
+	movie.RefId = movie_rid
+	movie.Label = input_movie.Label
+	movie.ReleaseDate = input_movie.ReleaseDate
+	movie.IsFav = is_fav
+
+	if input_movie.ImageLink != "" {
+		filename := constant.GetImageLinkName(constant.MovieImagePath, input_movie.ImageLink)
 		filepath := constant.BasePath + filename
-		if err := utils.SaveImageFromURL(filepath, *input.MovieImage); err != nil {
+		if err := utils.SaveImageFromURL(filepath, input_movie.ImageLink); err != nil {
 			return nil, err
 		}
 
@@ -32,6 +37,18 @@ func CreateMovie(tx *gorm.DB, input model.NewMovieSchedule, user dbmodel.User, r
 	movie.UpdatedBy = &user
 
 	if err := movie.Create(tx); err != nil {
+		return nil, err
+	}
+
+	return &movie, nil
+}
+
+func GetMovieByRid(movie_rid int, relation dbmodel.UserRelation) (*dbmodel.Movie, error) {
+	var movie dbmodel.Movie
+
+	movie.RefId = movie_rid
+	movie.RelationId = relation.ID
+	if err := movie.GetByRid(database.Connection); err != nil {
 		return nil, err
 	}
 

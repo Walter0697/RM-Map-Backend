@@ -143,7 +143,7 @@ func GetMovieList(filter model.MovieFilter) ([]*model.MovieOutput, error) {
 	return result, nil
 }
 
-func GetMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
+func FetchMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	url := getByIdRequest(movie_rid)
 
 	body, err := GetRequest(url)
@@ -161,7 +161,13 @@ func GetMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	output.RefId = movieDetail.ID
 	output.Label = movieDetail.OriginTitle
 	output.ReleaseDate = &movieDetail.ReleaseDate
-	output.ImageLink = movieDetail.PosterPath // it won't be the one to be saved inside db but act as temporary object
+	if movieDetail.PosterPath != "" {
+		output.ImageLink = config.Data.MovieDB.ImageLink + movieDetail.PosterPath
+	} else if movieDetail.BackdropPath != "" {
+		output.ImageLink = config.Data.MovieDB.ImageLink + movieDetail.BackdropPath
+	} else {
+		output.ImageLink = ""
+	}
 
 	return &output, nil
 }

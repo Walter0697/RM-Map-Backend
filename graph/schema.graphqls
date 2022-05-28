@@ -178,6 +178,7 @@ type MetaDataOutput {
 }
 
 type MovieOutput {
+  ref_id: Int!
   title: String!
   image_link: String!
   release_date: String!
@@ -353,9 +354,7 @@ input NewMovieSchedule {
   label: String!
   description: String!
   selected_time: String!
-  movie_name: String!
-  movie_release: String
-  movie_image: String
+  movie_rid: Int!
   marker_id: Int
 }
 
