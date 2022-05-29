@@ -94,9 +94,11 @@ type Marker {
 
 type Movie {
   id: Int!
+  reference_id: Int!
   label: String!
   release_date: String
   image_path: String
+  is_fav: Boolean!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -219,6 +221,7 @@ type Query {
   defaultpins: [DefaultPin]!
   mappins: [MapPin]!
   schedules(params: CurrentTime!): [Schedule]!
+  movies: [Movie]!
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
   expiredmarkers: [Marker]!
@@ -358,6 +361,10 @@ input NewMovieSchedule {
   marker_id: Int
 }
 
+input NewFavouriteMovie {
+  movie_rid: Int!
+}
+
 input ScheduleStatus {
   id: Int!
   status: String!
@@ -431,6 +438,8 @@ type Mutation {
   revokeMarker(input: UpdateModel!): Marker!
   websiteScrap(input: WebsiteScrapInput!): WebsiteScrapResult!
   updateStation(input: UpdateStation!): Station!
+  createFavouriteMovie(input: NewFavouriteMovie!): Movie!
+  removeFavouriteMovie(input: RemoveModel!): String!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

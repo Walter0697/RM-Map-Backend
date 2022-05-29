@@ -96,9 +96,11 @@ type MetaDataOutput struct {
 
 type Movie struct {
 	ID          int     `json:"id"`
+	ReferenceID int     `json:"reference_id"`
 	Label       string  `json:"label"`
 	ReleaseDate *string `json:"release_date"`
 	ImagePath   *string `json:"image_path"`
+	IsFav       bool    `json:"is_fav"`
 	CreatedAt   string  `json:"created_at"`
 	CreatedBy   *User   `json:"created_by"`
 	UpdatedAt   string  `json:"updated_at"`
@@ -116,6 +118,10 @@ type MovieOutput struct {
 	Title       string `json:"title"`
 	ImageLink   string `json:"image_link"`
 	ReleaseDate string `json:"release_date"`
+}
+
+type NewFavouriteMovie struct {
+	MovieRid int `json:"movie_rid"`
 }
 
 type NewMarker struct {

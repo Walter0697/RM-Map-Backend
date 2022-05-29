@@ -817,6 +817,67 @@ func (r *mutationResolver) UpdateStation(ctx context.Context, input model.Update
 	return &output, nil
 }
 
+func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model.NewFavouriteMovie) (*model.Movie, error) {
+	// USER
+	// Create favourite movie by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	movie, err := service.CreateMovie(database.Connection, input.MovieRid, true, *user, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertMovie(*movie)
+	return &output, nil
+}
+
+func (r *mutationResolver) RemoveFavouriteMovie(ctx context.Context, input model.RemoveModel) (string, error) {
+	// USER
+	// edit favourite movie by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return "", &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return "", err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return "", &helper.RelationNotFoundError{}
+		}
+		return "", helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	transaction := database.Connection.Begin()
+	_, err = service.RemoveFavouriteMovie(transaction, uint(input.ID), *relation, *user)
+	if err != nil {
+		transaction.Rollback()
+		return "", err
+	}
+
+	return "ok", nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -978,7 +1039,7 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 		if utils.RecordNotFound(err) {
 			return result, nil
 		}
-		return nil, err
+		return result, err
 	}
 
 	requested_field := utils.GetTopPreloads(ctx)
@@ -1208,6 +1269,43 @@ func (r *queryResolver) Schedules(ctx context.Context, params model.CurrentTime)
 
 	for _, schedule := range schedules {
 		item := helper.ConvertSchedule(schedule)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
+	// USER
+	// get movies
+
+	var result []*model.Movie
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return result, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return result, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return result, &helper.RelationNotFoundError{}
+		}
+		return result, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	movies, err := service.GetAllMovie(requested_field, *relation)
+	if err != nil {
+		return result, err
+	}
+
+	for _, movie := range movies {
+		item := helper.ConvertMovie(movie)
 		result = append(result, &item)
 	}
 

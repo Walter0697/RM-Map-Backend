@@ -68,6 +68,8 @@ func ConvertMovie(movie dbmodel.Movie) model.Movie {
 	item.Label = movie.Label
 	item.ReleaseDate = movie.ReleaseDate
 	item.ImagePath = &movie.ImageLink
+	item.ReferenceID = movie.RefId
+	item.IsFav = movie.IsFav
 
 	item.CreatedAt = utils.ConvertToOutputTime(movie.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(movie.UpdatedAt)

@@ -21,6 +21,14 @@ func (movie *Movie) Create(db *gorm.DB) error {
 	return nil
 }
 
+func (movie *Movie) Update(db *gorm.DB) error {
+	if err := db.Save(movie).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (movie *Movie) GetById(db *gorm.DB) error {
 	if err := db.Where("id = ?", movie.ID).First(movie).Error; err != nil {
 		return err
