@@ -838,12 +838,37 @@ func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	movie, err := service.CreateMovie(database.Connection, input.MovieRid, true, *user, *relation)
+	transaction := database.Connection.Begin()
+	current_movie, err := service.GetMovieByRid(input.MovieRid, *relation)
+	exist := true
 	if err != nil {
-		return nil, err
+		if utils.RecordNotFound(err) {
+			exist = false
+		} else {
+			return nil, err
+		}
 	}
 
-	output := helper.ConvertMovie(*movie)
+	var movie dbmodel.Movie
+	if exist {
+		current_movie.IsFav = true
+		current_movie.UpdatedBy = user
+		if err := current_movie.Update(transaction); err != nil {
+			transaction.Rollback()
+			return nil, err
+		}
+
+		movie = *current_movie
+	} else {
+		new_movie, err := service.CreateMovie(database.Connection, input.MovieRid, true, *user, *relation)
+		if err != nil {
+			return nil, err
+		}
+
+		movie = *new_movie
+	}
+
+	output := helper.ConvertMovie(movie)
 	return &output, nil
 }
 
