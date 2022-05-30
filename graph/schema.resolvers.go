@@ -838,7 +838,6 @@ func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	transaction := database.Connection.Begin()
 	current_movie, err := service.GetMovieByRid(input.MovieRid, *relation)
 	exist := true
 	if err != nil {
@@ -853,8 +852,7 @@ func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model
 	if exist {
 		current_movie.IsFav = true
 		current_movie.UpdatedBy = user
-		if err := current_movie.Update(transaction); err != nil {
-			transaction.Rollback()
+		if err := current_movie.Update(database.Connection); err != nil {
 			return nil, err
 		}
 
