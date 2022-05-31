@@ -848,7 +848,6 @@ func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model
 		}
 	}
 
-	var movie dbmodel.Movie
 	if exist {
 		current_movie.IsFav = true
 		current_movie.UpdatedBy = user
@@ -856,18 +855,18 @@ func (r *mutationResolver) CreateFavouriteMovie(ctx context.Context, input model
 			return nil, err
 		}
 
-		movie = *current_movie
+		output := helper.ConvertMovie(*current_movie)
+
+		return &output, nil
 	} else {
 		new_movie, err := service.CreateMovie(database.Connection, input.MovieRid, true, *user, *relation)
 		if err != nil {
 			return nil, err
 		}
 
-		movie = *new_movie
+		output := helper.ConvertMovie(*new_movie)
+		return &output, nil
 	}
-
-	output := helper.ConvertMovie(movie)
-	return &output, nil
 }
 
 func (r *mutationResolver) RemoveFavouriteMovie(ctx context.Context, input model.RemoveModel) (string, error) {
@@ -897,6 +896,8 @@ func (r *mutationResolver) RemoveFavouriteMovie(ctx context.Context, input model
 		transaction.Rollback()
 		return "", err
 	}
+
+	transaction.Commit()
 
 	return "ok", nil
 }
