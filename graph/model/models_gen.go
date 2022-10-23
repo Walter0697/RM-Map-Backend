@@ -45,6 +45,11 @@ type Logout struct {
 	Jwt string `json:"jwt"`
 }
 
+type ManageRoroadList struct {
+	Ids    []*int `json:"ids"`
+	Hidden *bool  `json:"hidden"`
+}
+
 type MapPin struct {
 	Pinlabel  string `json:"pinlabel"`
 	Typelabel string `json:"typelabel"`
@@ -120,6 +125,10 @@ type MovieOutput struct {
 	ReleaseDate string `json:"release_date"`
 }
 
+type NameSearchFilter struct {
+	Name string `json:"name"`
+}
+
 type NewFavouriteMovie struct {
 	MovieRid int `json:"movie_rid"`
 }
@@ -166,6 +175,12 @@ type NewPin struct {
 	BottomRightX int             `json:"bottom_right_x"`
 	BottomRightY int             `json:"bottom_right_y"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
+}
+
+type NewRoroadList struct {
+	Name       string `json:"name"`
+	TargetUser string `json:"target_user"`
+	ListType   string `json:"list_type"`
 }
 
 type NewSchedule struct {
@@ -237,6 +252,15 @@ type Restaurant struct {
 	SeatNumber     *string `json:"seat_number"`
 	Website        *string `json:"website"`
 	OtherInfo      *string `json:"other_info"`
+}
+
+type RoroadList struct {
+	ID         int    `json:"id"`
+	Name       string `json:"name"`
+	ListType   string `json:"list_type"`
+	Checked    bool   `json:"checked"`
+	Hidden     bool   `json:"hidden"`
+	TargetUser string `json:"target_user"`
 }
 
 type Schedule struct {
@@ -315,6 +339,15 @@ type UpdatePreferredPin struct {
 
 type UpdateRelation struct {
 	Username string `json:"username"`
+}
+
+type UpdateRoroadList struct {
+	ID         int     `json:"id"`
+	Name       *string `json:"name"`
+	ListType   *string `json:"list_type"`
+	Checked    *bool   `json:"checked"`
+	Hidden     *bool   `json:"hidden"`
+	TargetUser *string `json:"target_user"`
 }
 
 type UpdateSchedule struct {

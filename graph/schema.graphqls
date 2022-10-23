@@ -27,6 +27,10 @@ input MovieFilter {
   query: String
 }
 
+input NameSearchFilter {
+  name: String!
+}
+
 input ReleaseNoteFilter {
   version: String!
 }
@@ -210,6 +214,15 @@ type Station {
   line_info: String!
 }
 
+type RoroadList {
+  id: Int!
+  name: String!
+  list_type: String!
+  checked: Boolean!
+  hidden: Boolean!
+  target_user: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -232,6 +245,8 @@ type Query {
   specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
   releasenotes: [ReleaseNote]!
   stations: [Station]!
+  roroadlists: [RoroadList]!
+  roroadlistsbyname(params: NameSearchFilter!): [RoroadList]!
   me: String!
 }
 
@@ -400,6 +415,26 @@ input UpdateStation {
   active: Boolean!
 }
 
+input NewRoroadList {
+  name: String!
+  target_user: String!
+  list_type: String!
+}
+
+input UpdateRoroadList {
+  id: Int!
+  name: String
+  list_type: String
+  checked: Boolean
+  hidden: Boolean
+  target_user: String
+}
+
+input ManageRoroadList {
+  ids: [Int]!
+  hidden: Boolean
+}
+
 input Login {
   username: String!
   password: String!
@@ -440,6 +475,9 @@ type Mutation {
   updateStation(input: UpdateStation!): Station!
   createFavouriteMovie(input: NewFavouriteMovie!): Movie!
   removeFavouriteMovie(input: RemoveModel!): String!
+  createRoroadList(input: NewRoroadList!): RoroadList!
+  updateRoroadList(input: UpdateRoroadList!): RoroadList!
+  manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

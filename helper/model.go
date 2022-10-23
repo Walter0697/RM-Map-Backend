@@ -369,3 +369,16 @@ func ConvertTrainStation(input dbmodel.TrainStation) model.Station {
 
 	return item
 }
+
+func ConvertRoroadList(input dbmodel.RoRoadList) model.RoroadList {
+	var item model.RoroadList
+
+	item.ID = int(input.ID)
+	item.Name = input.Name
+	item.TargetUser = input.TargetUser
+	item.ListType = input.Type
+	item.Checked = input.Checked
+	item.Hidden = input.Hidden
+
+	return item
+}

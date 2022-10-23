@@ -902,6 +902,93 @@ func (r *mutationResolver) RemoveFavouriteMovie(ctx context.Context, input model
 	return "ok", nil
 }
 
+func (r *mutationResolver) CreateRoroadList(ctx context.Context, input model.NewRoroadList) (*model.RoroadList, error) {
+	// USER
+	// Create roroadlist by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	roroadlist, err := service.CreateRoRoadList(input, *user, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertRoroadList(*roroadlist)
+	return &output, nil
+}
+
+func (r *mutationResolver) UpdateRoroadList(ctx context.Context, input model.UpdateRoroadList) (*model.RoroadList, error) {
+	// USER
+	// Update roroadlist by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	roroadlist, err := service.EditRoRoadList(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertRoroadList(*roroadlist)
+	return &output, nil
+}
+
+func (r *mutationResolver) ManageMultipleRoroadList(ctx context.Context, input model.ManageRoroadList) ([]*model.RoroadList, error) {
+	// USER
+	// Update multiple roroadlist by user
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	roroadlists, err := service.UpdateMultipleRoroadList(input, *user)
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*model.RoroadList
+	for _, list := range roroadlists {
+		item := helper.ConvertRoroadList(list)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -1619,6 +1706,80 @@ func (r *queryResolver) Stations(ctx context.Context) ([]*model.Station, error) 
 		item := helper.ConvertTrainStation(station)
 		isActive := service.IsStationActive(records, item.Identifier, item.MapName)
 		item.Active = isActive
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Roroadlists(ctx context.Context) ([]*model.RoroadList, error) {
+	// USER
+	// get all roroadlists
+
+	var result []*model.RoroadList
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	roroadlists, err := service.GetAllActiveRoroadList(requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, list := range roroadlists {
+		item := helper.ConvertRoroadList(list)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Roroadlistsbyname(ctx context.Context, params model.NameSearchFilter) ([]*model.RoroadList, error) {
+	// USER
+	// search roroadlist by name
+
+	var result []*model.RoroadList
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	roroadlists, err := service.FindRoroadListByName(requested_field, params.Name, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, list := range roroadlists {
+		item := helper.ConvertRoroadList(list)
 		result = append(result, &item)
 	}
 

@@ -40,6 +40,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&Restaurant{})
 	database.Connection.AutoMigrate(&TrainStation{})
 	database.Connection.AutoMigrate(&TrainRecord{})
+	database.Connection.AutoMigrate(&RoRoadList{})
 
 	log.Println("auto migration completed")
 }
