@@ -125,10 +125,6 @@ type MovieOutput struct {
 	ReleaseDate string `json:"release_date"`
 }
 
-type NameSearchFilter struct {
-	Name string `json:"name"`
-}
-
 type NewFavouriteMovie struct {
 	MovieRid int `json:"movie_rid"`
 }
@@ -261,6 +257,11 @@ type RoroadList struct {
 	Checked    bool   `json:"checked"`
 	Hidden     bool   `json:"hidden"`
 	TargetUser string `json:"target_user"`
+}
+
+type RoroadListSearchFilter struct {
+	Name   *string `json:"name"`
+	Hidden *bool   `json:"hidden"`
 }
 
 type Schedule struct {

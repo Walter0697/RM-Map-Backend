@@ -98,7 +98,7 @@ func GetAllActiveRoroadList(requested []string, relation dbmodel.UserRelation) (
 	return roroadlists, nil
 }
 
-func FindRoroadListByName(requested []string, name string, relation dbmodel.UserRelation) ([]dbmodel.RoRoadList, error) {
+func FindRoroadListByName(requested []string, name *string, hidden *bool, relation dbmodel.UserRelation) ([]dbmodel.RoRoadList, error) {
 	var roroadlists []dbmodel.RoRoadList
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -109,9 +109,15 @@ func FindRoroadListByName(requested []string, name string, relation dbmodel.User
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
-	query = query.Where("name = %?%", name)
+	if name != nil {
+		query = query.Where("name LIKE ?", "%"+*name+"%")
+	}
 
-	if err := query.Find(&roroadlists).Error; err != nil {
+	if hidden != nil {
+		query = query.Where("hidden = ?", *hidden)
+	}
+
+	if err := query.Limit(20).Find(&roroadlists).Error; err != nil {
 		return roroadlists, err
 	}
 

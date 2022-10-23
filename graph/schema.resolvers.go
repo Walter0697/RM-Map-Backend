@@ -1749,7 +1749,7 @@ func (r *queryResolver) Roroadlists(ctx context.Context) ([]*model.RoroadList, e
 	return result, nil
 }
 
-func (r *queryResolver) Roroadlistsbyname(ctx context.Context, params model.NameSearchFilter) ([]*model.RoroadList, error) {
+func (r *queryResolver) Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error) {
 	// USER
 	// search roroadlist by name
 
@@ -1773,7 +1773,7 @@ func (r *queryResolver) Roroadlistsbyname(ctx context.Context, params model.Name
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	roroadlists, err := service.FindRoroadListByName(requested_field, params.Name, *relation)
+	roroadlists, err := service.FindRoroadListByName(requested_field, params.Name, params.Hidden, *relation)
 	if err != nil {
 		return nil, err
 	}

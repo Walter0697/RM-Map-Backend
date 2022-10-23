@@ -199,7 +199,7 @@ type ComplexityRoot struct {
 		Previousmarkers     func(childComplexity int) int
 		Releasenotes        func(childComplexity int) int
 		Roroadlists         func(childComplexity int) int
-		Roroadlistsbyname   func(childComplexity int, params model.NameSearchFilter) int
+		Roroadlistsbyname   func(childComplexity int, params model.RoroadListSearchFilter) int
 		Schedules           func(childComplexity int, params model.CurrentTime) int
 		Scrapimage          func(childComplexity int, params model.WebLink) int
 		Specificreleasenote func(childComplexity int, filter model.ReleaseNoteFilter) int
@@ -352,7 +352,7 @@ type QueryResolver interface {
 	Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error)
 	Stations(ctx context.Context) ([]*model.Station, error)
 	Roroadlists(ctx context.Context) ([]*model.RoroadList, error)
-	Roroadlistsbyname(ctx context.Context, params model.NameSearchFilter) ([]*model.RoroadList, error)
+	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -1395,7 +1395,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Roroadlistsbyname(childComplexity, args["params"].(model.NameSearchFilter)), true
+		return e.complexity.Query.Roroadlistsbyname(childComplexity, args["params"].(model.RoroadListSearchFilter)), true
 
 	case "Query.schedules":
 		if e.complexity.Query.Schedules == nil {
@@ -1989,8 +1989,9 @@ input MovieFilter {
   query: String
 }
 
-input NameSearchFilter {
-  name: String!
+input RoroadListSearchFilter {
+  name: String
+  hidden: Boolean
 }
 
 input ReleaseNoteFilter {
@@ -2208,7 +2209,7 @@ type Query {
   releasenotes: [ReleaseNote]!
   stations: [Station]!
   roroadlists: [RoroadList]!
-  roroadlistsbyname(params: NameSearchFilter!): [RoroadList]!
+  roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   me: String!
 }
 
@@ -2948,10 +2949,10 @@ func (ec *executionContext) field_Query_moviefetch_args(ctx context.Context, raw
 func (ec *executionContext) field_Query_roroadlistsbyname_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
-	var arg0 model.NameSearchFilter
+	var arg0 model.RoroadListSearchFilter
 	if tmp, ok := rawArgs["params"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNNameSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐNameSearchFilter(ctx, tmp)
+		arg0, err = ec.unmarshalNRoroadListSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadListSearchFilter(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -7802,7 +7803,7 @@ func (ec *executionContext) _Query_roroadlistsbyname(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Roroadlistsbyname(rctx, args["params"].(model.NameSearchFilter))
+		return ec.resolvers.Query().Roroadlistsbyname(rctx, args["params"].(model.RoroadListSearchFilter))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -11245,29 +11246,6 @@ func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj i
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNameSearchFilter(ctx context.Context, obj interface{}) (model.NameSearchFilter, error) {
-	var it model.NameSearchFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputNewFavouriteMovie(ctx context.Context, obj interface{}) (model.NewFavouriteMovie, error) {
 	var it model.NewFavouriteMovie
 	asMap := map[string]interface{}{}
@@ -11832,6 +11810,37 @@ func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj i
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 			it.ID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputRoroadListSearchFilter(ctx context.Context, obj interface{}) (model.RoroadListSearchFilter, error) {
+	var it model.RoroadListSearchFilter
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hidden":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
+			it.Hidden, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14802,11 +14811,6 @@ func (ec *executionContext) marshalNMovieOutput2ᚕᚖmapmarkerᚋbackendᚋgrap
 	return ret
 }
 
-func (ec *executionContext) unmarshalNNameSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐNameSearchFilter(ctx context.Context, v interface{}) (model.NameSearchFilter, error) {
-	res, err := ec.unmarshalInputNameSearchFilter(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNNewFavouriteMovie2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewFavouriteMovie(ctx context.Context, v interface{}) (model.NewFavouriteMovie, error) {
 	res, err := ec.unmarshalInputNewFavouriteMovie(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15016,6 +15020,11 @@ func (ec *executionContext) marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋ
 		return graphql.Null
 	}
 	return ec._RoroadList(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNRoroadListSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadListSearchFilter(ctx context.Context, v interface{}) (model.RoroadListSearchFilter, error) {
+	res, err := ec.unmarshalInputRoroadListSearchFilter(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx context.Context, sel ast.SelectionSet, v model.Schedule) graphql.Marshaler {

@@ -27,8 +27,9 @@ input MovieFilter {
   query: String
 }
 
-input NameSearchFilter {
-  name: String!
+input RoroadListSearchFilter {
+  name: String
+  hidden: Boolean
 }
 
 input ReleaseNoteFilter {
@@ -246,7 +247,7 @@ type Query {
   releasenotes: [ReleaseNote]!
   stations: [Station]!
   roroadlists: [RoroadList]!
-  roroadlistsbyname(params: NameSearchFilter!): [RoroadList]!
+  roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   me: String!
 }
 
