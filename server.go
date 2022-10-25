@@ -48,23 +48,26 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.6.0"
+	current_version := "2.7.0"
 	// notes := []string{
-	// 	"[b]Bug Fixed",
-	// 	"Fixing display issue when hashtag is chinese letter",
+	// 	"[b]New Feature:",
+	// 	"Adding Preview Marker that generate image to share!",
+	// 	"[b]Quality Of Life",
+	// 	"Adding a fetch button for marker url, it will no longer auto fetch but fetch image on button press",
 	// }
 	notes := []string{
 		"[b]New Feature:",
-		"Adding Preview Marker that generate image to share!",
+		"Adding RoroadList, alongside with previous roroadlists revoke!",
+		"Sorting Markers will be available in Filter Page",
 		"[b]Quality Of Life",
-		"Adding a fetch button for marker url, it will no longer auto fetch but fetch image on button press",
+		"Clicking Address will now open Google Map",
 	}
 
 	log.Println("Current version " + current_version)
 	exist := service.CheckReleaseNoteAdded(current_version)
 	if !exist {
 		log.Println("Release note not exist! Adding...")
-		icon := "valentine"
+		icon := "festival"
 		if err := service.CreateReleaseNote(current_version, notes, &icon); err != nil {
 			panic(err)
 		}
