@@ -16,6 +16,7 @@ import (
 	"mapmarker/backend/service"
 	"mapmarker/backend/service/scrapper"
 	"mapmarker/backend/utils"
+	"strings"
 )
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
@@ -1587,6 +1588,9 @@ func (r *queryResolver) Scrapimage(ctx context.Context, params model.WebLink) (*
 	if user == nil {
 		return nil, &helper.PermissionDeniedError{}
 	}
+
+	finalLink := strings.ReplaceAll(params.Link, "\r", "")
+	finalLink = strings.ReplaceAll(finalLink, "\n", "")
 
 	image, title, err := service.GetMetaDataFromWebLink(params.Link)
 	if err != nil {
