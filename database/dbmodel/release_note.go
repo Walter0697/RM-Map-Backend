@@ -26,7 +26,7 @@ func (note *ReleaseNote) GetReleaseNoteByVersion(db *gorm.DB) error {
 }
 
 func (note *ReleaseNote) GetLatestRecord(db *gorm.DB) error {
-	if err := db.Order("created_at").Last(note).Error; err != nil {
+	if err := db.Order("created_at desc").Last(note).Error; err != nil {
 		return err
 	}
 

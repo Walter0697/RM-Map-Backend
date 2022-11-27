@@ -154,7 +154,7 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 	}
 
 	if input.RemoveRestaurant != nil && *input.RemoveRestaurant == true {
-		marker.RestaurantInfo = nil
+		marker.RestaurantId = nil
 	}
 
 	if input.ImageLink != nil {

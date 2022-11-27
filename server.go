@@ -48,7 +48,7 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.7.1"
+	current_version := "2.7.2"
 	// notes := []string{
 	// 	"[b]New Feature:",
 	// 	"Adding Preview Marker that generate image to share!",
@@ -64,9 +64,7 @@ func prepareReleaseNote() {
 	// }
 	notes := []string{
 		"[b]Bug Fixed:",
-		"Attempt to fix issue with OpenRice scrapper",
-		"[b]Quality Of Life",
-		"You can now select a compressed version of your image before uploading to reduce saving time",
+		"Openrice scrapper removing and editing issue",
 	}
 
 	log.Println("Current version " + current_version)
