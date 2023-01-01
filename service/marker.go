@@ -395,3 +395,20 @@ func GetAllExpiredMarker(requested []string, relation dbmodel.UserRelation) ([]d
 
 	return markers, nil
 }
+
+func RetrieveCountryCodeMap() ([]*model.CountryCodeMap, error) {
+	var countryCodeMaps []*model.CountryCodeMap
+
+	var distinctMarkers []dbmodel.Marker
+	if err := database.Connection.Distinct("country_code", "country").Find(&distinctMarkers).Error; err != nil {
+		return countryCodeMaps, err
+	}
+
+	for _, marker := range distinctMarkers {
+		var countryCode model.CountryCodeMap
+		countryCode.CountryCode = marker.CountryCode
+		countryCode.CountryName = marker.Country
+		countryCodeMaps = append(countryCodeMaps, &countryCode)
+	}
+	return countryCodeMaps, nil
+}

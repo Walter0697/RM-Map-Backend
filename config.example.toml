@@ -21,10 +21,9 @@ bindpassword=""
 filter="(uid=%s)"
 defaultrole="user"
 
-[moviedb]
-apiLink="https://api.themoviedb.org"
-apiKey=""
-imageLink="https://image.tmdb.org/t/p/w500"
+[apikey]
+moviedb=""
+tomtommap=""
 
 [seed]
 enableSeed=true

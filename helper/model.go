@@ -32,6 +32,8 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.NeedBooking = marker.NeedBooking
 	item.Permanent = marker.Permanent
 	item.Status = &marker.Status
+	item.CountryCode = marker.CountryCode
+	item.CountryPart = marker.CountryPart
 
 	if marker.FromTime != nil {
 		fromTime := utils.ConvertToOutputTime(*marker.FromTime)

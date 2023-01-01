@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"mapmarker/backend/config"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
@@ -32,12 +33,12 @@ const (
 )
 
 func getRequestLink(suffix string) string {
-	return config.Data.MovieDB.ApiLink + suffix + "?api_key=" + config.Data.MovieDB.ApiKey
+	return constant.MovieDBAPI + suffix + "?api_key=" + config.Data.APIKEY.MovieDB
 }
 
 func getByIdRequest(id int64) string {
 	id_str := strconv.FormatInt(id, 10)
-	return config.Data.MovieDB.ApiLink + GetByIdURL + id_str + "?api_key=" + config.Data.MovieDB.ApiKey
+	return constant.MovieDBAPI + GetByIdURL + id_str + "?api_key=" + config.Data.APIKEY.MovieDB
 }
 
 func GetUpcoming(country *string) (*MovieResponse, error) {
@@ -129,9 +130,9 @@ func GetMovieList(filter model.MovieFilter) ([]*model.MovieOutput, error) {
 		item.Title = movieDetails.OriginTitle
 		item.RefID = movieDetails.ID
 		if movieDetails.PosterPath != "" {
-			item.ImageLink = config.Data.MovieDB.ImageLink + movieDetails.PosterPath
+			item.ImageLink = constant.MovieDBAPIImage + movieDetails.PosterPath
 		} else if movieDetails.BackdropPath != "" {
-			item.ImageLink = config.Data.MovieDB.ImageLink + movieDetails.BackdropPath
+			item.ImageLink = constant.MovieDBAPIImage + movieDetails.BackdropPath
 		} else {
 			item.ImageLink = ""
 		}
@@ -162,9 +163,9 @@ func FetchMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	output.Label = movieDetail.OriginTitle
 	output.ReleaseDate = &movieDetail.ReleaseDate
 	if movieDetail.PosterPath != "" {
-		output.ImageLink = config.Data.MovieDB.ImageLink + movieDetail.PosterPath
+		output.ImageLink = constant.MovieImagePath + movieDetail.PosterPath
 	} else if movieDetail.BackdropPath != "" {
-		output.ImageLink = config.Data.MovieDB.ImageLink + movieDetail.BackdropPath
+		output.ImageLink = constant.MovieImagePath + movieDetail.BackdropPath
 	} else {
 		output.ImageLink = ""
 	}

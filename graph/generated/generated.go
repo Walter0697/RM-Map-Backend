@@ -43,6 +43,11 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	CountryCodeMap struct {
+		CountryCode func(childComplexity int) int
+		CountryName func(childComplexity int) int
+	}
+
 	DefaultPin struct {
 		CreatedAt func(childComplexity int) int
 		CreatedBy func(childComplexity int) int
@@ -73,6 +78,8 @@ type ComplexityRoot struct {
 
 	Marker struct {
 		Address      func(childComplexity int) int
+		CountryCode  func(childComplexity int) int
+		CountryPart  func(childComplexity int) int
 		CreatedAt    func(childComplexity int) int
 		CreatedBy    func(childComplexity int) int
 		Description  func(childComplexity int) int
@@ -183,6 +190,7 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		Countrycodemap      func(childComplexity int) int
 		Defaultpins         func(childComplexity int) int
 		Eventtypes          func(childComplexity int) int
 		Expiredmarkers      func(childComplexity int) int
@@ -353,6 +361,7 @@ type QueryResolver interface {
 	Stations(ctx context.Context) ([]*model.Station, error)
 	Roroadlists(ctx context.Context) ([]*model.RoroadList, error)
 	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
+	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -370,6 +379,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "CountryCodeMap.country_code":
+		if e.complexity.CountryCodeMap.CountryCode == nil {
+			break
+		}
+
+		return e.complexity.CountryCodeMap.CountryCode(childComplexity), true
+
+	case "CountryCodeMap.country_name":
+		if e.complexity.CountryCodeMap.CountryName == nil {
+			break
+		}
+
+		return e.complexity.CountryCodeMap.CountryName(childComplexity), true
 
 	case "DefaultPin.created_at":
 		if e.complexity.DefaultPin.CreatedAt == nil {
@@ -489,6 +512,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Address(childComplexity), true
+
+	case "Marker.country_code":
+		if e.complexity.Marker.CountryCode == nil {
+			break
+		}
+
+		return e.complexity.Marker.CountryCode(childComplexity), true
+
+	case "Marker.country_part":
+		if e.complexity.Marker.CountryPart == nil {
+			break
+		}
+
+		return e.complexity.Marker.CountryPart(childComplexity), true
 
 	case "Marker.created_at":
 		if e.complexity.Marker.CreatedAt == nil {
@@ -1262,6 +1299,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Pin.UpdatedBy(childComplexity), true
+
+	case "Query.countrycodemap":
+		if e.complexity.Query.Countrycodemap == nil {
+			break
+		}
+
+		return e.complexity.Query.Countrycodemap(childComplexity), true
 
 	case "Query.defaultpins":
 		if e.complexity.Query.Defaultpins == nil {
@@ -2053,6 +2097,8 @@ type Marker {
   from_time: String
   restaurant: Restaurant
   is_fav: Boolean!
+  country_code: String!
+  country_part: String!
   created_at: String!
   created_by: User!
   updated_at: String!
@@ -2186,6 +2232,11 @@ type RoroadList {
   target_user: String!
 }
 
+type CountryCodeMap {
+  country_code: String!
+  country_name: String!
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -2210,6 +2261,7 @@ type Query {
   stations: [Station]!
   roroadlists: [RoroadList]!
   roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
+  countrycodemap: [CountryCodeMap]!
   me: String!
 }
 
@@ -3088,6 +3140,76 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _CountryCodeMap_country_code(ctx context.Context, field graphql.CollectedField, obj *model.CountryCodeMap) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryCodeMap",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CountryCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryCodeMap_country_name(ctx context.Context, field graphql.CollectedField, obj *model.CountryCodeMap) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryCodeMap",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CountryName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
 
 func (ec *executionContext) _DefaultPin_label(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
 	defer func() {
@@ -4235,6 +4357,76 @@ func (ec *executionContext) _Marker_is_fav(ctx context.Context, field graphql.Co
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_country_code(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CountryCode, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_country_part(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CountryPart, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Marker_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
@@ -7820,6 +8012,41 @@ func (ec *executionContext) _Query_roroadlistsbyname(ctx context.Context, field 
 	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_countrycodemap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Countrycodemap(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CountryCodeMap)
+	fc.Result = res
+	return ec.marshalNCountryCodeMap2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryCodeMap(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -10091,41 +10318,6 @@ func (ec *executionContext) ___Directive_args(ctx context.Context, field graphql
 	return ec.marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐInputValueᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) ___Directive_isRepeatable(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "__Directive",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsRepeatable, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) ___EnumValue_name(ctx context.Context, field graphql.CollectedField, obj *introspection.EnumValue) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -11078,10 +11270,7 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 func (ec *executionContext) unmarshalInputCurrentTime(ctx context.Context, obj interface{}) (model.CurrentTime, error) {
 	var it model.CurrentTime
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11101,10 +11290,7 @@ func (ec *executionContext) unmarshalInputCurrentTime(ctx context.Context, obj i
 
 func (ec *executionContext) unmarshalInputIdModel(ctx context.Context, obj interface{}) (model.IDModel, error) {
 	var it model.IDModel
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11124,10 +11310,7 @@ func (ec *executionContext) unmarshalInputIdModel(ctx context.Context, obj inter
 
 func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interface{}) (model.Login, error) {
 	var it model.Login
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11155,10 +11338,7 @@ func (ec *executionContext) unmarshalInputLogin(ctx context.Context, obj interfa
 
 func (ec *executionContext) unmarshalInputLogout(ctx context.Context, obj interface{}) (model.Logout, error) {
 	var it model.Logout
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11178,10 +11358,7 @@ func (ec *executionContext) unmarshalInputLogout(ctx context.Context, obj interf
 
 func (ec *executionContext) unmarshalInputManageRoroadList(ctx context.Context, obj interface{}) (model.ManageRoroadList, error) {
 	var it model.ManageRoroadList
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11209,10 +11386,7 @@ func (ec *executionContext) unmarshalInputManageRoroadList(ctx context.Context, 
 
 func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj interface{}) (model.MovieFilter, error) {
 	var it model.MovieFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11248,10 +11422,7 @@ func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj i
 
 func (ec *executionContext) unmarshalInputNewFavouriteMovie(ctx context.Context, obj interface{}) (model.NewFavouriteMovie, error) {
 	var it model.NewFavouriteMovie
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11271,10 +11442,7 @@ func (ec *executionContext) unmarshalInputNewFavouriteMovie(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj interface{}) (model.NewMarker, error) {
 	var it model.NewMarker
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11414,10 +11582,7 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 
 func (ec *executionContext) unmarshalInputNewMarkerType(ctx context.Context, obj interface{}) (model.NewMarkerType, error) {
 	var it model.NewMarkerType
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11469,10 +11634,7 @@ func (ec *executionContext) unmarshalInputNewMarkerType(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputNewMovieSchedule(ctx context.Context, obj interface{}) (model.NewMovieSchedule, error) {
 	var it model.NewMovieSchedule
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11524,10 +11686,7 @@ func (ec *executionContext) unmarshalInputNewMovieSchedule(ctx context.Context, 
 
 func (ec *executionContext) unmarshalInputNewPin(ctx context.Context, obj interface{}) (model.NewPin, error) {
 	var it model.NewPin
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11587,10 +11746,7 @@ func (ec *executionContext) unmarshalInputNewPin(ctx context.Context, obj interf
 
 func (ec *executionContext) unmarshalInputNewRoroadList(ctx context.Context, obj interface{}) (model.NewRoroadList, error) {
 	var it model.NewRoroadList
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11626,10 +11782,7 @@ func (ec *executionContext) unmarshalInputNewRoroadList(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputNewSchedule(ctx context.Context, obj interface{}) (model.NewSchedule, error) {
 	var it model.NewSchedule
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11673,10 +11826,7 @@ func (ec *executionContext) unmarshalInputNewSchedule(ctx context.Context, obj i
 
 func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj interface{}) (model.NewUser, error) {
 	var it model.NewUser
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11712,10 +11862,7 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 
 func (ec *executionContext) unmarshalInputPreviewPinInput(ctx context.Context, obj interface{}) (model.PreviewPinInput, error) {
 	var it model.PreviewPinInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11775,10 +11922,7 @@ func (ec *executionContext) unmarshalInputPreviewPinInput(ctx context.Context, o
 
 func (ec *executionContext) unmarshalInputReleaseNoteFilter(ctx context.Context, obj interface{}) (model.ReleaseNoteFilter, error) {
 	var it model.ReleaseNoteFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11798,10 +11942,7 @@ func (ec *executionContext) unmarshalInputReleaseNoteFilter(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj interface{}) (model.RemoveModel, error) {
 	var it model.RemoveModel
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11821,10 +11962,7 @@ func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj i
 
 func (ec *executionContext) unmarshalInputRoroadListSearchFilter(ctx context.Context, obj interface{}) (model.RoroadListSearchFilter, error) {
 	var it model.RoroadListSearchFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11852,10 +11990,7 @@ func (ec *executionContext) unmarshalInputRoroadListSearchFilter(ctx context.Con
 
 func (ec *executionContext) unmarshalInputScheduleStatus(ctx context.Context, obj interface{}) (model.ScheduleStatus, error) {
 	var it model.ScheduleStatus
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11883,10 +12018,7 @@ func (ec *executionContext) unmarshalInputScheduleStatus(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputScheduleStatusList(ctx context.Context, obj interface{}) (model.ScheduleStatusList, error) {
 	var it model.ScheduleStatusList
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -11906,10 +12038,7 @@ func (ec *executionContext) unmarshalInputScheduleStatusList(ctx context.Context
 
 func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj interface{}) (model.UpdateMarker, error) {
 	var it model.UpdateMarker
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12057,10 +12186,7 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Context, obj interface{}) (model.UpdateMarkerFavourite, error) {
 	var it model.UpdateMarkerFavourite
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12088,10 +12214,7 @@ func (ec *executionContext) unmarshalInputUpdateMarkerFavourite(ctx context.Cont
 
 func (ec *executionContext) unmarshalInputUpdateModel(ctx context.Context, obj interface{}) (model.UpdateModel, error) {
 	var it model.UpdateModel
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12111,10 +12234,7 @@ func (ec *executionContext) unmarshalInputUpdateModel(ctx context.Context, obj i
 
 func (ec *executionContext) unmarshalInputUpdatePreferredPin(ctx context.Context, obj interface{}) (model.UpdatePreferredPin, error) {
 	var it model.UpdatePreferredPin
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12142,10 +12262,7 @@ func (ec *executionContext) unmarshalInputUpdatePreferredPin(ctx context.Context
 
 func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, obj interface{}) (model.UpdateRelation, error) {
 	var it model.UpdateRelation
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12165,10 +12282,7 @@ func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputUpdateRoroadList(ctx context.Context, obj interface{}) (model.UpdateRoroadList, error) {
 	var it model.UpdateRoroadList
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12228,10 +12342,7 @@ func (ec *executionContext) unmarshalInputUpdateRoroadList(ctx context.Context, 
 
 func (ec *executionContext) unmarshalInputUpdateSchedule(ctx context.Context, obj interface{}) (model.UpdateSchedule, error) {
 	var it model.UpdateSchedule
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12275,10 +12386,7 @@ func (ec *executionContext) unmarshalInputUpdateSchedule(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputUpdateStation(ctx context.Context, obj interface{}) (model.UpdateStation, error) {
 	var it model.UpdateStation
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12314,10 +12422,7 @@ func (ec *executionContext) unmarshalInputUpdateStation(ctx context.Context, obj
 
 func (ec *executionContext) unmarshalInputUpdatedDefault(ctx context.Context, obj interface{}) (model.UpdatedDefault, error) {
 	var it model.UpdatedDefault
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12361,10 +12466,7 @@ func (ec *executionContext) unmarshalInputUpdatedDefault(ctx context.Context, ob
 
 func (ec *executionContext) unmarshalInputUpdatedMarkerType(ctx context.Context, obj interface{}) (model.UpdatedMarkerType, error) {
 	var it model.UpdatedMarkerType
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12424,10 +12526,7 @@ func (ec *executionContext) unmarshalInputUpdatedMarkerType(ctx context.Context,
 
 func (ec *executionContext) unmarshalInputUpdatedPin(ctx context.Context, obj interface{}) (model.UpdatedPin, error) {
 	var it model.UpdatedPin
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12495,10 +12594,7 @@ func (ec *executionContext) unmarshalInputUpdatedPin(ctx context.Context, obj in
 
 func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj interface{}) (model.UserFilter, error) {
 	var it model.UserFilter
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12526,10 +12622,7 @@ func (ec *executionContext) unmarshalInputUserFilter(ctx context.Context, obj in
 
 func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj interface{}) (model.UserSearch, error) {
 	var it model.UserSearch
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12549,10 +12642,7 @@ func (ec *executionContext) unmarshalInputUserSearch(ctx context.Context, obj in
 
 func (ec *executionContext) unmarshalInputWebLink(ctx context.Context, obj interface{}) (model.WebLink, error) {
 	var it model.WebLink
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12572,10 +12662,7 @@ func (ec *executionContext) unmarshalInputWebLink(ctx context.Context, obj inter
 
 func (ec *executionContext) unmarshalInputWebsiteScrapInput(ctx context.Context, obj interface{}) (model.WebsiteScrapInput, error) {
 	var it model.WebsiteScrapInput
-	asMap := map[string]interface{}{}
-	for k, v := range obj.(map[string]interface{}) {
-		asMap[k] = v
-	}
+	var asMap = obj.(map[string]interface{})
 
 	for k, v := range asMap {
 		switch k {
@@ -12608,6 +12695,38 @@ func (ec *executionContext) unmarshalInputWebsiteScrapInput(ctx context.Context,
 // endregion ************************** interface.gotpl ***************************
 
 // region    **************************** object.gotpl ****************************
+
+var countryCodeMapImplementors = []string{"CountryCodeMap"}
+
+func (ec *executionContext) _CountryCodeMap(ctx context.Context, sel ast.SelectionSet, obj *model.CountryCodeMap) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryCodeMapImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryCodeMap")
+		case "country_code":
+			out.Values[i] = ec._CountryCodeMap_country_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "country_name":
+			out.Values[i] = ec._CountryCodeMap_country_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
 
 var defaultPinImplementors = []string{"DefaultPin"}
 
@@ -12833,6 +12952,16 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_restaurant(ctx, field, obj)
 		case "is_fav":
 			out.Values[i] = ec._Marker_is_fav(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "country_code":
+			out.Values[i] = ec._Marker_country_code(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "country_part":
+			out.Values[i] = ec._Marker_country_part(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -13665,6 +13794,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "countrycodemap":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countrycodemap(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "me":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -14148,11 +14291,6 @@ func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionS
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "isRepeatable":
-			out.Values[i] = ec.___Directive_isRepeatable(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14385,6 +14523,43 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCountryCodeMap2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryCodeMap(ctx context.Context, sel ast.SelectionSet, v []*model.CountryCodeMap) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCountryCodeMap2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryCodeMap(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
 func (ec *executionContext) unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx context.Context, v interface{}) (model.CurrentTime, error) {
 	res, err := ec.unmarshalInputCurrentTime(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -14424,7 +14599,6 @@ func (ec *executionContext) marshalNDefaultPin2ᚕᚖmapmarkerᚋbackendᚋgraph
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14462,7 +14636,6 @@ func (ec *executionContext) marshalNEventType2ᚕᚖmapmarkerᚋbackendᚋgraph�
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14594,7 +14767,6 @@ func (ec *executionContext) marshalNMapPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋm
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14636,7 +14808,6 @@ func (ec *executionContext) marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋm
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14688,7 +14859,6 @@ func (ec *executionContext) marshalNMarkerType2ᚕᚖmapmarkerᚋbackendᚋgraph
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14754,7 +14924,6 @@ func (ec *executionContext) marshalNMovie2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmo
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14807,7 +14976,6 @@ func (ec *executionContext) marshalNMovieOutput2ᚕᚖmapmarkerᚋbackendᚋgrap
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14889,7 +15057,6 @@ func (ec *executionContext) marshalNPin2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmode
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -14946,7 +15113,6 @@ func (ec *executionContext) marshalNReleaseNote2ᚕᚖmapmarkerᚋbackendᚋgrap
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -15008,7 +15174,6 @@ func (ec *executionContext) marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraph
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -15065,7 +15230,6 @@ func (ec *executionContext) marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraph�
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -15143,7 +15307,6 @@ func (ec *executionContext) marshalNStation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋ
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -15275,7 +15438,6 @@ func (ec *executionContext) marshalNUser2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmod
 
 	}
 	wg.Wait()
-
 	return ret
 }
 
@@ -15370,13 +15532,6 @@ func (ec *executionContext) marshalN__Directive2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15450,13 +15605,6 @@ func (ec *executionContext) marshalN__DirectiveLocation2ᚕstringᚄ(ctx context
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15506,13 +15654,6 @@ func (ec *executionContext) marshalN__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15554,13 +15695,6 @@ func (ec *executionContext) marshalN__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15611,6 +15745,13 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 		return graphql.Null
 	}
 	return graphql.MarshalBoolean(*v)
+}
+
+func (ec *executionContext) marshalOCountryCodeMap2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryCodeMap(ctx context.Context, sel ast.SelectionSet, v *model.CountryCodeMap) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountryCodeMap(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalODefaultPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v *model.DefaultPin) graphql.Marshaler {
@@ -15825,13 +15966,6 @@ func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgq
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15872,13 +16006,6 @@ func (ec *executionContext) marshalO__Field2ᚕgithubᚗcomᚋ99designsᚋgqlgen
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15919,13 +16046,6 @@ func (ec *executionContext) marshalO__InputValue2ᚕgithubᚗcomᚋ99designsᚋg
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 
@@ -15973,13 +16093,6 @@ func (ec *executionContext) marshalO__Type2ᚕgithubᚗcomᚋ99designsᚋgqlgen�
 
 	}
 	wg.Wait()
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
 	return ret
 }
 

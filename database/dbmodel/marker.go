@@ -29,6 +29,9 @@ type Marker struct {
 	IsFavourite    bool         `json:"isFavourite"` // pre defined value
 	Relation       UserRelation `gorm:"foreignKey:relation_id;reference:id"`
 	RelationId     uint
+	Country        string `json:"country"`
+	CountryCode    string `json:"countryCode"`
+	CountryPart    string `json:"countryPart"`
 }
 
 func (marker *Marker) Create(db *gorm.DB) error {

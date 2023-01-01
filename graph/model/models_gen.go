@@ -6,6 +6,11 @@ import (
 	"github.com/99designs/gqlgen/graphql"
 )
 
+type CountryCodeMap struct {
+	CountryCode string `json:"country_code"`
+	CountryName string `json:"country_name"`
+}
+
 type CurrentTime struct {
 	Time string `json:"time"`
 }
@@ -75,6 +80,8 @@ type Marker struct {
 	FromTime     *string     `json:"from_time"`
 	Restaurant   *Restaurant `json:"restaurant"`
 	IsFav        bool        `json:"is_fav"`
+	CountryCode  string      `json:"country_code"`
+	CountryPart  string      `json:"country_part"`
 	CreatedAt    string      `json:"created_at"`
 	CreatedBy    *User       `json:"created_by"`
 	UpdatedAt    string      `json:"updated_at"`

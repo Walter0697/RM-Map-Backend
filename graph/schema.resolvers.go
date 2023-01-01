@@ -1790,6 +1790,27 @@ func (r *queryResolver) Roroadlistsbyname(ctx context.Context, params model.Roro
 	return result, nil
 }
 
+func (r *queryResolver) Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error) {
+	// USER
+	// get country code map
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	result, err := service.RetrieveCountryCodeMap()
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {
