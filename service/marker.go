@@ -62,6 +62,15 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 
 	var marker dbmodel.Marker
 
+	tomtomResp, err := GetReverseGeocode(input.Latitude, input.Longitude)
+	if err != nil {
+		return nil, err
+	}
+
+	marker.Country = tomtomResp.Addresses[0].Address.Country
+	marker.CountryCode = tomtomResp.Addresses[0].Address.CountryCode
+	marker.CountryPart = tomtomResp.Addresses[0].Address.LocalName
+
 	marker.Label = input.Label
 	marker.Latitude = input.Latitude
 	marker.Longitude = input.Longitude
@@ -405,10 +414,12 @@ func RetrieveCountryCodeMap() ([]*model.CountryCodeMap, error) {
 	}
 
 	for _, marker := range distinctMarkers {
-		var countryCode model.CountryCodeMap
-		countryCode.CountryCode = marker.CountryCode
-		countryCode.CountryName = marker.Country
-		countryCodeMaps = append(countryCodeMaps, &countryCode)
+		if len(marker.CountryCode) != 0 && len(marker.Country) != 0 {
+			var countryCode model.CountryCodeMap
+			countryCode.CountryCode = marker.CountryCode
+			countryCode.CountryName = marker.Country
+			countryCodeMaps = append(countryCodeMaps, &countryCode)
+		}
 	}
 	return countryCodeMaps, nil
 }
