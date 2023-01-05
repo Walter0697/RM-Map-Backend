@@ -48,7 +48,7 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.7.2"
+	current_version := "2.8.0"
 	// notes := []string{
 	// 	"[b]New Feature:",
 	// 	"Adding Preview Marker that generate image to share!",
@@ -62,9 +62,16 @@ func prepareReleaseNote() {
 	// 	"[b]Quality Of Life",
 	// 	"Clicking Address will now open Google Map",
 	// }
+	// notes := []string{
+	// 	"[b]Bug Fixed:",
+	// 	"Openrice scrapper removing and editing issue",
+	// }
 	notes := []string{
-		"[b]Bug Fixed:",
-		"Openrice scrapper removing and editing issue",
+		"[b]New Feature:",
+		"Group markers by country and location",
+		"Watched Movies List",
+		"[b]Layout:",
+		"Most listing buttons are now at Setting page instead of Home page",
 	}
 
 	log.Println("Current version " + current_version)

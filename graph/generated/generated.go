@@ -215,6 +215,7 @@ type ComplexityRoot struct {
 		Today               func(childComplexity int, params model.CurrentTime) int
 		Users               func(childComplexity int, filter *model.UserFilter) int
 		Usersearch          func(childComplexity int, filter model.UserSearch) int
+		Watchedmovies       func(childComplexity int) int
 	}
 
 	ReleaseNote struct {
@@ -362,6 +363,7 @@ type QueryResolver interface {
 	Roroadlists(ctx context.Context) ([]*model.RoroadList, error)
 	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
 	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
+	Watchedmovies(ctx context.Context) ([]*model.Schedule, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -1520,6 +1522,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Usersearch(childComplexity, args["filter"].(model.UserSearch)), true
 
+	case "Query.watchedmovies":
+		if e.complexity.Query.Watchedmovies == nil {
+			break
+		}
+
+		return e.complexity.Query.Watchedmovies(childComplexity), true
+
 	case "ReleaseNote.date":
 		if e.complexity.ReleaseNote.Date == nil {
 			break
@@ -2262,6 +2271,7 @@ type Query {
   roroadlists: [RoroadList]!
   roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   countrycodemap: [CountryCodeMap]!
+  watchedmovies: [Schedule]!
   me: String!
 }
 
@@ -8047,6 +8057,41 @@ func (ec *executionContext) _Query_countrycodemap(ctx context.Context, field gra
 	return ec.marshalNCountryCodeMap2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryCodeMap(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_watchedmovies(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Watchedmovies(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -13803,6 +13848,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_countrycodemap(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "watchedmovies":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_watchedmovies(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

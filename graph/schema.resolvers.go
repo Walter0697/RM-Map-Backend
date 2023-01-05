@@ -1811,6 +1811,43 @@ func (r *queryResolver) Countrycodemap(ctx context.Context) ([]*model.CountryCod
 	return result, nil
 }
 
+func (r *queryResolver) Watchedmovies(ctx context.Context) ([]*model.Schedule, error) {
+	// USER
+	// search watched movies
+
+	var result []*model.Schedule
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	requested_field := utils.GetTopPreloads(ctx)
+
+	schedule_movies, err := service.GetArrivedMovieSchedule(requested_field, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, schedule := range schedule_movies {
+		item := helper.ConvertSchedule(schedule)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
 func (r *queryResolver) Me(ctx context.Context) (string, error) {
 	user := middleware.ForContext(ctx)
 	if user == nil {

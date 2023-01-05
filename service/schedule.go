@@ -276,3 +276,31 @@ func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.Us
 
 	return schedules, nil
 }
+
+func GetArrivedMovieSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+	var schedules []dbmodel.Schedule
+	query := database.Connection
+	if utils.StringInSlice("created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("marker", requested) {
+		query = query.Preload("SelectedMarker")
+	}
+
+	query = query.Preload("SelectedMovie")
+
+	query = query.Where("relation_id = ?", relation.ID)
+
+	query = query.Where("movie_id IS NOT NULL")
+
+	query = query.Where("status = ?", constant.Arrived)
+
+	if err := query.Find(&schedules).Error; err != nil {
+		return schedules, err
+	}
+
+	return schedules, nil
+}
