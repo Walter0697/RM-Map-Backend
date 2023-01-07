@@ -51,12 +51,6 @@ func prepareReleaseNote() {
 	current_version := "2.8.0"
 	// notes := []string{
 	// 	"[b]New Feature:",
-	// 	"Adding Preview Marker that generate image to share!",
-	// 	"[b]Quality Of Life",
-	// 	"Adding a fetch button for marker url, it will no longer auto fetch but fetch image on button press",
-	// }
-	// notes := []string{
-	// 	"[b]New Feature:",
 	// 	"Adding RoroadList, alongside with previous roroadlists revoke!",
 	// 	"Sorting Markers will be available in Filter Page",
 	// 	"[b]Quality Of Life",
@@ -70,6 +64,7 @@ func prepareReleaseNote() {
 		"[b]New Feature:",
 		"Group markers by country and location",
 		"Watched Movies List",
+		"LatLon Form for adding location in map",
 		"[b]Layout:",
 		"Most listing buttons are now at Setting page instead of Home page",
 	}
