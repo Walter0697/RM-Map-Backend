@@ -1,6 +1,7 @@
 package initdb
 
 import (
+	"fmt"
 	"log"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -32,6 +33,8 @@ func AppendMarkerCountryColumn() error {
 
 				marker.Update(database.Connection)
 			}
+		} else {
+			fmt.Println(err)
 		}
 	}
 

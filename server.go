@@ -28,16 +28,16 @@ func main() {
 	database.Init()
 	dbmodel.AutoMigration()
 
-	if err := initdb.InitDatabaseValue(); err != nil {
-		panic(err)
-	}
-
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
 		if os.Args[1] == "seed" {
 			startSeed()
 			return
 		}
+	}
+
+	if err := initdb.InitDatabaseValue(); err != nil {
+		panic(err)
 	}
 
 	prepareReleaseNote()
