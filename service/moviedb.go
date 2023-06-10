@@ -163,9 +163,9 @@ func FetchMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	output.Label = movieDetail.OriginTitle
 	output.ReleaseDate = &movieDetail.ReleaseDate
 	if movieDetail.PosterPath != "" {
-		output.ImageLink = constant.MovieImagePath + movieDetail.PosterPath
+		output.ImageLink = constant.MovieDBAPIImage + movieDetail.PosterPath
 	} else if movieDetail.BackdropPath != "" {
-		output.ImageLink = constant.MovieImagePath + movieDetail.BackdropPath
+		output.ImageLink = constant.MovieDBAPIImage + movieDetail.BackdropPath
 	} else {
 		output.ImageLink = ""
 	}
