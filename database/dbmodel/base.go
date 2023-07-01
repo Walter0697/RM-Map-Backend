@@ -41,6 +41,8 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&TrainStation{})
 	database.Connection.AutoMigrate(&TrainRecord{})
 	database.Connection.AutoMigrate(&RoRoadList{})
+	database.Connection.AutoMigrate(&CountryPoint{})
+	database.Connection.AutoMigrate(&CountryLocation{})
 
 	log.Println("auto migration completed")
 }

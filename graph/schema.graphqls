@@ -231,6 +231,25 @@ type CountryCodeMap {
   country_name: String!
 }
 
+type CountryPoint {
+  id: Int!
+  label: String!
+  map_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+type CountryLocation {
+  id: Int!
+  label: String!
+  visit_time: String
+  country_point_id: Int!
+  marker_id: Int
+  image_link: String
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -257,6 +276,8 @@ type Query {
   roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   countrycodemap: [CountryCodeMap]!
   watchedmovies: [Schedule]!
+  countrypoints: [CountryPoint]!
+  countrylocations: [CountryLocation]!
   me: String!
 }
 
@@ -445,6 +466,23 @@ input ManageRoroadList {
   hidden: Boolean
 }
 
+input NewCountryPoint {
+  label: String!
+  map_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+input NewCountryLocation {
+  label: String!
+  country_point_id: Int!
+  marker_id: Int
+  image_upload: Upload
+  visit_time: String
+}
+
 input Login {
   username: String!
   password: String!
@@ -488,6 +526,8 @@ type Mutation {
   createRoroadList(input: NewRoroadList!): RoroadList!
   updateRoroadList(input: UpdateRoroadList!): RoroadList!
   manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
+  createCountryPoint(input: NewCountryPoint!): CountryPoint!
+  createCountryLocation(input: NewCountryLocation!): CountryLocation!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
 }

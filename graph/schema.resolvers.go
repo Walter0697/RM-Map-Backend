@@ -990,6 +990,83 @@ func (r *mutationResolver) ManageMultipleRoroadList(ctx context.Context, input m
 	return result, nil
 }
 
+func (r *mutationResolver) CreateCountryPoint(ctx context.Context, input model.NewCountryPoint) (*model.CountryPoint, error) {
+	// USER
+	// create country point
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	point, err := service.CreateCountryPoint(input, *user, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertCountryPoint(*point)
+	return &output, nil
+}
+
+func (r *mutationResolver) CreateCountryLocation(ctx context.Context, input model.NewCountryLocation) (*model.CountryLocation, error) {
+	// USER
+	// create country location
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	var marker dbmodel.Marker
+	var markerPtr *dbmodel.Marker = nil
+	if input.MarkerID != nil {
+		marker.ID = uint(*input.MarkerID)
+		if err := marker.GetById(database.Connection); err != nil {
+			return nil, err
+		}
+		markerPtr = &marker
+	}
+
+	var point dbmodel.CountryPoint
+	point.ID = uint(input.CountryPointID)
+	if err := point.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+
+	location, err := service.CreateCountryLocation(input, point, markerPtr, *user, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	output := helper.ConvertCountryLocation(*location)
+
+	return &output, nil
+}
+
 func (r *mutationResolver) Login(ctx context.Context, input model.Login) (*model.LoginResult, error) {
 	// Login function
 
@@ -1842,6 +1919,78 @@ func (r *queryResolver) Watchedmovies(ctx context.Context) ([]*model.Schedule, e
 
 	for _, schedule := range schedule_movies {
 		item := helper.ConvertSchedule(schedule)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Countrypoints(ctx context.Context) ([]*model.CountryPoint, error) {
+	// USER
+	// get all country points
+
+	var result []*model.CountryPoint
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	points, err := service.GetAllCountryPoint(*relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, point := range points {
+		item := helper.ConvertCountryPoint(point)
+		result = append(result, &item)
+	}
+
+	return result, nil
+}
+
+func (r *queryResolver) Countrylocations(ctx context.Context) ([]*model.CountryLocation, error) {
+	// USER
+	// get all country points
+
+	var result []*model.CountryLocation
+
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return nil, &helper.RelationNotFoundError{}
+		}
+		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
+	}
+
+	locations, err := service.GetAllCountryLocation(*relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, location := range locations {
+		item := helper.ConvertCountryLocation(location)
 		result = append(result, &item)
 	}
 

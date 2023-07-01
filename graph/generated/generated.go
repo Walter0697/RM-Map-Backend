@@ -48,6 +48,25 @@ type ComplexityRoot struct {
 		CountryName func(childComplexity int) int
 	}
 
+	CountryLocation struct {
+		CountryPointID func(childComplexity int) int
+		ID             func(childComplexity int) int
+		ImageLink      func(childComplexity int) int
+		Label          func(childComplexity int) int
+		MarkerID       func(childComplexity int) int
+		VisitTime      func(childComplexity int) int
+	}
+
+	CountryPoint struct {
+		ID      func(childComplexity int) int
+		Label   func(childComplexity int) int
+		MapName func(childComplexity int) int
+		MapX    func(childComplexity int) int
+		MapY    func(childComplexity int) int
+		PhotoX  func(childComplexity int) int
+		PhotoY  func(childComplexity int) int
+	}
+
 	DefaultPin struct {
 		CreatedAt func(childComplexity int) int
 		CreatedBy func(childComplexity int) int
@@ -142,6 +161,8 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
+		CreateCountryLocation    func(childComplexity int, input model.NewCountryLocation) int
+		CreateCountryPoint       func(childComplexity int, input model.NewCountryPoint) int
 		CreateFavouriteMovie     func(childComplexity int, input model.NewFavouriteMovie) int
 		CreateMarker             func(childComplexity int, input model.NewMarker) int
 		CreateMarkerType         func(childComplexity int, input model.NewMarkerType) int
@@ -191,6 +212,8 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Countrycodemap      func(childComplexity int) int
+		Countrylocations    func(childComplexity int) int
+		Countrypoints       func(childComplexity int) int
 		Defaultpins         func(childComplexity int) int
 		Eventtypes          func(childComplexity int) int
 		Expiredmarkers      func(childComplexity int) int
@@ -335,6 +358,8 @@ type MutationResolver interface {
 	CreateRoroadList(ctx context.Context, input model.NewRoroadList) (*model.RoroadList, error)
 	UpdateRoroadList(ctx context.Context, input model.UpdateRoroadList) (*model.RoroadList, error)
 	ManageMultipleRoroadList(ctx context.Context, input model.ManageRoroadList) ([]*model.RoroadList, error)
+	CreateCountryPoint(ctx context.Context, input model.NewCountryPoint) (*model.CountryPoint, error)
+	CreateCountryLocation(ctx context.Context, input model.NewCountryLocation) (*model.CountryLocation, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 	Logout(ctx context.Context, input model.Logout) (string, error)
 }
@@ -364,6 +389,8 @@ type QueryResolver interface {
 	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
 	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
 	Watchedmovies(ctx context.Context) ([]*model.Schedule, error)
+	Countrypoints(ctx context.Context) ([]*model.CountryPoint, error)
+	Countrylocations(ctx context.Context) ([]*model.CountryLocation, error)
 	Me(ctx context.Context) (string, error)
 }
 
@@ -395,6 +422,97 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CountryCodeMap.CountryName(childComplexity), true
+
+	case "CountryLocation.country_point_id":
+		if e.complexity.CountryLocation.CountryPointID == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.CountryPointID(childComplexity), true
+
+	case "CountryLocation.id":
+		if e.complexity.CountryLocation.ID == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.ID(childComplexity), true
+
+	case "CountryLocation.image_link":
+		if e.complexity.CountryLocation.ImageLink == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.ImageLink(childComplexity), true
+
+	case "CountryLocation.label":
+		if e.complexity.CountryLocation.Label == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.Label(childComplexity), true
+
+	case "CountryLocation.marker_id":
+		if e.complexity.CountryLocation.MarkerID == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.MarkerID(childComplexity), true
+
+	case "CountryLocation.visit_time":
+		if e.complexity.CountryLocation.VisitTime == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.VisitTime(childComplexity), true
+
+	case "CountryPoint.id":
+		if e.complexity.CountryPoint.ID == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.ID(childComplexity), true
+
+	case "CountryPoint.label":
+		if e.complexity.CountryPoint.Label == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.Label(childComplexity), true
+
+	case "CountryPoint.map_name":
+		if e.complexity.CountryPoint.MapName == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.MapName(childComplexity), true
+
+	case "CountryPoint.map_x":
+		if e.complexity.CountryPoint.MapX == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.MapX(childComplexity), true
+
+	case "CountryPoint.map_y":
+		if e.complexity.CountryPoint.MapY == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.MapY(childComplexity), true
+
+	case "CountryPoint.photo_x":
+		if e.complexity.CountryPoint.PhotoX == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.PhotoX(childComplexity), true
+
+	case "CountryPoint.photo_y":
+		if e.complexity.CountryPoint.PhotoY == nil {
+			break
+		}
+
+		return e.complexity.CountryPoint.PhotoY(childComplexity), true
 
 	case "DefaultPin.created_at":
 		if e.complexity.DefaultPin.CreatedAt == nil {
@@ -858,6 +976,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.MovieOutput.Title(childComplexity), true
 
+	case "Mutation.createCountryLocation":
+		if e.complexity.Mutation.CreateCountryLocation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCountryLocation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCountryLocation(childComplexity, args["input"].(model.NewCountryLocation)), true
+
+	case "Mutation.createCountryPoint":
+		if e.complexity.Mutation.CreateCountryPoint == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createCountryPoint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateCountryPoint(childComplexity, args["input"].(model.NewCountryPoint)), true
+
 	case "Mutation.createFavouriteMovie":
 		if e.complexity.Mutation.CreateFavouriteMovie == nil {
 			break
@@ -1308,6 +1450,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Countrycodemap(childComplexity), true
+
+	case "Query.countrylocations":
+		if e.complexity.Query.Countrylocations == nil {
+			break
+		}
+
+		return e.complexity.Query.Countrylocations(childComplexity), true
+
+	case "Query.countrypoints":
+		if e.complexity.Query.Countrypoints == nil {
+			break
+		}
+
+		return e.complexity.Query.Countrypoints(childComplexity), true
 
 	case "Query.defaultpins":
 		if e.complexity.Query.Defaultpins == nil {
@@ -2246,6 +2402,25 @@ type CountryCodeMap {
   country_name: String!
 }
 
+type CountryPoint {
+  id: Int!
+  label: String!
+  map_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+type CountryLocation {
+  id: Int!
+  label: String!
+  visit_time: String
+  country_point_id: Int!
+  marker_id: Int
+  image_link: String
+}
+
 type Query {
   users(filter: UserFilter): [User]!
   usersearch(filter: UserSearch!): User
@@ -2272,6 +2447,8 @@ type Query {
   roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   countrycodemap: [CountryCodeMap]!
   watchedmovies: [Schedule]!
+  countrypoints: [CountryPoint]!
+  countrylocations: [CountryLocation]!
   me: String!
 }
 
@@ -2460,6 +2637,23 @@ input ManageRoroadList {
   hidden: Boolean
 }
 
+input NewCountryPoint {
+  label: String!
+  map_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+input NewCountryLocation {
+  label: String!
+  country_point_id: Int!
+  marker_id: Int
+  image_upload: Upload
+  visit_time: String
+}
+
 input Login {
   username: String!
   password: String!
@@ -2503,15 +2697,48 @@ type Mutation {
   createRoroadList(input: NewRoroadList!): RoroadList!
   updateRoroadList(input: UpdateRoroadList!): RoroadList!
   manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
+  createCountryPoint(input: NewCountryPoint!): CountryPoint!
+  createCountryLocation(input: NewCountryLocation!): CountryLocation!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_createCountryLocation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewCountryLocation
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewCountryLocation2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryLocation(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createCountryPoint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.NewCountryPoint
+	if tmp, ok := rawArgs["input"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
+		arg0, err = ec.unmarshalNNewCountryPoint2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryPoint(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_createFavouriteMovie_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -3219,6 +3446,446 @@ func (ec *executionContext) _CountryCodeMap_country_name(ctx context.Context, fi
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_id(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_label(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_visit_time(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.VisitTime, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_country_point_id(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.CountryPointID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_marker_id(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MarkerID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*int)
+	fc.Result = res
+	return ec.marshalOInt2ᚖint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_image_link(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ImageLink, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_id(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_label(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Label, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_map_name(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MapName, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_photo_x(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PhotoX, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_photo_y(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PhotoY, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_map_x(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MapX, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*float64)
+	fc.Result = res
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryPoint_map_y(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryPoint",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MapY, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*float64)
+	fc.Result = res
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _DefaultPin_label(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
@@ -6656,6 +7323,90 @@ func (ec *executionContext) _Mutation_manageMultipleRoroadList(ctx context.Conte
 	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_createCountryPoint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createCountryPoint_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCountryPoint(rctx, args["input"].(model.NewCountryPoint))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CountryPoint)
+	fc.Result = res
+	return ec.marshalNCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createCountryLocation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createCountryLocation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateCountryLocation(rctx, args["input"].(model.NewCountryLocation))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.CountryLocation)
+	fc.Result = res
+	return ec.marshalNCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8090,6 +8841,76 @@ func (ec *executionContext) _Query_watchedmovies(ctx context.Context, field grap
 	res := resTmp.([]*model.Schedule)
 	fc.Result = res
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_countrypoints(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Countrypoints(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CountryPoint)
+	fc.Result = res
+	return ec.marshalNCountryPoint2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_countrylocations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Countrylocations(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CountryLocation)
+	fc.Result = res
+	return ec.marshalNCountryLocation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -11465,6 +12286,118 @@ func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewCountryLocation(ctx context.Context, obj interface{}) (model.NewCountryLocation, error) {
+	var it model.NewCountryLocation
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "country_point_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country_point_id"))
+			it.CountryPointID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "marker_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("marker_id"))
+			it.MarkerID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
+			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "visit_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visit_time"))
+			it.VisitTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewCountryPoint(ctx context.Context, obj interface{}) (model.NewCountryPoint, error) {
+	var it model.NewCountryPoint
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_name"))
+			it.MapName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "photo_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("photo_x"))
+			it.PhotoX, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "photo_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("photo_y"))
+			it.PhotoY, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_x"))
+			it.MapX, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_y"))
+			it.MapY, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewFavouriteMovie(ctx context.Context, obj interface{}) (model.NewFavouriteMovie, error) {
 	var it model.NewFavouriteMovie
 	var asMap = obj.(map[string]interface{})
@@ -12773,6 +13706,100 @@ func (ec *executionContext) _CountryCodeMap(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var countryLocationImplementors = []string{"CountryLocation"}
+
+func (ec *executionContext) _CountryLocation(ctx context.Context, sel ast.SelectionSet, obj *model.CountryLocation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryLocationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryLocation")
+		case "id":
+			out.Values[i] = ec._CountryLocation_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CountryLocation_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "visit_time":
+			out.Values[i] = ec._CountryLocation_visit_time(ctx, field, obj)
+		case "country_point_id":
+			out.Values[i] = ec._CountryLocation_country_point_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "marker_id":
+			out.Values[i] = ec._CountryLocation_marker_id(ctx, field, obj)
+		case "image_link":
+			out.Values[i] = ec._CountryLocation_image_link(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var countryPointImplementors = []string{"CountryPoint"}
+
+func (ec *executionContext) _CountryPoint(ctx context.Context, sel ast.SelectionSet, obj *model.CountryPoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryPointImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryPoint")
+		case "id":
+			out.Values[i] = ec._CountryPoint_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CountryPoint_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "map_name":
+			out.Values[i] = ec._CountryPoint_map_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "photo_x":
+			out.Values[i] = ec._CountryPoint_photo_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "photo_y":
+			out.Values[i] = ec._CountryPoint_photo_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "map_x":
+			out.Values[i] = ec._CountryPoint_map_x(ctx, field, obj)
+		case "map_y":
+			out.Values[i] = ec._CountryPoint_map_y(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var defaultPinImplementors = []string{"DefaultPin"}
 
 func (ec *executionContext) _DefaultPin(ctx context.Context, sel ast.SelectionSet, obj *model.DefaultPin) graphql.Marshaler {
@@ -13405,6 +14432,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createCountryPoint":
+			out.Values[i] = ec._Mutation_createCountryPoint(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createCountryLocation":
+			out.Values[i] = ec._Mutation_createCountryLocation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -13862,6 +14899,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_watchedmovies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "countrypoints":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countrypoints(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "countrylocations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countrylocations(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -14619,6 +15684,108 @@ func (ec *executionContext) marshalNCountryCodeMap2ᚕᚖmapmarkerᚋbackendᚋg
 	return ret
 }
 
+func (ec *executionContext) marshalNCountryLocation2mapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v model.CountryLocation) graphql.Marshaler {
+	return ec._CountryLocation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCountryLocation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v []*model.CountryLocation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v *model.CountryLocation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CountryLocation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCountryPoint2mapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v model.CountryPoint) graphql.Marshaler {
+	return ec._CountryPoint(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCountryPoint2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v []*model.CountryPoint) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v *model.CountryPoint) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CountryPoint(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx context.Context, v interface{}) (model.CurrentTime, error) {
 	res, err := ec.unmarshalInputCurrentTime(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15036,6 +16203,16 @@ func (ec *executionContext) marshalNMovieOutput2ᚕᚖmapmarkerᚋbackendᚋgrap
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) unmarshalNNewCountryLocation2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryLocation(ctx context.Context, v interface{}) (model.NewCountryLocation, error) {
+	res, err := ec.unmarshalInputNewCountryLocation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewCountryPoint2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryPoint(ctx context.Context, v interface{}) (model.NewCountryPoint, error) {
+	res, err := ec.unmarshalInputNewCountryPoint(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNNewFavouriteMovie2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewFavouriteMovie(ctx context.Context, v interface{}) (model.NewFavouriteMovie, error) {
@@ -15813,6 +16990,20 @@ func (ec *executionContext) marshalOCountryCodeMap2ᚖmapmarkerᚋbackendᚋgrap
 	return ec._CountryCodeMap(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v *model.CountryLocation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountryLocation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v *model.CountryPoint) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountryPoint(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalODefaultPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v *model.DefaultPin) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -15825,6 +17016,21 @@ func (ec *executionContext) marshalOEventType2ᚖmapmarkerᚋbackendᚋgraphᚋm
 		return graphql.Null
 	}
 	return ec._EventType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloat(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalFloat(*v)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {

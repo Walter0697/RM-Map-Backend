@@ -11,6 +11,25 @@ type CountryCodeMap struct {
 	CountryName string `json:"country_name"`
 }
 
+type CountryLocation struct {
+	ID             int     `json:"id"`
+	Label          string  `json:"label"`
+	VisitTime      *string `json:"visit_time"`
+	CountryPointID int     `json:"country_point_id"`
+	MarkerID       *int    `json:"marker_id"`
+	ImageLink      *string `json:"image_link"`
+}
+
+type CountryPoint struct {
+	ID      int      `json:"id"`
+	Label   string   `json:"label"`
+	MapName string   `json:"map_name"`
+	PhotoX  float64  `json:"photo_x"`
+	PhotoY  float64  `json:"photo_y"`
+	MapX    *float64 `json:"map_x"`
+	MapY    *float64 `json:"map_y"`
+}
+
 type CurrentTime struct {
 	Time string `json:"time"`
 }
@@ -130,6 +149,23 @@ type MovieOutput struct {
 	Title       string `json:"title"`
 	ImageLink   string `json:"image_link"`
 	ReleaseDate string `json:"release_date"`
+}
+
+type NewCountryLocation struct {
+	Label          string          `json:"label"`
+	CountryPointID int             `json:"country_point_id"`
+	MarkerID       *int            `json:"marker_id"`
+	ImageUpload    *graphql.Upload `json:"image_upload"`
+	VisitTime      *string         `json:"visit_time"`
+}
+
+type NewCountryPoint struct {
+	Label   string   `json:"label"`
+	MapName string   `json:"map_name"`
+	PhotoX  float64  `json:"photo_x"`
+	PhotoY  float64  `json:"photo_y"`
+	MapX    *float64 `json:"map_x"`
+	MapY    *float64 `json:"map_y"`
 }
 
 type NewFavouriteMovie struct {
