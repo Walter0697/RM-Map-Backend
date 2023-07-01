@@ -48,6 +48,25 @@ type ComplexityRoot struct {
 		CountryName func(childComplexity int) int
 	}
 
+	CountryLocation struct {
+		CountryPointID func(childComplexity int) int
+		ID             func(childComplexity int) int
+		ImageLink      func(childComplexity int) int
+		Label          func(childComplexity int) int
+		MarkerID       func(childComplexity int) int
+		VisitTime      func(childComplexity int) int
+	}
+
+	CountryPoint struct {
+		ID      func(childComplexity int) int
+		Label   func(childComplexity int) int
+		MapName func(childComplexity int) int
+		MapX    func(childComplexity int) int
+		MapY    func(childComplexity int) int
+		PhotoX  func(childComplexity int) int
+		PhotoY  func(childComplexity int) int
+	}
+
 	DefaultPin struct {
 		CreatedAt func(childComplexity int) int
 		CreatedBy func(childComplexity int) int
@@ -142,33 +161,38 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateFavouriteMovie func(childComplexity int, input model.NewFavouriteMovie) int
-		CreateMarker         func(childComplexity int, input model.NewMarker) int
-		CreateMarkerType     func(childComplexity int, input model.NewMarkerType) int
-		CreateMovieSchedule  func(childComplexity int, input model.NewMovieSchedule) int
-		CreatePin            func(childComplexity int, input model.NewPin) int
-		CreateSchedule       func(childComplexity int, input model.NewSchedule) int
-		CreateUser           func(childComplexity int, input model.NewUser) int
-		EditMarker           func(childComplexity int, input model.UpdateMarker) int
-		EditMarkerType       func(childComplexity int, input model.UpdatedMarkerType) int
-		EditPin              func(childComplexity int, input model.UpdatedPin) int
-		EditSchedule         func(childComplexity int, input model.UpdateSchedule) int
-		Login                func(childComplexity int, input model.Login) int
-		Logout               func(childComplexity int, input model.Logout) int
-		PreviewPin           func(childComplexity int, input model.PreviewPinInput) int
-		RemoveFavouriteMovie func(childComplexity int, input model.RemoveModel) int
-		RemoveMarker         func(childComplexity int, input model.RemoveModel) int
-		RemoveMarkerType     func(childComplexity int, input model.RemoveModel) int
-		RemovePin            func(childComplexity int, input model.RemoveModel) int
-		RemoveSchedule       func(childComplexity int, input model.RemoveModel) int
-		RevokeMarker         func(childComplexity int, input model.UpdateModel) int
-		UpdateDefault        func(childComplexity int, input model.UpdatedDefault) int
-		UpdateMarkerFav      func(childComplexity int, input model.UpdateMarkerFavourite) int
-		UpdatePreferredPin   func(childComplexity int, input model.UpdatePreferredPin) int
-		UpdateRelation       func(childComplexity int, input model.UpdateRelation) int
-		UpdateScheduleStatus func(childComplexity int, input model.ScheduleStatusList) int
-		UpdateStation        func(childComplexity int, input model.UpdateStation) int
-		WebsiteScrap         func(childComplexity int, input model.WebsiteScrapInput) int
+		CreateCountryLocation    func(childComplexity int, input model.NewCountryLocation) int
+		CreateCountryPoint       func(childComplexity int, input model.NewCountryPoint) int
+		CreateFavouriteMovie     func(childComplexity int, input model.NewFavouriteMovie) int
+		CreateMarker             func(childComplexity int, input model.NewMarker) int
+		CreateMarkerType         func(childComplexity int, input model.NewMarkerType) int
+		CreateMovieSchedule      func(childComplexity int, input model.NewMovieSchedule) int
+		CreatePin                func(childComplexity int, input model.NewPin) int
+		CreateRoroadList         func(childComplexity int, input model.NewRoroadList) int
+		CreateSchedule           func(childComplexity int, input model.NewSchedule) int
+		CreateUser               func(childComplexity int, input model.NewUser) int
+		EditMarker               func(childComplexity int, input model.UpdateMarker) int
+		EditMarkerType           func(childComplexity int, input model.UpdatedMarkerType) int
+		EditPin                  func(childComplexity int, input model.UpdatedPin) int
+		EditSchedule             func(childComplexity int, input model.UpdateSchedule) int
+		Login                    func(childComplexity int, input model.Login) int
+		Logout                   func(childComplexity int, input model.Logout) int
+		ManageMultipleRoroadList func(childComplexity int, input model.ManageRoroadList) int
+		PreviewPin               func(childComplexity int, input model.PreviewPinInput) int
+		RemoveFavouriteMovie     func(childComplexity int, input model.RemoveModel) int
+		RemoveMarker             func(childComplexity int, input model.RemoveModel) int
+		RemoveMarkerType         func(childComplexity int, input model.RemoveModel) int
+		RemovePin                func(childComplexity int, input model.RemoveModel) int
+		RemoveSchedule           func(childComplexity int, input model.RemoveModel) int
+		RevokeMarker             func(childComplexity int, input model.UpdateModel) int
+		UpdateDefault            func(childComplexity int, input model.UpdatedDefault) int
+		UpdateMarkerFav          func(childComplexity int, input model.UpdateMarkerFavourite) int
+		UpdatePreferredPin       func(childComplexity int, input model.UpdatePreferredPin) int
+		UpdateRelation           func(childComplexity int, input model.UpdateRelation) int
+		UpdateRoroadList         func(childComplexity int, input model.UpdateRoroadList) int
+		UpdateScheduleStatus     func(childComplexity int, input model.ScheduleStatusList) int
+		UpdateStation            func(childComplexity int, input model.UpdateStation) int
+		WebsiteScrap             func(childComplexity int, input model.WebsiteScrapInput) int
 	}
 
 	Pin struct {
@@ -188,6 +212,8 @@ type ComplexityRoot struct {
 
 	Query struct {
 		Countrycodemap      func(childComplexity int) int
+		Countrylocations    func(childComplexity int) int
+		Countrypoints       func(childComplexity int) int
 		Defaultpins         func(childComplexity int) int
 		Eventtypes          func(childComplexity int) int
 		Expiredmarkers      func(childComplexity int) int
@@ -318,1994 +344,41 @@ type MutationResolver interface {
 	UpdateStation(ctx context.Context, input model.UpdateStation) (*model.Station, error)
 	CreateFavouriteMovie(ctx context.Context, input model.NewFavouriteMovie) (*model.Movie, error)
 	RemoveFavouriteMovie(ctx context.Context, input model.RemoveModel) (string, error)
-	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
-	Logout(ctx context.Context, input model.Logout) (string, error)
-}
-type QueryResolver interface {
-	Users(ctx context.Context, filter *model.UserFilter) ([]*model.User, error)
-	Usersearch(ctx context.Context, filter model.UserSearch) (*model.User, error)
-	Preference(ctx context.Context) (*model.UserPreference, error)
-	Markers(ctx context.Context) ([]*model.Marker, error)
-	Markertypes(ctx context.Context) ([]*model.MarkerType, error)
-	Eventtypes(ctx context.Context) ([]*model.EventType, error)
-	Pins(ctx context.Context) ([]*model.Pin, error)
-	Defaultpins(ctx context.Context) ([]*model.DefaultPin, error)
-	Mappins(ctx context.Context) ([]*model.MapPin, error)
-	Schedules(ctx context.Context, params model.CurrentTime) ([]*model.Schedule, error)
-	Movies(ctx context.Context) ([]*model.Movie, error)
-	Today(ctx context.Context, params model.CurrentTime) (*model.TodayEvent, error)
-	Previousmarkers(ctx context.Context) ([]*model.Marker, error)
-	Expiredmarkers(ctx context.Context) ([]*model.Marker, error)
-	Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error)
-	Scrapimage(ctx context.Context, params model.WebLink) (*model.MetaDataOutput, error)
-	Moviefetch(ctx context.Context, filter model.MovieFilter) ([]*model.MovieOutput, error)
-	Latestreleasenote(ctx context.Context) (*model.ReleaseNote, error)
-	Specificreleasenote(ctx context.Context, filter model.ReleaseNoteFilter) (*model.ReleaseNote, error)
-	Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error)
-	Stations(ctx context.Context) ([]*model.Station, error)
-	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
-	Watchedmovies(ctx context.Context) ([]*model.Schedule, error)
-	Me(ctx context.Context) (string, error)
-}
-
-type executableSchema struct {
-	resolvers  ResolverRoot
-	directives DirectiveRoot
-	complexity ComplexityRoot
-}
-
-func (e *executableSchema) Schema() *ast.Schema {
-	return parsedSchema
-}
-
-func (e *executableSchema) Complexity(typeName, field string, childComplexity int, rawArgs map[string]interface{}) (int, bool) {
-	ec := executionContext{nil, e}
-	_ = ec
-	switch typeName + "." + field {
-
-	case "CountryCodeMap.country_code":
-		if e.complexity.CountryCodeMap.CountryCode == nil {
-			break
-		}
-
-		return e.complexity.CountryCodeMap.CountryCode(childComplexity), true
-
-	case "CountryCodeMap.country_name":
-		if e.complexity.CountryCodeMap.CountryName == nil {
-			break
-		}
-
-		return e.complexity.CountryCodeMap.CountryName(childComplexity), true
-
-	case "DefaultPin.created_at":
-		if e.complexity.DefaultPin.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.CreatedAt(childComplexity), true
-
-	case "DefaultPin.created_by":
-		if e.complexity.DefaultPin.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.CreatedBy(childComplexity), true
-
-	case "DefaultPin.label":
-		if e.complexity.DefaultPin.Label == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.Label(childComplexity), true
-
-	case "DefaultPin.pin":
-		if e.complexity.DefaultPin.Pin == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.Pin(childComplexity), true
-
-	case "DefaultPin.updated_at":
-		if e.complexity.DefaultPin.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.UpdatedAt(childComplexity), true
-
-	case "DefaultPin.updated_by":
-		if e.complexity.DefaultPin.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.DefaultPin.UpdatedBy(childComplexity), true
-
-	case "EventType.hidden":
-		if e.complexity.EventType.Hidden == nil {
-			break
-		}
-
-		return e.complexity.EventType.Hidden(childComplexity), true
-
-	case "EventType.icon_path":
-		if e.complexity.EventType.IconPath == nil {
-			break
-		}
-
-		return e.complexity.EventType.IconPath(childComplexity), true
-
-	case "EventType.label":
-		if e.complexity.EventType.Label == nil {
-			break
-		}
-
-		return e.complexity.EventType.Label(childComplexity), true
-
-	case "EventType.priority":
-		if e.complexity.EventType.Priority == nil {
-			break
-		}
-
-		return e.complexity.EventType.Priority(childComplexity), true
-
-	case "EventType.value":
-		if e.complexity.EventType.Value == nil {
-			break
-		}
-
-		return e.complexity.EventType.Value(childComplexity), true
-
-	case "LoginResult.jwt":
-		if e.complexity.LoginResult.Jwt == nil {
-			break
-		}
-
-		return e.complexity.LoginResult.Jwt(childComplexity), true
-
-	case "LoginResult.username":
-		if e.complexity.LoginResult.Username == nil {
-			break
-		}
-
-		return e.complexity.LoginResult.Username(childComplexity), true
-
-	case "MapPin.image_path":
-		if e.complexity.MapPin.ImagePath == nil {
-			break
-		}
-
-		return e.complexity.MapPin.ImagePath(childComplexity), true
-
-	case "MapPin.pinlabel":
-		if e.complexity.MapPin.Pinlabel == nil {
-			break
-		}
-
-		return e.complexity.MapPin.Pinlabel(childComplexity), true
-
-	case "MapPin.typelabel":
-		if e.complexity.MapPin.Typelabel == nil {
-			break
-		}
-
-		return e.complexity.MapPin.Typelabel(childComplexity), true
-
-	case "Marker.address":
-		if e.complexity.Marker.Address == nil {
-			break
-		}
-
-		return e.complexity.Marker.Address(childComplexity), true
-
-	case "Marker.country_code":
-		if e.complexity.Marker.CountryCode == nil {
-			break
-		}
-
-		return e.complexity.Marker.CountryCode(childComplexity), true
-
-	case "Marker.country_part":
-		if e.complexity.Marker.CountryPart == nil {
-			break
-		}
-
-		return e.complexity.Marker.CountryPart(childComplexity), true
-
-	case "Marker.created_at":
-		if e.complexity.Marker.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Marker.CreatedAt(childComplexity), true
-
-	case "Marker.created_by":
-		if e.complexity.Marker.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.Marker.CreatedBy(childComplexity), true
-
-	case "Marker.description":
-		if e.complexity.Marker.Description == nil {
-			break
-		}
-
-		return e.complexity.Marker.Description(childComplexity), true
-
-	case "Marker.estimate_time":
-		if e.complexity.Marker.EstimateTime == nil {
-			break
-		}
-
-		return e.complexity.Marker.EstimateTime(childComplexity), true
-
-	case "Marker.from_time":
-		if e.complexity.Marker.FromTime == nil {
-			break
-		}
-
-		return e.complexity.Marker.FromTime(childComplexity), true
-
-	case "Marker.id":
-		if e.complexity.Marker.ID == nil {
-			break
-		}
-
-		return e.complexity.Marker.ID(childComplexity), true
-
-	case "Marker.image_link":
-		if e.complexity.Marker.ImageLink == nil {
-			break
-		}
-
-		return e.complexity.Marker.ImageLink(childComplexity), true
-
-	case "Marker.is_fav":
-		if e.complexity.Marker.IsFav == nil {
-			break
-		}
-
-		return e.complexity.Marker.IsFav(childComplexity), true
-
-	case "Marker.label":
-		if e.complexity.Marker.Label == nil {
-			break
-		}
-
-		return e.complexity.Marker.Label(childComplexity), true
-
-	case "Marker.latitude":
-		if e.complexity.Marker.Latitude == nil {
-			break
-		}
-
-		return e.complexity.Marker.Latitude(childComplexity), true
-
-	case "Marker.link":
-		if e.complexity.Marker.Link == nil {
-			break
-		}
-
-		return e.complexity.Marker.Link(childComplexity), true
-
-	case "Marker.longitude":
-		if e.complexity.Marker.Longitude == nil {
-			break
-		}
-
-		return e.complexity.Marker.Longitude(childComplexity), true
-
-	case "Marker.need_booking":
-		if e.complexity.Marker.NeedBooking == nil {
-			break
-		}
-
-		return e.complexity.Marker.NeedBooking(childComplexity), true
-
-	case "Marker.permanent":
-		if e.complexity.Marker.Permanent == nil {
-			break
-		}
-
-		return e.complexity.Marker.Permanent(childComplexity), true
-
-	case "Marker.price":
-		if e.complexity.Marker.Price == nil {
-			break
-		}
-
-		return e.complexity.Marker.Price(childComplexity), true
-
-	case "Marker.restaurant":
-		if e.complexity.Marker.Restaurant == nil {
-			break
-		}
-
-		return e.complexity.Marker.Restaurant(childComplexity), true
-
-	case "Marker.status":
-		if e.complexity.Marker.Status == nil {
-			break
-		}
-
-		return e.complexity.Marker.Status(childComplexity), true
-
-	case "Marker.to_time":
-		if e.complexity.Marker.ToTime == nil {
-			break
-		}
-
-		return e.complexity.Marker.ToTime(childComplexity), true
-
-	case "Marker.type":
-		if e.complexity.Marker.Type == nil {
-			break
-		}
-
-		return e.complexity.Marker.Type(childComplexity), true
-
-	case "Marker.updated_at":
-		if e.complexity.Marker.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Marker.UpdatedAt(childComplexity), true
-
-	case "Marker.updated_by":
-		if e.complexity.Marker.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.Marker.UpdatedBy(childComplexity), true
-
-	case "MarkerType.created_at":
-		if e.complexity.MarkerType.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.CreatedAt(childComplexity), true
-
-	case "MarkerType.created_by":
-		if e.complexity.MarkerType.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.CreatedBy(childComplexity), true
-
-	case "MarkerType.hidden":
-		if e.complexity.MarkerType.Hidden == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.Hidden(childComplexity), true
-
-	case "MarkerType.id":
-		if e.complexity.MarkerType.ID == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.ID(childComplexity), true
-
-	case "MarkerType.icon_path":
-		if e.complexity.MarkerType.IconPath == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.IconPath(childComplexity), true
-
-	case "MarkerType.label":
-		if e.complexity.MarkerType.Label == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.Label(childComplexity), true
-
-	case "MarkerType.priority":
-		if e.complexity.MarkerType.Priority == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.Priority(childComplexity), true
-
-	case "MarkerType.updated_at":
-		if e.complexity.MarkerType.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.UpdatedAt(childComplexity), true
-
-	case "MarkerType.updated_by":
-		if e.complexity.MarkerType.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.UpdatedBy(childComplexity), true
-
-	case "MarkerType.value":
-		if e.complexity.MarkerType.Value == nil {
-			break
-		}
-
-		return e.complexity.MarkerType.Value(childComplexity), true
-
-	case "MetaDataOutput.image_link":
-		if e.complexity.MetaDataOutput.ImageLink == nil {
-			break
-		}
-
-		return e.complexity.MetaDataOutput.ImageLink(childComplexity), true
-
-	case "MetaDataOutput.title":
-		if e.complexity.MetaDataOutput.Title == nil {
-			break
-		}
-
-		return e.complexity.MetaDataOutput.Title(childComplexity), true
-
-	case "Movie.created_at":
-		if e.complexity.Movie.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Movie.CreatedAt(childComplexity), true
-
-	case "Movie.created_by":
-		if e.complexity.Movie.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.Movie.CreatedBy(childComplexity), true
-
-	case "Movie.id":
-		if e.complexity.Movie.ID == nil {
-			break
-		}
-
-		return e.complexity.Movie.ID(childComplexity), true
-
-	case "Movie.image_path":
-		if e.complexity.Movie.ImagePath == nil {
-			break
-		}
-
-		return e.complexity.Movie.ImagePath(childComplexity), true
-
-	case "Movie.is_fav":
-		if e.complexity.Movie.IsFav == nil {
-			break
-		}
-
-		return e.complexity.Movie.IsFav(childComplexity), true
-
-	case "Movie.label":
-		if e.complexity.Movie.Label == nil {
-			break
-		}
-
-		return e.complexity.Movie.Label(childComplexity), true
-
-	case "Movie.reference_id":
-		if e.complexity.Movie.ReferenceID == nil {
-			break
-		}
-
-		return e.complexity.Movie.ReferenceID(childComplexity), true
-
-	case "Movie.release_date":
-		if e.complexity.Movie.ReleaseDate == nil {
-			break
-		}
-
-		return e.complexity.Movie.ReleaseDate(childComplexity), true
-
-	case "Movie.updated_at":
-		if e.complexity.Movie.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Movie.UpdatedAt(childComplexity), true
-
-	case "Movie.updated_by":
-		if e.complexity.Movie.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.Movie.UpdatedBy(childComplexity), true
-
-	case "MovieOutput.image_link":
-		if e.complexity.MovieOutput.ImageLink == nil {
-			break
-		}
-
-		return e.complexity.MovieOutput.ImageLink(childComplexity), true
-
-	case "MovieOutput.ref_id":
-		if e.complexity.MovieOutput.RefID == nil {
-			break
-		}
-
-		return e.complexity.MovieOutput.RefID(childComplexity), true
-
-	case "MovieOutput.release_date":
-		if e.complexity.MovieOutput.ReleaseDate == nil {
-			break
-		}
-
-		return e.complexity.MovieOutput.ReleaseDate(childComplexity), true
-
-	case "MovieOutput.title":
-		if e.complexity.MovieOutput.Title == nil {
-			break
-		}
-
-		return e.complexity.MovieOutput.Title(childComplexity), true
-
-	case "Mutation.createFavouriteMovie":
-		if e.complexity.Mutation.CreateFavouriteMovie == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createFavouriteMovie_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateFavouriteMovie(childComplexity, args["input"].(model.NewFavouriteMovie)), true
-
-	case "Mutation.createMarker":
-		if e.complexity.Mutation.CreateMarker == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createMarker_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateMarker(childComplexity, args["input"].(model.NewMarker)), true
-
-	case "Mutation.createMarkerType":
-		if e.complexity.Mutation.CreateMarkerType == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createMarkerType_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateMarkerType(childComplexity, args["input"].(model.NewMarkerType)), true
-
-	case "Mutation.createMovieSchedule":
-		if e.complexity.Mutation.CreateMovieSchedule == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createMovieSchedule_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateMovieSchedule(childComplexity, args["input"].(model.NewMovieSchedule)), true
-
-	case "Mutation.createPin":
-		if e.complexity.Mutation.CreatePin == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createPin_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreatePin(childComplexity, args["input"].(model.NewPin)), true
-
-	case "Mutation.createSchedule":
-		if e.complexity.Mutation.CreateSchedule == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createSchedule_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateSchedule(childComplexity, args["input"].(model.NewSchedule)), true
-
-	case "Mutation.createUser":
-		if e.complexity.Mutation.CreateUser == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createUser_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateUser(childComplexity, args["input"].(model.NewUser)), true
-
-	case "Mutation.editMarker":
-		if e.complexity.Mutation.EditMarker == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_editMarker_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.EditMarker(childComplexity, args["input"].(model.UpdateMarker)), true
-
-	case "Mutation.editMarkerType":
-		if e.complexity.Mutation.EditMarkerType == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_editMarkerType_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.EditMarkerType(childComplexity, args["input"].(model.UpdatedMarkerType)), true
-
-	case "Mutation.editPin":
-		if e.complexity.Mutation.EditPin == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_editPin_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.EditPin(childComplexity, args["input"].(model.UpdatedPin)), true
-
-	case "Mutation.editSchedule":
-		if e.complexity.Mutation.EditSchedule == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_editSchedule_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.EditSchedule(childComplexity, args["input"].(model.UpdateSchedule)), true
-
-	case "Mutation.login":
-		if e.complexity.Mutation.Login == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_login_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Login(childComplexity, args["input"].(model.Login)), true
-
-	case "Mutation.logout":
-		if e.complexity.Mutation.Logout == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_logout_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.Logout(childComplexity, args["input"].(model.Logout)), true
-
-	case "Mutation.previewPin":
-		if e.complexity.Mutation.PreviewPin == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_previewPin_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.PreviewPin(childComplexity, args["input"].(model.PreviewPinInput)), true
-
-	case "Mutation.removeFavouriteMovie":
-		if e.complexity.Mutation.RemoveFavouriteMovie == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeFavouriteMovie_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveFavouriteMovie(childComplexity, args["input"].(model.RemoveModel)), true
-
-	case "Mutation.removeMarker":
-		if e.complexity.Mutation.RemoveMarker == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeMarker_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveMarker(childComplexity, args["input"].(model.RemoveModel)), true
-
-	case "Mutation.removeMarkerType":
-		if e.complexity.Mutation.RemoveMarkerType == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeMarkerType_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveMarkerType(childComplexity, args["input"].(model.RemoveModel)), true
-
-	case "Mutation.removePin":
-		if e.complexity.Mutation.RemovePin == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removePin_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemovePin(childComplexity, args["input"].(model.RemoveModel)), true
-
-	case "Mutation.removeSchedule":
-		if e.complexity.Mutation.RemoveSchedule == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_removeSchedule_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RemoveSchedule(childComplexity, args["input"].(model.RemoveModel)), true
-
-	case "Mutation.revokeMarker":
-		if e.complexity.Mutation.RevokeMarker == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_revokeMarker_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.RevokeMarker(childComplexity, args["input"].(model.UpdateModel)), true
-
-	case "Mutation.updateDefault":
-		if e.complexity.Mutation.UpdateDefault == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateDefault_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateDefault(childComplexity, args["input"].(model.UpdatedDefault)), true
-
-	case "Mutation.updateMarkerFav":
-		if e.complexity.Mutation.UpdateMarkerFav == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateMarkerFav_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateMarkerFav(childComplexity, args["input"].(model.UpdateMarkerFavourite)), true
-
-	case "Mutation.updatePreferredPin":
-		if e.complexity.Mutation.UpdatePreferredPin == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updatePreferredPin_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdatePreferredPin(childComplexity, args["input"].(model.UpdatePreferredPin)), true
-
-	case "Mutation.updateRelation":
-		if e.complexity.Mutation.UpdateRelation == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateRelation_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
-
-	case "Mutation.updateScheduleStatus":
-		if e.complexity.Mutation.UpdateScheduleStatus == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateScheduleStatus_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateScheduleStatus(childComplexity, args["input"].(model.ScheduleStatusList)), true
-
-	case "Mutation.updateStation":
-		if e.complexity.Mutation.UpdateStation == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateStation_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateStation(childComplexity, args["input"].(model.UpdateStation)), true
-
-	case "Mutation.websiteScrap":
-		if e.complexity.Mutation.WebsiteScrap == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_websiteScrap_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.WebsiteScrap(childComplexity, args["input"].(model.WebsiteScrapInput)), true
-
-	case "Pin.bottom_right_x":
-		if e.complexity.Pin.BottomRightX == nil {
-			break
-		}
-
-		return e.complexity.Pin.BottomRightX(childComplexity), true
-
-	case "Pin.bottom_right_y":
-		if e.complexity.Pin.BottomRightY == nil {
-			break
-		}
-
-		return e.complexity.Pin.BottomRightY(childComplexity), true
-
-	case "Pin.created_at":
-		if e.complexity.Pin.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Pin.CreatedAt(childComplexity), true
-
-	case "Pin.created_by":
-		if e.complexity.Pin.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.Pin.CreatedBy(childComplexity), true
-
-	case "Pin.display_path":
-		if e.complexity.Pin.DisplayPath == nil {
-			break
-		}
-
-		return e.complexity.Pin.DisplayPath(childComplexity), true
-
-	case "Pin.id":
-		if e.complexity.Pin.ID == nil {
-			break
-		}
-
-		return e.complexity.Pin.ID(childComplexity), true
-
-	case "Pin.image_path":
-		if e.complexity.Pin.ImagePath == nil {
-			break
-		}
-
-		return e.complexity.Pin.ImagePath(childComplexity), true
-
-	case "Pin.label":
-		if e.complexity.Pin.Label == nil {
-			break
-		}
-
-		return e.complexity.Pin.Label(childComplexity), true
-
-	case "Pin.top_left_x":
-		if e.complexity.Pin.TopLeftX == nil {
-			break
-		}
-
-		return e.complexity.Pin.TopLeftX(childComplexity), true
-
-	case "Pin.top_left_y":
-		if e.complexity.Pin.TopLeftY == nil {
-			break
-		}
-
-		return e.complexity.Pin.TopLeftY(childComplexity), true
-
-	case "Pin.updated_at":
-		if e.complexity.Pin.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Pin.UpdatedAt(childComplexity), true
-
-	case "Pin.updated_by":
-		if e.complexity.Pin.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.Pin.UpdatedBy(childComplexity), true
-
-	case "Query.countrycodemap":
-		if e.complexity.Query.Countrycodemap == nil {
-			break
-		}
-
-		return e.complexity.Query.Countrycodemap(childComplexity), true
-
-	case "Query.defaultpins":
-		if e.complexity.Query.Defaultpins == nil {
-			break
-		}
-
-		return e.complexity.Query.Defaultpins(childComplexity), true
-
-	case "Query.eventtypes":
-		if e.complexity.Query.Eventtypes == nil {
-			break
-		}
-
-		return e.complexity.Query.Eventtypes(childComplexity), true
-
-	case "Query.expiredmarkers":
-		if e.complexity.Query.Expiredmarkers == nil {
-			break
-		}
-
-		return e.complexity.Query.Expiredmarkers(childComplexity), true
-
-	case "Query.latestreleasenote":
-		if e.complexity.Query.Latestreleasenote == nil {
-			break
-		}
-
-		return e.complexity.Query.Latestreleasenote(childComplexity), true
-
-	case "Query.mappins":
-		if e.complexity.Query.Mappins == nil {
-			break
-		}
-
-		return e.complexity.Query.Mappins(childComplexity), true
-
-	case "Query.markers":
-		if e.complexity.Query.Markers == nil {
-			break
-		}
-
-		return e.complexity.Query.Markers(childComplexity), true
-
-	case "Query.markerschedules":
-		if e.complexity.Query.Markerschedules == nil {
-			break
-		}
-
-		args, err := ec.field_Query_markerschedules_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Markerschedules(childComplexity, args["params"].(model.IDModel)), true
-
-	case "Query.markertypes":
-		if e.complexity.Query.Markertypes == nil {
-			break
-		}
-
-		return e.complexity.Query.Markertypes(childComplexity), true
-
-	case "Query.me":
-		if e.complexity.Query.Me == nil {
-			break
-		}
-
-		return e.complexity.Query.Me(childComplexity), true
-
-	case "Query.moviefetch":
-		if e.complexity.Query.Moviefetch == nil {
-			break
-		}
-
-		args, err := ec.field_Query_moviefetch_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Moviefetch(childComplexity, args["filter"].(model.MovieFilter)), true
-
-	case "Query.movies":
-		if e.complexity.Query.Movies == nil {
-			break
-		}
-
-		return e.complexity.Query.Movies(childComplexity), true
-
-	case "Query.pins":
-		if e.complexity.Query.Pins == nil {
-			break
-		}
-
-		return e.complexity.Query.Pins(childComplexity), true
-
-	case "Query.preference":
-		if e.complexity.Query.Preference == nil {
-			break
-		}
-
-		return e.complexity.Query.Preference(childComplexity), true
-
-	case "Query.previousmarkers":
-		if e.complexity.Query.Previousmarkers == nil {
-			break
-		}
-
-		return e.complexity.Query.Previousmarkers(childComplexity), true
-
-	case "Query.releasenotes":
-		if e.complexity.Query.Releasenotes == nil {
-			break
-		}
-
-		return e.complexity.Query.Releasenotes(childComplexity), true
-
-	case "Query.schedules":
-		if e.complexity.Query.Schedules == nil {
-			break
-		}
-
-		args, err := ec.field_Query_schedules_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Schedules(childComplexity, args["params"].(model.CurrentTime)), true
-
-	case "Query.scrapimage":
-		if e.complexity.Query.Scrapimage == nil {
-			break
-		}
-
-		args, err := ec.field_Query_scrapimage_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Scrapimage(childComplexity, args["params"].(model.WebLink)), true
-
-	case "Query.specificreleasenote":
-		if e.complexity.Query.Specificreleasenote == nil {
-			break
-		}
-
-		args, err := ec.field_Query_specificreleasenote_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Specificreleasenote(childComplexity, args["filter"].(model.ReleaseNoteFilter)), true
-
-	case "Query.stations":
-		if e.complexity.Query.Stations == nil {
-			break
-		}
-
-		return e.complexity.Query.Stations(childComplexity), true
-
-	case "Query.today":
-		if e.complexity.Query.Today == nil {
-			break
-		}
-
-		args, err := ec.field_Query_today_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Today(childComplexity, args["params"].(model.CurrentTime)), true
-
-	case "Query.users":
-		if e.complexity.Query.Users == nil {
-			break
-		}
-
-		args, err := ec.field_Query_users_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Users(childComplexity, args["filter"].(*model.UserFilter)), true
-
-	case "Query.usersearch":
-		if e.complexity.Query.Usersearch == nil {
-			break
-		}
-
-		args, err := ec.field_Query_usersearch_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Usersearch(childComplexity, args["filter"].(model.UserSearch)), true
-
-	case "Query.watchedmovies":
-		if e.complexity.Query.Watchedmovies == nil {
-			break
-		}
-
-		return e.complexity.Query.Watchedmovies(childComplexity), true
-
-	case "ReleaseNote.date":
-		if e.complexity.ReleaseNote.Date == nil {
-			break
-		}
-
-		return e.complexity.ReleaseNote.Date(childComplexity), true
-
-	case "ReleaseNote.icon":
-		if e.complexity.ReleaseNote.Icon == nil {
-			break
-		}
-
-		return e.complexity.ReleaseNote.Icon(childComplexity), true
-
-	case "ReleaseNote.notes":
-		if e.complexity.ReleaseNote.Notes == nil {
-			break
-		}
-
-		return e.complexity.ReleaseNote.Notes(childComplexity), true
-
-	case "ReleaseNote.version":
-		if e.complexity.ReleaseNote.Version == nil {
-			break
-		}
-
-		return e.complexity.ReleaseNote.Version(childComplexity), true
-
-	case "Restaurant.address":
-		if e.complexity.Restaurant.Address == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Address(childComplexity), true
-
-	case "Restaurant.direction":
-		if e.complexity.Restaurant.Direction == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Direction(childComplexity), true
-
-	case "Restaurant.id":
-		if e.complexity.Restaurant.ID == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.ID(childComplexity), true
-
-	case "Restaurant.introduction":
-		if e.complexity.Restaurant.Introduction == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Introduction(childComplexity), true
-
-	case "Restaurant.name":
-		if e.complexity.Restaurant.Name == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Name(childComplexity), true
-
-	case "Restaurant.opening_hours":
-		if e.complexity.Restaurant.OpeningHours == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.OpeningHours(childComplexity), true
-
-	case "Restaurant.other_info":
-		if e.complexity.Restaurant.OtherInfo == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.OtherInfo(childComplexity), true
-
-	case "Restaurant.payment_method":
-		if e.complexity.Restaurant.PaymentMethod == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.PaymentMethod(childComplexity), true
-
-	case "Restaurant.price_range":
-		if e.complexity.Restaurant.PriceRange == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.PriceRange(childComplexity), true
-
-	case "Restaurant.rating":
-		if e.complexity.Restaurant.Rating == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Rating(childComplexity), true
-
-	case "Restaurant.restaurant_type":
-		if e.complexity.Restaurant.RestaurantType == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.RestaurantType(childComplexity), true
-
-	case "Restaurant.seat_number":
-		if e.complexity.Restaurant.SeatNumber == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.SeatNumber(childComplexity), true
-
-	case "Restaurant.source":
-		if e.complexity.Restaurant.Source == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Source(childComplexity), true
-
-	case "Restaurant.source_id":
-		if e.complexity.Restaurant.SourceID == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.SourceID(childComplexity), true
-
-	case "Restaurant.telephone":
-		if e.complexity.Restaurant.Telephone == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Telephone(childComplexity), true
-
-	case "Restaurant.website":
-		if e.complexity.Restaurant.Website == nil {
-			break
-		}
-
-		return e.complexity.Restaurant.Website(childComplexity), true
-
-	case "Schedule.created_at":
-		if e.complexity.Schedule.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.Schedule.CreatedAt(childComplexity), true
-
-	case "Schedule.created_by":
-		if e.complexity.Schedule.CreatedBy == nil {
-			break
-		}
-
-		return e.complexity.Schedule.CreatedBy(childComplexity), true
-
-	case "Schedule.description":
-		if e.complexity.Schedule.Description == nil {
-			break
-		}
-
-		return e.complexity.Schedule.Description(childComplexity), true
-
-	case "Schedule.id":
-		if e.complexity.Schedule.ID == nil {
-			break
-		}
-
-		return e.complexity.Schedule.ID(childComplexity), true
-
-	case "Schedule.label":
-		if e.complexity.Schedule.Label == nil {
-			break
-		}
-
-		return e.complexity.Schedule.Label(childComplexity), true
-
-	case "Schedule.marker":
-		if e.complexity.Schedule.Marker == nil {
-			break
-		}
-
-		return e.complexity.Schedule.Marker(childComplexity), true
-
-	case "Schedule.movie":
-		if e.complexity.Schedule.Movie == nil {
-			break
-		}
-
-		return e.complexity.Schedule.Movie(childComplexity), true
-
-	case "Schedule.selected_date":
-		if e.complexity.Schedule.SelectedDate == nil {
-			break
-		}
-
-		return e.complexity.Schedule.SelectedDate(childComplexity), true
-
-	case "Schedule.status":
-		if e.complexity.Schedule.Status == nil {
-			break
-		}
-
-		return e.complexity.Schedule.Status(childComplexity), true
-
-	case "Schedule.updated_at":
-		if e.complexity.Schedule.UpdatedAt == nil {
-			break
-		}
-
-		return e.complexity.Schedule.UpdatedAt(childComplexity), true
-
-	case "Schedule.updated_by":
-		if e.complexity.Schedule.UpdatedBy == nil {
-			break
-		}
-
-		return e.complexity.Schedule.UpdatedBy(childComplexity), true
-
-	case "Station.active":
-		if e.complexity.Station.Active == nil {
-			break
-		}
-
-		return e.complexity.Station.Active(childComplexity), true
-
-	case "Station.identifier":
-		if e.complexity.Station.Identifier == nil {
-			break
-		}
-
-		return e.complexity.Station.Identifier(childComplexity), true
-
-	case "Station.label":
-		if e.complexity.Station.Label == nil {
-			break
-		}
-
-		return e.complexity.Station.Label(childComplexity), true
-
-	case "Station.line_info":
-		if e.complexity.Station.LineInfo == nil {
-			break
-		}
-
-		return e.complexity.Station.LineInfo(childComplexity), true
-
-	case "Station.local_name":
-		if e.complexity.Station.LocalName == nil {
-			break
-		}
-
-		return e.complexity.Station.LocalName(childComplexity), true
-
-	case "Station.map_name":
-		if e.complexity.Station.MapName == nil {
-			break
-		}
-
-		return e.complexity.Station.MapName(childComplexity), true
-
-	case "Station.map_x":
-		if e.complexity.Station.MapX == nil {
-			break
-		}
-
-		return e.complexity.Station.MapX(childComplexity), true
-
-	case "Station.map_y":
-		if e.complexity.Station.MapY == nil {
-			break
-		}
-
-		return e.complexity.Station.MapY(childComplexity), true
-
-	case "Station.photo_x":
-		if e.complexity.Station.PhotoX == nil {
-			break
-		}
-
-		return e.complexity.Station.PhotoX(childComplexity), true
-
-	case "Station.photo_y":
-		if e.complexity.Station.PhotoY == nil {
-			break
-		}
-
-		return e.complexity.Station.PhotoY(childComplexity), true
-
-	case "TodayEvent.yesterday_event":
-		if e.complexity.TodayEvent.YesterdayEvent == nil {
-			break
-		}
-
-		return e.complexity.TodayEvent.YesterdayEvent(childComplexity), true
-
-	case "User.created_at":
-		if e.complexity.User.CreatedAt == nil {
-			break
-		}
-
-		return e.complexity.User.CreatedAt(childComplexity), true
-
-	case "User.id":
-		if e.complexity.User.ID == nil {
-			break
-		}
-
-		return e.complexity.User.ID(childComplexity), true
-
-	case "User.role":
-		if e.complexity.User.Role == nil {
-			break
-		}
-
-		return e.complexity.User.Role(childComplexity), true
-
-	case "User.username":
-		if e.complexity.User.Username == nil {
-			break
-		}
-
-		return e.complexity.User.Username(childComplexity), true
-
-	case "UserPreference.favourite_pin":
-		if e.complexity.UserPreference.FavouritePin == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.FavouritePin(childComplexity), true
-
-	case "UserPreference.hurry_pin":
-		if e.complexity.UserPreference.HurryPin == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.HurryPin(childComplexity), true
-
-	case "UserPreference.id":
-		if e.complexity.UserPreference.ID == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.ID(childComplexity), true
-
-	case "UserPreference.regular_pin":
-		if e.complexity.UserPreference.RegularPin == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.RegularPin(childComplexity), true
-
-	case "UserPreference.relation":
-		if e.complexity.UserPreference.Relation == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.Relation(childComplexity), true
-
-	case "UserPreference.selected_pin":
-		if e.complexity.UserPreference.SelectedPin == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.SelectedPin(childComplexity), true
-
-	case "UserPreference.user":
-		if e.complexity.UserPreference.User == nil {
-			break
-		}
-
-		return e.complexity.UserPreference.User(childComplexity), true
-
-	case "WebsiteScrapResult.restaurant":
-		if e.complexity.WebsiteScrapResult.Restaurant == nil {
-			break
-		}
-
-		return e.complexity.WebsiteScrapResult.Restaurant(childComplexity), true
-
-	}
-	return 0, false
-}
-
-func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
-	rc := graphql.GetOperationContext(ctx)
-	ec := executionContext{rc, e}
-	first := true
-
-	switch rc.Operation.Operation {
-	case ast.Query:
-		return func(ctx context.Context) *graphql.Response {
-			if !first {
-				return nil
-			}
-			first = false
-			data := ec._Query(ctx, rc.Operation.SelectionSet)
-			var buf bytes.Buffer
-			data.MarshalGQL(&buf)
-
-			return &graphql.Response{
-				Data: buf.Bytes(),
-			}
-		}
-	case ast.Mutation:
-		return func(ctx context.Context) *graphql.Response {
-			if !first {
-				return nil
-			}
-			first = false
-			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
-			var buf bytes.Buffer
-			data.MarshalGQL(&buf)
-
-			return &graphql.Response{
-				Data: buf.Bytes(),
-			}
-		}
-
-	default:
-		return graphql.OneShot(graphql.ErrorResponse(ctx, "unsupported GraphQL operation"))
-	}
-}
-
-type executionContext struct {
-	*graphql.OperationContext
-	*executableSchema
-}
-
-func (ec *executionContext) introspectSchema() (*introspection.Schema, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
-	}
-	return introspection.WrapSchema(parsedSchema), nil
-}
-
-func (ec *executionContext) introspectType(name string) (*introspection.Type, error) {
-	if ec.DisableIntrospection {
-		return nil, errors.New("introspection disabled")
-	}
-	return introspection.WrapTypeFromDef(parsedSchema, parsedSchema.Types[name]), nil
-}
-
-var sources = []*ast.Source{
-	{Name: "graph/schema.graphqls", Input: `scalar Upload
-
-input UserFilter {
-  username: String
-  role: String
-}
-
-input UserSearch {
-  username: String!
-}
-
-input CurrentTime {
-  time: String!
-}
-
-input IdModel {
-  id: Int!
-}
-
-input WebLink {
-  link: String!
-}
-
-input MovieFilter {
-  type: String!
-  location: String
-  query: String
-}
-
-input ReleaseNoteFilter {
-  version: String!
-}
-
-type User {
-  id: Int!
-  username: String!
-  role: String!
-  created_at: String!
-}
-
-type UserPreference {
-  id: Int!
-  user: User
-  relation: User
-  regular_pin: Pin
-  favourite_pin: Pin
-  selected_pin: Pin
-  hurry_pin: Pin
-}
-
-type Restaurant {
-  id: Int!
+input NewRoroadList {
   name: String!
-  source: String!
-  source_id: String!
-  price_range: String
-  restaurant_type: String
-  address: String
-  rating: String
-  direction: String
-  telephone: String
-  introduction: String
-  opening_hours: String
-  payment_method: String
-  seat_number: String
-  website: String
-  other_info: String
+  target_user: String!
+  list_type: String!
 }
 
-type Marker {
+input UpdateRoroadList {
   id: Int!
-  label: String!
-  latitude: Float!
-  longitude: Float!
-  address: String!
-  image_link: String
-  link: String
-  type: String!
-  description: String
-  estimate_time: String
-  price: String
-  permanent: Boolean!
-  need_booking: Boolean!
-  status: String
-  to_time: String
-  from_time: String
-  restaurant: Restaurant
-  is_fav: Boolean!
-  country_code: String!
-  country_part: String!
-  created_at: String!
-  created_by: User!
-  updated_at: String!
-  updated_by: User!
+  name: String
+  list_type: String
+  checked: Boolean
+  hidden: Boolean
+  target_user: String
 }
 
-type Movie {
-  id: Int!
-  reference_id: Int!
-  label: String!
-  release_date: String
-  image_path: String
-  is_fav: Boolean!
-  created_at: String!
-  created_by: User!
-  updated_at: String!
-  updated_by: User!
-}
-
-type MarkerType {
-  id: Int!
-  label: String!
-  value: String!
-  priority: Int!
-  hidden: Boolean!
-  icon_path: String!
-  created_at: String!
-  created_by: User!
-  updated_at: String!
-  updated_by: User!
-}
-
-type EventType {
-  label: String!
-  value: String!
-  priority: Int!
-  icon_path: String!
-  hidden: Boolean!
-}
-
-type Pin {
-  id: Int!
-  label: String!
-  image_path: String!
-  display_path: String!
-  top_left_x: Int!
-  top_left_y: Int!
-  bottom_right_x: Int!
-  bottom_right_y: Int!
-  created_at: String!
-  created_by: User!
-  updated_at: String!
-  updated_by: User!
-}
-
-type DefaultPin {
-  label: String!
-  pin: Pin
-  created_at: String
-  created_by: User
-  updated_at: String
-  updated_by: User
-}
-
-type MapPin {
-  pinlabel: String!
-  typelabel: String!
-  image_path: String!
-}
-
-type Schedule {
-  id: Int!
-  label: String!
-  description: String!
-  status: String!
-  selected_date: String!
-  marker: Marker
-  movie: Movie
-  created_at: String!
-  created_by: User!
-  updated_at: String!
-  updated_by: User!
-}
-
-type TodayEvent {
-  yesterday_event: [Schedule]!
-}
-
-type MetaDataOutput {
-  image_link: String!
-  title: String!
-}
-
-type MovieOutput {
-  ref_id: Int!
-  title: String!
-  image_link: String!
-  release_date: String!
-}
-
-type ReleaseNote {
-  version: String!
-  notes: String
-  date: String
-  icon: String
-}
-
-type WebsiteScrapResult {
-  restaurant: Restaurant
-}
-
-type Station {
-  identifier: String!
-  label: String!
-  local_name: String!
-  photo_x: Float!
-  photo_y: Float!
-  map_x: Float!
-  map_y: Float!
-  active: Boolean!
-  map_name: String!
-  line_info: String!
-}
-
-type CountryCodeMap {
-  country_code: String!
-  country_name: String!
-}
-
-type Query {
-  users(filter: UserFilter): [User]!
-  usersearch(filter: UserSearch!): User
-  preference: UserPreference
-  markers: [Marker]!
-  markertypes: [MarkerType]!
-  eventtypes: [EventType]!
-  pins: [Pin]!
-  defaultpins: [DefaultPin]!
-  mappins: [MapPin]!
-  schedules(params: CurrentTime!): [Schedule]!
-  movies: [Movie]!
-  today(params: CurrentTime!): TodayEvent!
-  previousmarkers: [Marker]!
-  expiredmarkers: [Marker]!
-  markerschedules(params: IdModel!): [Schedule]!
-  scrapimage(params: WebLink!): MetaDataOutput!
-  moviefetch(filter: MovieFilter!): [MovieOutput]!
-  latestreleasenote: ReleaseNote!
-  specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
-  releasenotes: [ReleaseNote]!
-  stations: [Station]!
-  countrycodemap: [CountryCodeMap]!
-  watchedmovies: [Schedule]!
-  me: String!
-}
-
-input NewUser {
-  username: String!
-  password: String!
-  role: String!
-}
-
-input UpdateRelation {
-  username: String!
-}
-
-input UpdatePreferredPin {
-  label: String!
-  pin_id: Int
-}
-
-input NewMarker {
-  label: String!
-  latitude: Float!
-  longitude: Float!
-  address: String!
-  image_link: String
-  image_upload: Upload
-  link: String
-  type: String!
-  description: String
-  permanent: Boolean
-  need_booking: Boolean
-  to_time: String
-  from_time: String
-  estimate_time: String
-  restaurant_id: Int
-  price: String
-}
-
-input UpdateMarker {
-  id: Int!
-  label: String
-  address: String
-  image_link: String
-  image_upload: Upload
-  no_image: Boolean!
-  link: String
-  type: String
-  description: String
-  permanent: Boolean
-  need_booking: Boolean
-  to_time: String
-  from_time: String
-  estimate_time: String
-  restaurant_id: Int
-  remove_restaurant: Boolean
-  price: String
-}
-
-input UpdateMarkerFavourite {
-  id: Int!
-  is_fav: Boolean!
-}
-
-input NewMarkerType {
-  label: String!
-  value: String!
-  priority: Int!
-  icon_upload: Upload
-  hidden: Boolean!
-}
-
-input UpdatedMarkerType {
-  id: Int!
-  label: String
-  value: String
-  priority: Int
-  icon_upload: Upload
+input ManageRoroadList {
+  ids: [Int]!
   hidden: Boolean
 }
 
-input NewPin {
+input NewCountryPoint {
   label: String!
-  top_left_x: Int!
-  top_left_y: Int!
-  bottom_right_x: Int!
-  bottom_right_y: Int!
-  image_upload: Upload
-}
-
-input UpdatedPin {
-  id: Int!
-  label: String
-  top_left_x: Int
-  top_left_y: Int
-  bottom_right_x: Int
-  bottom_right_y: Int
-  image_upload: Upload
-}
-
-input PreviewPinInput {
-  top_left_x: Int!
-  top_left_y: Int!
-  bottom_right_x: Int!
-  bottom_right_y: Int!
-  image_upload: Upload
-  type_id: Int!
-}
-
-input NewSchedule {
-  label: String!
-  description: String!
-  selected_time: String!
-  marker_id: Int!
-}
-
-input UpdateSchedule {
-  id: Int!
-  label: String
-  description: String
-  selected_time: String
-}
-
-input NewMovieSchedule {
-  label: String!
-  description: String!
-  selected_time: String!
-  movie_rid: Int!
-  marker_id: Int
-}
-
-input NewFavouriteMovie {
-  movie_rid: Int!
-}
-
-input ScheduleStatus {
-  id: Int!
-  status: String!
-}
-
-input ScheduleStatusList {
-  ids: [ScheduleStatus]!
-}
-
-input UpdateModel {
-  id: Int!
-}
-
-input RemoveModel {
-  id: Int!
-}
-
-input UpdatedDefault {
-  label: String!
-  updated_type: String!
-  int_value: Int
-  string_value: String
-}
-
-input WebsiteScrapInput {
-  source: String!
-  source_id: String!
-}
-
-input UpdateStation {
   map_name: String!
-  identifier: String!
-  active: Boolean!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+input NewCountryLocation {
+  label: String!
+  country_point_id: Int!
+  marker_id: Int
+  image_upload: Upload
+  visit_time: String
 }
 
 input Login {
@@ -2348,2928 +421,7 @@ type Mutation {
   updateStation(input: UpdateStation!): Station!
   createFavouriteMovie(input: NewFavouriteMovie!): Movie!
   removeFavouriteMovie(input: RemoveModel!): String!
-  login(input: Login!): LoginResult!
-  logout(input: Logout!): String!
-}
-`, BuiltIn: false},
-}
-var parsedSchema = gqlparser.MustLoadSchema(sources...)
-
-// endregion ************************** generated!.gotpl **************************
-
-// region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_Mutation_createFavouriteMovie_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewFavouriteMovie
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewFavouriteMovie2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewFavouriteMovie(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewMarkerType
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarkerType(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewMarker
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMarker(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createMovieSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewMovieSchedule
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewMovieSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewMovieSchedule(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewPin
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewSchedule
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewSchedule(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewUser
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewUser2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewUser(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_editMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdatedMarkerType
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdatedMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedMarkerType(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_editMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateMarker
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateMarker2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarker(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_editPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdatedPin
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdatedPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedPin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_editSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateSchedule
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateSchedule(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.Login
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLogin2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.Logout
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_previewPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.PreviewPinInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNPreviewPinInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐPreviewPinInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removeFavouriteMovie_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RemoveModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removeMarkerType_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RemoveModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removeMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RemoveModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removePin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RemoveModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_removeSchedule_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RemoveModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_revokeMarker_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateModel
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateDefault_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdatedDefault
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdatedDefault2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatedDefault(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateMarkerFav_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateMarkerFavourite
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateMarkerFavourite2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateMarkerFavourite(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updatePreferredPin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdatePreferredPin
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdatePreferredPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdatePreferredPin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateRelation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateRelation
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateScheduleStatus_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ScheduleStatusList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNScheduleStatusList2mapmarkerᚋbackendᚋgraphᚋmodelᚐScheduleStatusList(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateStation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateStation
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateStation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateStation(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_websiteScrap_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.WebsiteScrapInput
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNWebsiteScrapInput2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapInput(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["name"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_markerschedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.IDModel
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNIdModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐIDModel(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_moviefetch_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.MovieFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalNMovieFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐMovieFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_schedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.CurrentTime
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_scrapimage_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.WebLink
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNWebLink2mapmarkerᚋbackendᚋgraphᚋmodelᚐWebLink(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_specificreleasenote_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ReleaseNoteFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalNReleaseNoteFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐReleaseNoteFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_today_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.CurrentTime
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 *model.UserFilter
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalOUserFilter2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_usersearch_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UserSearch
-	if tmp, ok := rawArgs["filter"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("filter"))
-		arg0, err = ec.unmarshalNUserSearch2mapmarkerᚋbackendᚋgraphᚋmodelᚐUserSearch(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field___Type_enumValues_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 bool
-	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
-		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["includeDeprecated"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 bool
-	if tmp, ok := rawArgs["includeDeprecated"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("includeDeprecated"))
-		arg0, err = ec.unmarshalOBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["includeDeprecated"] = arg0
-	return args, nil
-}
-
-// endregion ***************************** args.gotpl *****************************
-
-// region    ************************** directives.gotpl **************************
-
-// endregion ************************** directives.gotpl **************************
-
-// region    **************************** field.gotpl *****************************
-
-func (ec *executionContext) _CountryCodeMap_country_code(ctx context.Context, field graphql.CollectedField, obj *model.CountryCodeMap) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CountryCodeMap",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CountryCode, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _CountryCodeMap_country_name(ctx context.Context, field graphql.CollectedField, obj *model.CountryCodeMap) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "CountryCodeMap",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CountryName, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_label(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Label, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_pin(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Pin, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.Pin)
-	fc.Result = res
-	return ec.marshalOPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_created_at(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_created_by(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _DefaultPin_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.DefaultPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "DefaultPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalOUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _EventType_label(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "EventType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Label, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _EventType_value(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "EventType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Value, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _EventType_priority(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "EventType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Priority, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _EventType_icon_path(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "EventType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IconPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _EventType_hidden(ctx context.Context, field graphql.CollectedField, obj *model.EventType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "EventType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Hidden, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _LoginResult_jwt(ctx context.Context, field graphql.CollectedField, obj *model.LoginResult) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "LoginResult",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Jwt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _LoginResult_username(ctx context.Context, field graphql.CollectedField, obj *model.LoginResult) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "LoginResult",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Username, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MapPin_pinlabel(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MapPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Pinlabel, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MapPin_typelabel(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MapPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Typelabel, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MapPin_image_path(ctx context.Context, field graphql.CollectedField, obj *model.MapPin) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MapPin",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ImagePath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_id(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_label(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Label, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_latitude(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Latitude, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(float64)
-	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_longitude(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Longitude, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(float64)
-	fc.Result = res
-	return ec.marshalNFloat2float64(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_address(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Address, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_image_link(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ImageLink, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_link(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Link, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_type(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Type, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_description(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_estimate_time(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.EstimateTime, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_price(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Price, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_permanent(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Permanent, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_need_booking(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.NeedBooking, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_status(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Status, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_to_time(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ToTime, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_from_time(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.FromTime, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_restaurant(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Restaurant, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.Restaurant)
-	fc.Result = res
-	return ec.marshalORestaurant2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRestaurant(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_is_fav(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsFav, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_country_code(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CountryCode, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_country_part(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CountryPart, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_created_by(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Marker_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Marker",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_id(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_label(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Label, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_value(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Value, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_priority(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Priority, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_hidden(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Hidden, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_icon_path(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IconPath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_created_at(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_created_by(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MarkerType_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MarkerType",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MetaDataOutput_image_link(ctx context.Context, field graphql.CollectedField, obj *model.MetaDataOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MetaDataOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ImageLink, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MetaDataOutput_title(ctx context.Context, field graphql.CollectedField, obj *model.MetaDataOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MetaDataOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_id(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_reference_id(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ReferenceID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_label(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Label, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_release_date(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ReleaseDate, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_image_path(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ImagePath, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*string)
-	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_is_fav(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.IsFav, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_created_at(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_created_by(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.CreatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_updated_at(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedAt, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Movie_updated_by(ctx context.Context, field graphql.CollectedField, obj *model.Movie) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Movie",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.UpdatedBy, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.User)
-	fc.Result = res
-	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MovieOutput_ref_id(ctx context.Context, field graphql.CollectedField, obj *model.MovieOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MovieOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.RefID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MovieOutput_title(ctx context.Context, field graphql.CollectedField, obj *model.MovieOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MovieOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Title, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MovieOutput_image_link(ctx context.Context, field graphql.CollectedField, obj *model.MovieOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MovieOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ImageLink, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _MovieOutput_release_date(ctx context.Context, field graphql.CollectedField, obj *model.MovieOutput) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "MovieOutput",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ReleaseDate, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5286,7 +438,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createUser_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createRoroadList_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5294,7 +446,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateUser(rctx, args["input"].(model.NewUser))
+		return ec.resolvers.Mutation().CreateRoroadList(rctx, args["input"].(model.NewRoroadList))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5306,12 +458,12 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.RoroadList)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_updateRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5328,7 +480,7 @@ func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field 
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateRelation_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_updateRoroadList_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5336,7 +488,7 @@ func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateRelation(rctx, args["input"].(model.UpdateRelation))
+		return ec.resolvers.Mutation().UpdateRoroadList(rctx, args["input"].(model.UpdateRoroadList))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5348,12 +500,12 @@ func (ec *executionContext) _Mutation_updateRelation(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.RoroadList)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_manageMultipleRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5370,7 +522,7 @@ func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, fi
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updatePreferredPin_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_manageMultipleRoroadList_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5378,7 +530,7 @@ func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, fi
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdatePreferredPin(rctx, args["input"].(model.UpdatePreferredPin))
+		return ec.resolvers.Mutation().ManageMultipleRoroadList(rctx, args["input"].(model.ManageRoroadList))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5390,12 +542,12 @@ func (ec *executionContext) _Mutation_updatePreferredPin(ctx context.Context, fi
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.UserPreference)
+	res := resTmp.([]*model.RoroadList)
 	fc.Result = res
-	return ec.marshalNUserPreference2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUserPreference(ctx, field.Selections, res)
+	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createCountryPoint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5412,7 +564,7 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createMarker_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createCountryPoint_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5420,7 +572,7 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMarker(rctx, args["input"].(model.NewMarker))
+		return ec.resolvers.Mutation().CreateCountryPoint(rctx, args["input"].(model.NewCountryPoint))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5432,12 +584,12 @@ func (ec *executionContext) _Mutation_createMarker(ctx context.Context, field gr
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Marker)
+	res := resTmp.(*model.CountryPoint)
 	fc.Result = res
-	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+	return ec.marshalNCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_editMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_createCountryLocation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -5454,7 +606,7 @@ func (ec *executionContext) _Mutation_editMarker(ctx context.Context, field grap
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_editMarker_args(ctx, rawArgs)
+	args, err := ec.field_Mutation_createCountryLocation_args(ctx, rawArgs)
 	if err != nil {
 		ec.Error(ctx, err)
 		return graphql.Null
@@ -5462,7 +614,7 @@ func (ec *executionContext) _Mutation_editMarker(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditMarker(rctx, args["input"].(model.UpdateMarker))
+		return ec.resolvers.Mutation().CreateCountryLocation(rctx, args["input"].(model.NewCountryLocation))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -5474,846 +626,9 @@ func (ec *executionContext) _Mutation_editMarker(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Marker)
+	res := resTmp.(*model.CountryLocation)
 	fc.Result = res
-	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_removeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_removeMarker_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveMarker(rctx, args["input"].(model.RemoveModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateMarkerFav(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateMarkerFav_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMarkerFav(rctx, args["input"].(model.UpdateMarkerFavourite))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Marker)
-	fc.Result = res
-	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createMarkerType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createMarkerType_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMarkerType(rctx, args["input"].(model.NewMarkerType))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.MarkerType)
-	fc.Result = res
-	return ec.marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_editMarkerType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_editMarkerType_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditMarkerType(rctx, args["input"].(model.UpdatedMarkerType))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.MarkerType)
-	fc.Result = res
-	return ec.marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_removeMarkerType(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_removeMarkerType_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveMarkerType(rctx, args["input"].(model.RemoveModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createPin_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreatePin(rctx, args["input"].(model.NewPin))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Pin)
-	fc.Result = res
-	return ec.marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_editPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_editPin_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditPin(rctx, args["input"].(model.UpdatedPin))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Pin)
-	fc.Result = res
-	return ec.marshalNPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐPin(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_previewPin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_previewPin_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().PreviewPin(rctx, args["input"].(model.PreviewPinInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_removePin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_removePin_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemovePin(rctx, args["input"].(model.RemoveModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateDefault(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateDefault_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateDefault(rctx, args["input"].(model.UpdatedDefault))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createSchedule_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateSchedule(rctx, args["input"].(model.NewSchedule))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Schedule)
-	fc.Result = res
-	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createMovieSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createMovieSchedule_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateMovieSchedule(rctx, args["input"].(model.NewMovieSchedule))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Schedule)
-	fc.Result = res
-	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_editSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_editSchedule_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().EditSchedule(rctx, args["input"].(model.UpdateSchedule))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Schedule)
-	fc.Result = res
-	return ec.marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateScheduleStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateScheduleStatus_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateScheduleStatus(rctx, args["input"].(model.ScheduleStatusList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.Schedule)
-	fc.Result = res
-	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_removeSchedule(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_removeSchedule_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveSchedule(rctx, args["input"].(model.RemoveModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.Marker)
-	fc.Result = res
-	return ec.marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_revokeMarker(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_revokeMarker_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RevokeMarker(rctx, args["input"].(model.UpdateModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Marker)
-	fc.Result = res
-	return ec.marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_websiteScrap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_websiteScrap_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().WebsiteScrap(rctx, args["input"].(model.WebsiteScrapInput))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.WebsiteScrapResult)
-	fc.Result = res
-	return ec.marshalNWebsiteScrapResult2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐWebsiteScrapResult(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateStation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateStation_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateStation(rctx, args["input"].(model.UpdateStation))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Station)
-	fc.Result = res
-	return ec.marshalNStation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐStation(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createFavouriteMovie(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createFavouriteMovie_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateFavouriteMovie(rctx, args["input"].(model.NewFavouriteMovie))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Movie)
-	fc.Result = res
-	return ec.marshalNMovie2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMovie(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_removeFavouriteMovie(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_removeFavouriteMovie_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().RemoveFavouriteMovie(rctx, args["input"].(model.RemoveModel))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -7673,6 +1988,76 @@ func (ec *executionContext) _Query_watchedmovies(ctx context.Context, field grap
 	res := resTmp.([]*model.Schedule)
 	fc.Result = res
 	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_countrypoints(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Countrypoints(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CountryPoint)
+	fc.Result = res
+	return ec.marshalNCountryPoint2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_countrylocations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Countrylocations(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CountryLocation)
+	fc.Result = res
+	return ec.marshalNCountryLocation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -10810,6 +5195,118 @@ func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj i
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewCountryLocation(ctx context.Context, obj interface{}) (model.NewCountryLocation, error) {
+	var it model.NewCountryLocation
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "country_point_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("country_point_id"))
+			it.CountryPointID, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "marker_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("marker_id"))
+			it.MarkerID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "image_upload":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_upload"))
+			it.ImageUpload, err = ec.unmarshalOUpload2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "visit_time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visit_time"))
+			it.VisitTime, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputNewCountryPoint(ctx context.Context, obj interface{}) (model.NewCountryPoint, error) {
+	var it model.NewCountryPoint
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_name":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_name"))
+			it.MapName, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "photo_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("photo_x"))
+			it.PhotoX, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "photo_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("photo_y"))
+			it.PhotoY, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_x":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_x"))
+			it.MapX, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "map_y":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("map_y"))
+			it.MapY, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputNewFavouriteMovie(ctx context.Context, obj interface{}) (model.NewFavouriteMovie, error) {
 	var it model.NewFavouriteMovie
 	var asMap = obj.(map[string]interface{})
@@ -11994,6 +6491,100 @@ func (ec *executionContext) _CountryCodeMap(ctx context.Context, sel ast.Selecti
 	return out
 }
 
+var countryLocationImplementors = []string{"CountryLocation"}
+
+func (ec *executionContext) _CountryLocation(ctx context.Context, sel ast.SelectionSet, obj *model.CountryLocation) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryLocationImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryLocation")
+		case "id":
+			out.Values[i] = ec._CountryLocation_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CountryLocation_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "visit_time":
+			out.Values[i] = ec._CountryLocation_visit_time(ctx, field, obj)
+		case "country_point_id":
+			out.Values[i] = ec._CountryLocation_country_point_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "marker_id":
+			out.Values[i] = ec._CountryLocation_marker_id(ctx, field, obj)
+		case "image_link":
+			out.Values[i] = ec._CountryLocation_image_link(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var countryPointImplementors = []string{"CountryPoint"}
+
+func (ec *executionContext) _CountryPoint(ctx context.Context, sel ast.SelectionSet, obj *model.CountryPoint) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, countryPointImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CountryPoint")
+		case "id":
+			out.Values[i] = ec._CountryPoint_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "label":
+			out.Values[i] = ec._CountryPoint_label(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "map_name":
+			out.Values[i] = ec._CountryPoint_map_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "photo_x":
+			out.Values[i] = ec._CountryPoint_photo_x(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "photo_y":
+			out.Values[i] = ec._CountryPoint_photo_y(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "map_x":
+			out.Values[i] = ec._CountryPoint_map_x(ctx, field, obj)
+		case "map_y":
+			out.Values[i] = ec._CountryPoint_map_y(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var defaultPinImplementors = []string{"DefaultPin"}
 
 func (ec *executionContext) _DefaultPin(ctx context.Context, sel ast.SelectionSet, obj *model.DefaultPin) graphql.Marshaler {
@@ -12611,6 +7202,31 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "createRoroadList":
+			out.Values[i] = ec._Mutation_createRoroadList(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "updateRoroadList":
+			out.Values[i] = ec._Mutation_updateRoroadList(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "manageMultipleRoroadList":
+			out.Values[i] = ec._Mutation_manageMultipleRoroadList(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createCountryPoint":
+			out.Values[i] = ec._Mutation_createCountryPoint(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createCountryLocation":
+			out.Values[i] = ec._Mutation_createCountryLocation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -13040,6 +7656,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_watchedmovies(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "countrypoints":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countrypoints(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "countrylocations":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_countrylocations(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -13745,6 +8389,108 @@ func (ec *executionContext) marshalNCountryCodeMap2ᚕᚖmapmarkerᚋbackendᚋg
 	return ret
 }
 
+func (ec *executionContext) marshalNCountryLocation2mapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v model.CountryLocation) graphql.Marshaler {
+	return ec._CountryLocation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCountryLocation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v []*model.CountryLocation) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v *model.CountryLocation) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CountryLocation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNCountryPoint2mapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v model.CountryPoint) graphql.Marshaler {
+	return ec._CountryPoint(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCountryPoint2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v []*model.CountryPoint) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v *model.CountryPoint) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._CountryPoint(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNCurrentTime2mapmarkerᚋbackendᚋgraphᚋmodelᚐCurrentTime(ctx context.Context, v interface{}) (model.CurrentTime, error) {
 	res, err := ec.unmarshalInputCurrentTime(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -14127,6 +8873,16 @@ func (ec *executionContext) marshalNMovieOutput2ᚕᚖmapmarkerᚋbackendᚋgrap
 	}
 	wg.Wait()
 	return ret
+}
+
+func (ec *executionContext) unmarshalNNewCountryLocation2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryLocation(ctx context.Context, v interface{}) (model.NewCountryLocation, error) {
+	res, err := ec.unmarshalInputNewCountryLocation(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNNewCountryPoint2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewCountryPoint(ctx context.Context, v interface{}) (model.NewCountryPoint, error) {
+	res, err := ec.unmarshalInputNewCountryPoint(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNNewFavouriteMovie2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewFavouriteMovie(ctx context.Context, v interface{}) (model.NewFavouriteMovie, error) {
@@ -14838,6 +9594,20 @@ func (ec *executionContext) marshalOCountryCodeMap2ᚖmapmarkerᚋbackendᚋgrap
 	return ec._CountryCodeMap(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalOCountryLocation2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryLocation(ctx context.Context, sel ast.SelectionSet, v *model.CountryLocation) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountryLocation(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOCountryPoint2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐCountryPoint(ctx context.Context, sel ast.SelectionSet, v *model.CountryPoint) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CountryPoint(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalODefaultPin2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐDefaultPin(ctx context.Context, sel ast.SelectionSet, v *model.DefaultPin) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -14850,6 +9620,21 @@ func (ec *executionContext) marshalOEventType2ᚖmapmarkerᚋbackendᚋgraphᚋm
 		return graphql.Null
 	}
 	return ec._EventType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloat(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return graphql.MarshalFloat(*v)
 }
 
 func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {

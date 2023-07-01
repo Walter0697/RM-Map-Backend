@@ -371,3 +371,58 @@ func ConvertTrainStation(input dbmodel.TrainStation) model.Station {
 
 	return item
 }
+
+func ConvertRoroadList(input dbmodel.RoRoadList) model.RoroadList {
+	var item model.RoroadList
+
+	item.ID = int(input.ID)
+	item.Name = input.Name
+	item.TargetUser = input.TargetUser
+	item.ListType = input.Type
+	item.Checked = input.Checked
+	item.Hidden = input.Hidden
+
+	return item
+}
+
+func ConvertCountryPoint(input dbmodel.CountryPoint) model.CountryPoint {
+	var item model.CountryPoint
+
+	item.ID = int(input.ID)
+	item.Label = input.Label
+	item.MapName = input.MapName
+	item.PhotoX = input.PhotoX
+	item.PhotoY = input.PhotoY
+	item.MapX = input.MapX
+	item.MapY = input.MapY
+
+	return item
+}
+
+func ConvertCountryLocation(input dbmodel.CountryLocation) model.CountryLocation {
+	var item model.CountryLocation
+
+	item.ID = int(input.ID)
+	item.Label = input.Label
+	item.CountryPointID = int(input.CountryPointId)
+	if input.MarkerId != nil {
+		markerId := int(*input.MarkerId)
+		item.MarkerID = &markerId
+	} else {
+		item.MarkerID = nil
+	}
+	if input.ImageLink != "" {
+		var imageLink = &input.ImageLink
+		item.ImageLink = imageLink
+	} else {
+		item.ImageLink = nil
+	}
+	if input.VisitTime != nil {
+		visitTime := utils.ConvertToOutputTime(*input.VisitTime)
+		item.VisitTime = &visitTime
+	} else {
+		item.VisitTime = nil
+	}
+
+	return item
+}
