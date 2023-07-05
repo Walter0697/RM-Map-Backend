@@ -234,6 +234,7 @@ type CountryLocation {
   country_point_id: Int!
   marker_id: Int
   image_link: String
+  marker: Marker
 }
 
 type Query {
@@ -430,6 +431,84 @@ input UpdateStation {
   active: Boolean!
 }
 
+input NewRoroadList {
+  name: String!
+  target_user: String!
+  list_type: String!
+}
+
+input UpdateRoroadList {
+  id: Int!
+  name: String
+  list_type: String
+  checked: Boolean
+  hidden: Boolean
+  target_user: String
+}
+
+input ManageRoroadList {
+  ids: [Int]!
+  hidden: Boolean
+}
+
+input NewCountryPoint {
+  label: String!
+  map_name: String!
+  photo_x: Float!
+  photo_y: Float!
+  map_x: Float
+  map_y: Float
+}
+
+input NewCountryLocation {
+  label: String!
+  country_point_id: Int!
+  marker_id: Int
+  image_link: String
+  image_upload: Upload
+  visit_time: String
+}
+
+input Login {
+  username: String!
+  password: String!
+}
+
+input Logout {
+  jwt: String!
+}
+
+type LoginResult {
+  jwt: String!
+  username: String!
+}
+
+type Mutation {
+  createUser(input: NewUser!): String!
+  updateRelation(input: UpdateRelation!): String!
+  updatePreferredPin(input: UpdatePreferredPin!): UserPreference!
+  createMarker(input: NewMarker!): Marker!
+  editMarker(input: UpdateMarker!): Marker!
+  removeMarker(input: RemoveModel!): String!
+  updateMarkerFav(input: UpdateMarkerFavourite!): Marker!
+  createMarkerType(input: NewMarkerType!): MarkerType!
+  editMarkerType(input: UpdatedMarkerType!): MarkerType!
+  removeMarkerType(input: RemoveModel!): String!
+  createPin(input: NewPin!): Pin!
+  editPin(input: UpdatedPin!): Pin!
+  previewPin(input: PreviewPinInput!): String!
+  removePin(input: RemoveModel!): String!
+  updateDefault(input: UpdatedDefault!): String!
+  createSchedule(input: NewSchedule!): Schedule!
+  createMovieSchedule(input: NewMovieSchedule!): Schedule!
+  editSchedule(input: UpdateSchedule!): Schedule!
+  updateScheduleStatus(input: ScheduleStatusList!): [Schedule]!
+  removeSchedule(input: RemoveModel!): Marker
+  revokeMarker(input: UpdateModel!): Marker!
+  websiteScrap(input: WebsiteScrapInput!): WebsiteScrapResult!
+  updateStation(input: UpdateStation!): Station!
+  createFavouriteMovie(input: NewFavouriteMovie!): Movie!
+  removeFavouriteMovie(input: RemoveModel!): String!
   createRoroadList(input: NewRoroadList!): RoroadList!
   updateRoroadList(input: UpdateRoroadList!): RoroadList!
   manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!

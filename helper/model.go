@@ -424,5 +424,10 @@ func ConvertCountryLocation(input dbmodel.CountryLocation) model.CountryLocation
 		item.VisitTime = nil
 	}
 
+	if input.RelatedMarker != nil {
+		marker := ConvertMarker(*input.RelatedMarker)
+		item.Marker = &marker
+	}
+
 	return item
 }
