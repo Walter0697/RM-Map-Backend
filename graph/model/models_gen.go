@@ -18,6 +18,7 @@ type CountryLocation struct {
 	CountryPointID int     `json:"country_point_id"`
 	MarkerID       *int    `json:"marker_id"`
 	ImageLink      *string `json:"image_link"`
+	Marker         *Marker `json:"marker"`
 }
 
 type CountryPoint struct {
@@ -155,6 +156,7 @@ type NewCountryLocation struct {
 	Label          string          `json:"label"`
 	CountryPointID int             `json:"country_point_id"`
 	MarkerID       *int            `json:"marker_id"`
+	ImageLink      *string         `json:"image_link"`
 	ImageUpload    *graphql.Upload `json:"image_upload"`
 	VisitTime      *string         `json:"visit_time"`
 }

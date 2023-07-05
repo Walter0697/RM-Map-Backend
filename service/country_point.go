@@ -25,9 +25,13 @@ func GetAllCountryPoint(relation dbmodel.UserRelation) ([]dbmodel.CountryPoint, 
 	return points, nil
 }
 
-func GetAllCountryLocation(relation dbmodel.UserRelation) ([]dbmodel.CountryLocation, error) {
+func GetAllCountryLocation(relation dbmodel.UserRelation, requested []string) ([]dbmodel.CountryLocation, error) {
 	var locations []dbmodel.CountryLocation
 	query := database.Connection
+
+	if utils.StringInSlice("marker", requested) {
+		query = query.Preload("RelatedMarker")
+	}
 
 	query = query.Preload("Relation")
 	query = query.Where("relation_id = ?", relation.ID)
@@ -74,6 +78,20 @@ func CreateCountryLocation(input model.NewCountryLocation, point dbmodel.Country
 	location.Label = input.Label
 
 	imageFileName := ""
+
+	if input.ImageLink != nil {
+		// for now we use frontend to validate if it is an image
+		// maybe add that to backend in the future
+
+		filename := constant.GetImageLinkName(constant.CountryImagePath, *input.ImageLink)
+		filepath := constant.BasePath + filename
+		if err := utils.SaveImageFromURL(filepath, *input.ImageLink); err != nil {
+			return nil, err
+		}
+
+		imageFileName = filename
+	}
+
 	if input.ImageUpload != nil {
 		typeInfo := strings.Split(input.ImageUpload.ContentType, "/")
 		if typeInfo[0] != "image" {

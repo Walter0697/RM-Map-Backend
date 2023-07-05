@@ -1984,7 +1984,9 @@ func (r *queryResolver) Countrylocations(ctx context.Context) ([]*model.CountryL
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	locations, err := service.GetAllCountryLocation(*relation)
+	requested_field := utils.GetTopPreloads(ctx)
+
+	locations, err := service.GetAllCountryLocation(*relation, requested_field)
 	if err != nil {
 		return nil, err
 	}

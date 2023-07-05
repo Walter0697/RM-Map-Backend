@@ -248,6 +248,7 @@ type CountryLocation {
   country_point_id: Int!
   marker_id: Int
   image_link: String
+  marker: Marker
 }
 
 type Query {
@@ -479,6 +480,7 @@ input NewCountryLocation {
   label: String!
   country_point_id: Int!
   marker_id: Int
+  image_link: String
   image_upload: Upload
   visit_time: String
 }

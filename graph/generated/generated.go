@@ -53,6 +53,7 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		ImageLink      func(childComplexity int) int
 		Label          func(childComplexity int) int
+		Marker         func(childComplexity int) int
 		MarkerID       func(childComplexity int) int
 		VisitTime      func(childComplexity int) int
 	}
@@ -450,6 +451,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CountryLocation.Label(childComplexity), true
+
+	case "CountryLocation.marker":
+		if e.complexity.CountryLocation.Marker == nil {
+			break
+		}
+
+		return e.complexity.CountryLocation.Marker(childComplexity), true
 
 	case "CountryLocation.marker_id":
 		if e.complexity.CountryLocation.MarkerID == nil {
@@ -2419,6 +2427,7 @@ type CountryLocation {
   country_point_id: Int!
   marker_id: Int
   image_link: String
+  marker: Marker
 }
 
 type Query {
@@ -2650,6 +2659,7 @@ input NewCountryLocation {
   label: String!
   country_point_id: Int!
   marker_id: Int
+  image_link: String
   image_upload: Upload
   visit_time: String
 }
@@ -3647,6 +3657,38 @@ func (ec *executionContext) _CountryLocation_image_link(ctx context.Context, fie
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _CountryLocation_marker(ctx context.Context, field graphql.CollectedField, obj *model.CountryLocation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "CountryLocation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Marker, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.Marker)
+	fc.Result = res
+	return ec.marshalOMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _CountryPoint_id(ctx context.Context, field graphql.CollectedField, obj *model.CountryPoint) (ret graphql.Marshaler) {
@@ -12316,6 +12358,14 @@ func (ec *executionContext) unmarshalInputNewCountryLocation(ctx context.Context
 			if err != nil {
 				return it, err
 			}
+		case "image_link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("image_link"))
+			it.ImageLink, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "image_upload":
 			var err error
 
@@ -13738,6 +13788,8 @@ func (ec *executionContext) _CountryLocation(ctx context.Context, sel ast.Select
 			out.Values[i] = ec._CountryLocation_marker_id(ctx, field, obj)
 		case "image_link":
 			out.Values[i] = ec._CountryLocation_image_link(ctx, field, obj)
+		case "marker":
+			out.Values[i] = ec._CountryLocation_marker(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}

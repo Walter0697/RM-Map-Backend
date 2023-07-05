@@ -111,6 +111,8 @@ func startServer() {
 	fileServer(router, "/image/previews", previewsDir)
 	moviesDir := http.Dir(filepath.Join(workDir, "uploads/movies"))
 	fileServer(router, "/image/movies", moviesDir)
+	countriesDir := http.Dir(filepath.Join(workDir, "uploads/countries"))
+	fileServer(router, "/image/countries", countriesDir)
 
 	// for non dynamic asset that is required when nothing is set
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
