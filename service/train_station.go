@@ -5,6 +5,17 @@ import (
 	"mapmarker/backend/database/dbmodel"
 )
 
+func GetAllTrainStations() ([]dbmodel.TrainStation, error) {
+	var stations []dbmodel.TrainStation
+
+	query := database.Connection
+	if err := query.Find(&stations).Error; err != nil {
+		return stations, err
+	}
+
+	return stations, nil
+}
+
 func GetAllTrainStationByMapName(name string) ([]dbmodel.TrainStation, error) {
 	var stations []dbmodel.TrainStation
 

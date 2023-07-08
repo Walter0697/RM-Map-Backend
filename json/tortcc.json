@@ -1,0 +1,1212 @@
+{
+    "version": 1,
+    "type": "train_station",
+    "name": "TOR_TCC",
+    "data": [
+        {
+            "label": "Vaughan Metropolitan Centre",
+            "localName": "Vaughan Metropolitan Centre",
+            "identifier": "VaughanMetropolitanCentre",
+            "photo": {
+                "x": 405,
+                "y": 98
+            },
+             "map": {
+                "x": 43.794243871091574,
+                "y":  -79.52748670294929
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 1 }
+            ]
+        },
+        {
+            "label": "Highway 407",
+            "localName": "Highway 407",
+            "identifier": "Highway407",
+            "photo": {
+                "x": 404,
+                "y": 156
+            },
+             "map": {
+                "x": 43.78334501461228,
+                "y":  -79.5238135190369
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 2 }
+            ]
+        },
+        {
+            "label": "Pioner Village",
+            "localName": "Pioner Village",
+            "identifier": "PionerVillage",
+            "photo": {
+                "x": 466,
+                "y": 220
+            },
+             "map": {
+                "x": 43.77710543708404,
+                "y":  -79.51033560973278
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 3 }
+            ]
+        },
+        {
+            "label": "York University",
+            "localName": "York University",
+            "identifier": "YorkUniversity",
+            "photo": {
+                "x": 526,
+                "y": 279
+            },
+            "map": {
+                "x": 43.7739129075113,
+                "y":  -79.4998186933215
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 4 }
+            ]
+        },
+        {
+            "label": "Finch West",
+            "localName": "Finch West",
+            "identifier": "FinchWest",
+            "photo": {
+                "x": 587,
+                "y": 341
+            },
+             "map": {
+                "x": 43.765128436612606,
+                "y":  -79.49089503587332
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 5 }
+            ]
+        },
+        {
+            "label": "Downsview Park",
+            "localName": "Downsview Park",
+            "identifier": "DownsviewPark",
+            "photo": {
+                "x": 650,
+                "y": 403
+            },
+             "map": {
+                "x": 43.75349412855756,
+                "y":  -79.47895138767066
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 6 }
+            ]
+        },
+        {
+            "label": "Sheppard West",
+            "localName": "Sheppard West",
+            "identifier": "SheppardWest",
+            "photo": {
+                "x": 771,
+                "y": 463
+            },
+             "map": {
+                "x": 43.74964724884347, 
+                "y":  -79.46191031961439
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 7 }
+            ]
+        },
+        {
+            "label": "Wilson",
+            "localName": "Wilson",
+            "identifier": "Wilson",
+            "photo": {
+                "x": 893,
+                "y": 583
+            },
+             "map": {
+                "x": 43.73448493876328,
+                "y": -79.4499690350527
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 8 }
+            ]
+        },
+        {
+            "label": "Yorkdale",
+            "localName": "Yorkdale",
+            "identifier": "Yorkdale",
+            "photo": {
+                "x": 893,
+                "y": 643
+            },
+             "map": {
+                "x": 43.72456145209806,
+                "y": -79.44749083617857
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 9 }
+            ]
+        },
+        {
+            "label": "Lawrenace West",
+            "localName": "Lawrenace West",
+            "identifier": "LawrenaceWest",
+            "photo": {
+                "x": 893,
+                "y": 706
+            },
+             "map": {
+                "x": 43.715909423670404,
+                "y": -79.44416893801716
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 10 }
+            ]
+        },
+        {
+            "label": "Glencairn",
+            "localName": "Glencairn",
+            "identifier": "Glencairn",
+            "photo": {
+                "x": 893,
+                "y": 767
+            },
+             "map": {
+                "x": 43.70877842686106,
+                "y": -79.44072211426003
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 11 }
+            ]
+        },
+        {
+            "label": "Eglinton West",
+            "localName": "Eglinton West",
+            "identifier": "EglintonWest",
+            "photo": {
+                "x": 893,
+                "y": 829
+            },
+             "map": {
+                "x": 43.6990589022141,
+                "y": -79.43601242145917
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 12 }
+            ]
+        },
+        {
+            "label": "St. Clair West",
+            "localName": "St. Clair West",
+            "identifier": "StClairWest",
+            "photo": {
+                "x": 1014,
+                "y": 950
+            },
+             "map": {
+                "x": 43.68417024650824,
+                "y": -79.4154980348215
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 13 }
+            ]
+        },
+        {
+            "label": "Dupoint",
+            "localName": "Dupoint",
+            "identifier": "Dupoint",
+            "photo": {
+                "x": 1014,
+                "y": 1013
+            },
+             "map": {
+                "x": 43.67483654683256,
+                "y": -79.40707919950407
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 14 }
+            ]
+        },
+        {
+            "label": "Spadina",
+            "localName": "Spadina",
+            "identifier": "Spadina",
+            "photo": {
+                "x": 1014,
+                "y": 1105
+            },
+             "map": {
+                "x": 43.66716299617958,
+                "y": -79.404339789366
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 15 },
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 15 }
+            ]
+        },
+        {
+            "label": "St. George",
+            "localName": "St. George",
+            "identifier": "StGeorge",
+            "photo": {
+                "x": 1075,
+                "y": 1134
+            },
+             "map": {
+                "x": 43.66827324653194,
+                "y": -79.39983786826589
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 16 },
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 16 }
+            ]
+        },
+        {
+            "label": "Museum",
+            "localName": "Museum",
+            "identifier": "Museum",
+            "photo": {
+                "x": 1075,
+                "y": 1194
+            },
+             "map": {
+                "x": 43.666999576381905,
+                "y": -79.39342723400878
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 17 }
+            ]
+        },
+        {
+            "label": "Queen's Park",
+            "localName": "Queen's Park",
+            "identifier": "QueensPark",
+            "photo": {
+                "x": 1075,
+                "y": 1256
+            },
+             "map": {
+                "x": 43.659864890536355,
+                "y": -79.39047816051269
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 18 }
+            ]
+        },
+        {
+            "label": "St. Patrick",
+            "localName": "St. Patrick",
+            "identifier": "StPatrick",
+            "photo": {
+                "x": 1075,
+                "y": 1317
+            },
+             "map": {
+                "x": 43.65482669887084,
+                "y": -79.38833434845168
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 19 }
+            ]
+        },
+        {
+            "label": "Osgoode",
+            "localName": "Osgoode",
+            "identifier": "Osgoode",
+            "photo": {
+                "x": 1075,
+                "y": 1376
+            },
+             "map": {
+                "x": 43.650601805057484,
+                "y": -79.3868325468793
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 20 }
+            ]
+        },
+        {
+            "label": "St. Andrew",
+            "localName": "St. Andrew",
+            "identifier": "StAndrew",
+            "photo": {
+                "x": 1075,
+                "y": 1438
+            },
+             "map": {
+                "x": 43.64765154119614,
+                "y": -79.3848023144977
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 21 }
+            ]
+        },
+        {
+            "label": "Union",
+            "localName": "Union",
+            "identifier": "Union",
+            "photo": {
+                "x": 1137,
+                "y": 1500
+            },
+             "map": {
+                "x": 43.64522099899128,
+                "y": -79.38060285764122
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 22 }
+            ]
+        },
+        {
+            "label": "King",
+            "localName": "King",
+            "identifier": "King",
+            "photo": {
+                "x": 1198,
+                "y": 1438
+            },
+             "map": {
+                "x": 43.64914645494127,
+                "y": -79.37785021753716
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 23 }
+            ]
+        },
+        {
+            "label": "Queen",
+            "localName": "Queen",
+            "identifier": "Queen",
+            "photo": {
+                "x": 1198,
+                "y": 1376
+            },
+             "map": {
+                "x": 43.65238938528042,
+                "y": -79.37921140657733
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 24 }
+            ]
+        },
+        {
+            "label": "Dundas",
+            "localName": "Dundas",
+            "identifier": "Dundas",
+            "photo": {
+                "x": 1198,
+                "y": 1317
+            },
+             "map": {
+                "x": 43.65627916571845,
+                "y": -79.38044739699701
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 25 }
+            ]
+        },
+        {
+            "label": "College",
+            "localName": "College",
+            "identifier": "College",
+            "photo": {
+                "x": 1198,
+                "y": 1256
+            },
+             "map": {
+                "x": 43.661317092795024,
+                "y": -79.3830666543245
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 26 }
+            ]
+        },
+        {
+            "label": "Wellesley",
+            "localName": "Wellesley",
+            "identifier": "Wellesley",
+            "photo": {
+                "x": 1198,
+                "y": 1194
+            },
+             "map": {
+                "x": 43.665226510573,
+                "y": -79.38366159804423
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 27 }
+            ]
+        },
+        {
+            "label": "Bloor-Yonge",
+            "localName": "Bloor-Yonge",
+            "identifier": "BloorYonge",
+            "photo": {
+                "x": 1198,
+                "y": 1134
+            },
+             "map": {
+                "x": 43.671036843008956,
+                "y": -79.38591451250541
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 28 },
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 18 }
+            ]
+        },
+        {
+            "label": "Roseadale",
+            "localName": "Roseadale",
+            "identifier": "Roseadale",
+            "photo": {
+                "x": 1198,
+                "y": 1072
+            },
+             "map": {
+                "x": 43.67694936143129,
+                "y": -79.38882260051511
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 29 }
+            ]
+        },
+        {
+            "label": "Summerhill",
+            "localName": "Summerhill",
+            "identifier": "Summerhill",
+            "photo": {
+                "x": 1198,
+                "y": 1013
+            },
+             "map": {
+                "x": 43.68225326819588,
+                "y": -79.3907590328536
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 30 }
+            ]
+        },
+        {
+            "label": "St. Clair",
+            "localName": "St. Clair",
+            "identifier": "StClair",
+            "photo": {
+                "x": 1198,
+                "y": 950
+            },
+             "map": {
+                "x": 43.68748042095479,
+                "y": -79.39303771418403
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 31 }
+            ]
+        },
+        {
+            "label": "Davisville",
+            "localName": "Davisville",
+            "identifier": "Davisville",
+            "photo": {
+                "x": 1198,
+                "y": 890
+            },
+             "map": {
+                "x": 43.69765220409582,
+                "y": -79.39707892024754
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 32 }
+            ]
+        },
+        {
+            "label": "Eglinton",
+            "localName": "Eglinton",
+            "identifier": "Eglinton",
+            "photo": {
+                "x": 1198,
+                "y": 829
+            },
+             "map": {
+                "x": 43.70530556781966,
+                "y": -79.39896229081108
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 33 }
+            ]
+        },
+        {
+            "label": "Lawrence",
+            "localName": "Lawrence",
+            "identifier": "Lawrence",
+            "photo": {
+                "x": 1198,
+                "y": 706
+            },
+             "map": {
+                "x": 43.725351833246265,
+                "y": -79.40205780496001
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 34 }
+            ]
+        },
+        {
+            "label": "York Mills",
+            "localName": "York Mills",
+            "identifier": "YorkMills",
+            "photo": {
+                "x": 1198,
+                "y": 583
+            },
+             "map": {
+                "x": 43.744867227708085,
+                "y": -79.4064881111875
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 35 }
+            ]
+        },
+        {
+            "label": "Sheppard-Yonge",
+            "localName": "Sheppard-Yonge",
+            "identifier": "SheppardYonge",
+            "photo": {
+                "x": 1198,
+                "y": 463
+            },
+             "map": {
+                "x": 43.762027932212206,
+                "y": -79.4118938191037
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 36 },
+                { "name": "Sheppard Line", "localName": "Sheppard Line", "colour": "#a8518a", "position": 1 }
+            ]
+        },
+        {
+            "label": "North York Centre",
+            "localName": "North York Centre",
+            "identifier": "NorthYorkCentre",
+            "photo": {
+                "x": 1198,
+                "y": 403
+            },
+             "map": {
+                "x": 43.768767140936085,
+                "y": -79.41301661769191
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 37 }
+            ]
+        },
+        {
+            "label": "Finch",
+            "localName": "Finch",
+            "identifier": "Finch",
+            "photo": {
+                "x": 1198,
+                "y": 341
+            },
+             "map": {
+                "x": 43.780265903530726,
+                "y": -79.41545105335713
+            },
+            "line": [
+                { "name": "Yonge-University Line", "localName": "Yonge-University Line", "colour": "#ffcc28", "position": 38 }
+            ]
+        },
+        {
+            "label": "Kipling",
+            "localName": "Kipling",
+            "identifier": "Kipling",
+            "photo": {
+                "x": 161,
+                "y": 1164
+            },
+             "map": {
+                "x": 43.63762228461483,
+                "y": -79.53540645535114
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 1 }
+            ]
+        },
+        {
+            "label": "Islington",
+            "localName": "Islington",
+            "identifier": "Islington",
+            "photo": {
+                "x": 223,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.64528393312264,
+                "y": -79.52391451701659
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 2 }
+            ]
+        },
+        {
+            "label": "Royal York",
+            "localName": "Royal York",
+            "identifier": "RoyalYork",
+            "photo": {
+                "x": 283,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.6482202837118,
+                "y": -79.51131236562401
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 3 }
+            ]
+        },
+        {
+            "label": "Old Mill",
+            "localName": "Old Mill",
+            "identifier": "OldMill",
+            "photo": {
+                "x": 343,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.65008346984852,
+                "y": -79.49496631277776
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 4 }
+            ]
+        },
+        {
+            "label": "Jane",
+            "localName": "Jane",
+            "identifier": "Jane",
+            "photo": {
+                "x": 403,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.64992392752001,
+                "y": -79.4838232571943
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 5 }
+            ]
+        },
+        {
+            "label": "Runnymede",
+            "localName": "Runnymede",
+            "identifier": "Runnymede",
+            "photo": {
+                "x": 463,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.65171145825692,
+                "y": -79.47589883505451
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 6 }
+            ]
+        },
+        {
+            "label": "High Park",
+            "localName": "High Park",
+            "identifier": "HighPark",
+            "photo": {
+                "x": 523,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.65382911184958,
+                "y": -79.46688851866509
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 7 }
+            ]
+        },
+        {
+            "label": "Keele",
+            "localName": "Keele",
+            "identifier": "Keele",
+            "photo": {
+                "x": 583,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.6555194932828,
+                "y": -79.45968443870755
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 8 }
+            ]
+        },
+        {
+            "label": "Dundas West",
+            "localName": "Dundas West",
+            "identifier": "DundasWest",
+            "photo": {
+                "x": 643,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.65695803322589,
+                "y": -79.4527665055857
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 9 }
+            ]
+        },
+        {
+            "label": "Lansdowne",
+            "localName": "Lansdowne",
+            "identifier": "Lansdowne",
+            "photo": {
+                "x": 703,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.65907691867705,
+                "y": -79.44280042797064
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 10 }
+            ]
+        },
+        {
+            "label": "Dufferin",
+            "localName": "Dufferin",
+            "identifier": "Dufferin",
+            "photo": {
+                "x": 763,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.660146501570395,
+                "y": -79.43566892597025
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 11 }
+            ]
+        },
+        {
+            "label": "Ossington",
+            "localName": "Ossington",
+            "identifier": "Ossington",
+            "photo": {
+                "x": 823,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.662367087272614,
+                "y": -79.42630428860511
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 12 }
+            ]
+        },
+        {
+            "label": "Christie",
+            "localName": "Christie",
+            "identifier": "Christie",
+            "photo": {
+                "x": 893,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.66411334005153,
+                "y": -79.41835991142108
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 13 }
+            ]
+        },
+        {
+            "label": "Bathurst",
+            "localName": "Bathurst",
+            "identifier": "Bathurst",
+            "photo": {
+                "x": 953,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.66599907914199,
+                "y": -79.4112084892513
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 14 }
+            ]
+        },
+        {
+            "label": "Bay",
+            "localName": "Bay",
+            "identifier": "Bay",
+            "photo": {
+                "x": 1137,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.670326085704794,
+                "y": -79.38997928930627
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 17 }
+            ]
+        },
+        {
+            "label": "Sherbourne",
+            "localName": "Sherbourne",
+            "identifier": "Sherbourne",
+            "photo": {
+                "x": 1258,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.67216977781681,
+                "y": -79.37643746124418
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 19 }
+            ]
+        },
+        {
+            "label": "Castle Frank",
+            "localName": "Castle Frank",
+            "identifier": "CastleFrank",
+            "photo": {
+                "x": 1320,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.67370612791827,
+                "y": -79.3685993014837
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 20 }
+            ]
+        },
+        {
+            "label": "Broadview",
+            "localName": "Broadview",
+            "identifier": "Broadview",
+            "photo": {
+                "x": 1380,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.676873312067485,
+                "y": -79.35831618913696
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 21 }
+            ]
+        },
+        {
+            "label": "Chester",
+            "localName": "Chester",
+            "identifier": "Chester",
+            "photo": {
+                "x": 1441,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.67823830022045,
+                "y": -79.35240729888572
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 22 }
+            ]
+        },
+        {
+            "label": "Pape",
+            "localName": "Pape",
+            "identifier": "Pape",
+            "photo": {
+                "x": 1502,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.67989825125411,
+                "y": -79.3450660026308
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 23 }
+            ]
+        },
+        {
+            "label": "Donlands",
+            "localName": "Donlands",
+            "identifier": "Donlands",
+            "photo": {
+                "x": 1562,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.68096525375944,
+                "y": -79.33768201604414
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 24 }
+            ]
+        },
+        {
+            "label": "Greenwood",
+            "localName": "Greenwood",
+            "identifier": "Greenwood",
+            "photo": {
+                "x": 1624,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.68259108791666,
+                "y": -79.33015726185013
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 25 }
+            ]
+        },
+        {
+            "label": "Coxwell",
+            "localName": "Coxwell",
+            "identifier": "Coxwell",
+            "photo": {
+                "x": 1685,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.684218196557026,
+                "y": -79.32307783011814
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 26 }
+            ]
+        },
+        {
+            "label": "Woodbine",
+            "localName": "Woodbine",
+            "identifier": "Woodbine",
+            "photo": {
+                "x": 1746,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.68638526486877,
+                "y": -79.3126894977984
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 27 }
+            ]
+        },
+        {
+            "label": "Main Street",
+            "localName": "Main Street",
+            "identifier": "MainStreet",
+            "photo": {
+                "x": 1806,
+                "y": 1133
+            },
+             "map": {
+                "x": 43.688944888742014,
+                "y": -79.30199950226147
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 28 }
+            ]
+        },
+        {
+            "label": "Victoria Park",
+            "localName": "Victoria Park",
+            "identifier": "VictoriaPark",
+            "photo": {
+                "x": 1868,
+                "y": 1104
+            },
+             "map": {
+                "x": 43.69465861179937,
+                "y": -79.28912330581853
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 29 }
+            ]
+        },
+        {
+            "label": "Warden",
+            "localName": "Warden",
+            "identifier": "Warden",
+            "photo": {
+                "x": 2018,
+                "y": 952
+            },
+             "map": {
+                "x": 43.71140773202147,
+                "y": -79.27909377292694
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 30 }
+            ]
+        },
+        {
+            "label": "Kennedy",
+            "localName": "Kennedy",
+            "identifier": "Kennedy",
+            "photo": {
+                "x": 2142,
+                "y": 829
+            },
+             "map": {
+                "x": 43.73215867448358,
+                "y": -79.26411890808605
+            },
+            "line": [
+                { "name": "Bloor-Danforth Line", "localName": "Bloor-Danforth Line", "colour": "#00a859", "position": 31 },
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 1 }
+            ]
+        },
+        {
+            "label": "Lawrence East",
+            "localName": "Lawrence East",
+            "identifier": "LawrenceEast",
+            "photo": {
+                "x": 2141,
+                "y": 707
+            },
+             "map": {
+                "x": 43.750703487925264,
+                "y": -79.27042384113301
+            },
+            "line": [
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 2 }
+            ]
+        },
+        {
+            "label": "Ellesmere",
+            "localName": "Ellesmere",
+            "identifier": "Ellesmere",
+            "photo": {
+                "x": 2141,
+                "y": 585
+            },
+             "map": {
+                "x": 43.76694879436403,
+                "y": -79.276304024127
+            },
+            "line": [
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 3 }
+            ]
+        },
+        {
+            "label": "Midland",
+            "localName": "Midland",
+            "identifier": "Midland",
+            "photo": {
+                "x": 2203,
+                "y": 555
+            },
+             "map": {
+                "x": 43.77040497454635,
+                "y": -79.27217274146444
+            },
+            "line": [
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 4 }
+            ]
+        },
+        {
+            "label": "Scarborough Centre",
+            "localName": "Scarborough Centre",
+            "identifier": "ScarboroughCentre",
+            "photo": {
+                "x": 2264,
+                "y": 555
+            },
+             "map": {
+                "x": 43.774376468907036,
+                "y": -79.25793931504444
+            },
+            "line": [
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 5 }
+            ]
+        },
+        {
+            "label": "McCowan",
+            "localName": "McCowan",
+            "identifier": "McCowan",
+            "photo": {
+                "x": 2325,
+                "y": 555
+            },
+             "map": {
+                "x": 43.77492276448555,
+                "y": -79.25180481358352
+            },
+            "line": [
+                { "name": "Scarborough (RT) Line", "localName": "Scarborough (RT) Line", "colour": "#00afef", "position": 6 }
+            ]
+        },
+        {
+            "label": "Bayview",
+            "localName": "Bayview",
+            "identifier": "Bayview",
+            "photo": {
+                "x": 1381,
+                "y": 463
+            },
+             "map": {
+                "x": 43.76690127908228,
+                "y": -79.38629823495437
+            },
+            "line": [
+                { "name": "Sheppard Line", "localName": "Sheppard Line", "colour": "#a8518a", "position": 2 }
+            ]
+        },
+        {
+            "label": "Bessarion",
+            "localName": "Bessarion",
+            "identifier": "Bessarion",
+            "photo": {
+                "x": 1472,
+                "y": 463
+            },
+             "map": {
+                "x": 43.76920369862749,
+                "y": -79.37594646810535
+            },
+            "line": [
+                { "name": "Sheppard Line", "localName": "Sheppard Line", "colour": "#a8518a", "position": 3 }
+            ]
+        },
+        {
+            "label": "Leslie",
+            "localName": "Leslie",
+            "identifier": "Leslie",
+            "photo": {
+                "x": 1563,
+                "y": 463
+            },
+             "map": {
+                "x": 43.77083587536037,
+                "y":  -79.36780185123699
+            },
+            "line": [
+                { "name": "Sheppard Line", "localName": "Sheppard Line", "colour": "#a8518a", "position": 4 }
+            ]
+        },
+        {
+            "label": "Don Mills",
+            "localName": "Don Mills",
+            "identifier": "DonMills",
+            "photo": {
+                "x": 1685,
+                "y": 463
+            },
+             "map": {
+                "x": 43.77569394082153,
+                "y": -79.34535029767302
+            },
+            "line": [
+                { "name": "Sheppard Line", "localName": "Sheppard Line", "colour": "#a8518a", "position": 5 }
+            ]
+        }
+    ]
+}

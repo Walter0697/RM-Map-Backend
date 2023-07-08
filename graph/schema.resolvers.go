@@ -1773,7 +1773,7 @@ func (r *queryResolver) Stations(ctx context.Context) ([]*model.Station, error) 
 		return result, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	stations, err := service.GetAllTrainStationByMapName(constant.HKMTR)
+	stations, err := service.GetAllTrainStations()
 	if err != nil {
 		return result, err
 	}
