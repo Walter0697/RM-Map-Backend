@@ -48,25 +48,25 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.8.0"
+	current_version := "2.9.0"
 	// notes := []string{
 	// 	"[b]New Feature:",
-	// 	"Adding RoroadList, alongside with previous roroadlists revoke!",
-	// 	"Sorting Markers will be available in Filter Page",
-	// 	"[b]Quality Of Life",
-	// 	"Clicking Address will now open Google Map",
-	// }
-	// notes := []string{
-	// 	"[b]Bug Fixed:",
-	// 	"Openrice scrapper removing and editing issue",
+	// 	"Group markers by country and location",
+	// 	"Watched Movies List",
+	// 	"LatLon Form for adding location in map",
+	// 	"[b]Layout:",
+	// 	"Most listing buttons are now at Setting page instead of Home page",
 	// }
 	notes := []string{
 		"[b]New Feature:",
-		"Group markers by country and location",
-		"Watched Movies List",
-		"LatLon Form for adding location in map",
-		"[b]Layout:",
-		"Most listing buttons are now at Setting page instead of Home page",
+		"Country Map!",
+		"Canada Map for both Country map and Station map!",
+		"[b]Bug Fixed:",
+		"Fixing issue where movie item cannot be saved",
+		"Marker Country selection dropdown will sometimes block map view previously",
+		"[b]Quality Of Life",
+		"Sharing marker preview will also copy the link to clipboard (we cannot override the text for most social media app so this is alternative)",
+		"Totally different Home Page experience!!!",
 	}
 
 	log.Println("Current version " + current_version)
