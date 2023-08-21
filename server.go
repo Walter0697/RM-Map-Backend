@@ -48,7 +48,7 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.9.3"
+	current_version := "2.9.4"
 	// notes := []string{
 	// 	"[b]New Feature:",
 	// 	"Country Map!",
@@ -60,9 +60,13 @@ func prepareReleaseNote() {
 	// 	"Sharing marker preview will also copy the link to clipboard (we cannot override the text for most social media app so this is alternative)",
 	// 	"Totally different Home Page experience!!!",
 	// }
+	// notes := []string{
+	// 	"[b]Bug Fixed:",
+	// 	"Fixing issue where you cannot edit schedule",
+	// }
 	notes := []string{
 		"[b]Bug Fixed:",
-		"Fixing issue where you cannot edit schedule",
+		"Fixing issue where you cannot edit marker",
 	}
 
 	log.Println("Current version " + current_version)
