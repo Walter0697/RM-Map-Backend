@@ -120,6 +120,10 @@ func startServer() {
 		router.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	}
 
+	router.Get("/auth/mode", service.AuthModeHandler)
+	router.Get("/auth/health", service.AuthHealthHandler)
+	router.Get("/auth/oidc/start", service.OIDCStartHandler)
+	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
 	router.Handle("/query", server)
 
 	if config.Data.App.Environment == "development" {

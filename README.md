@@ -6,12 +6,21 @@
 ### Technologies
 - GoFiber
 - Postgres
-- LDAP (togglable)
+- OIDC (default) with local password fallback for development
 - GraphQL
 - Simple Web scrapping using GoQuery
 
 ### Environment
-- most of them are pretty easy to follow according to `config.example.toml`, `enable` under `[ldap]` section indicate that if you want to use LDAP to login, any new login in this system with LDAP will use `defaultrole` as their role
+- Follow `config.example.toml`.
+- `app.authmode` controls auth behavior:
+  - `oidc` for OpenID Connect login (recommended)
+  - `local-password` for development/local testing only
+- `GET /auth/mode` shows active auth mode.
+- `GET /auth/health` provides auth diagnostics.
+
+### Auth Docs
+- Migration checklist: `docs/auth-migration-checklist.md`
+- Local Authentik guide: `docs/local-authentik-oidc.md`
 
 ### Notes to self
 run `go run -mod=mod github.com/99designs/gqlgen generate` if schema changed

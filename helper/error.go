@@ -51,7 +51,7 @@ func (m *IncorrectPasswordError) Error() string {
 type LDAPLoginEnabledError struct{}
 
 func (m *LDAPLoginEnabledError) Error() string {
-	return "ldap login enabled, cannot create user"
+	return "password-based user creation is disabled for current auth mode"
 }
 
 type UploadFileNotImageError struct{}

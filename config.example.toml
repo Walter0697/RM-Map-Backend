@@ -3,6 +3,7 @@ environment="development"
 port="1998"
 jwtkey=""
 allowedorigin=""
+authmode="local-password" # local-password or oidc
 
 [database]
 host=""
@@ -19,6 +20,20 @@ port="389"
 host="localhost"
 bindpassword=""
 filter="(uid=%s)"
+defaultrole="user"
+
+[oidc]
+enable=false
+issuer="" # e.g. http://localhost:9000/application/o/rmmap/
+clientid=""
+clientsecret=""
+redirecturl="http://localhost:1998/auth/oidc/callback"
+frontendredirecturl="http://localhost:3000/login"
+authendpoint="" # optional override, defaults from issuer discovery
+tokenendpoint="" # optional override, defaults from issuer discovery
+userinfoendpoint="" # optional override, defaults from issuer discovery
+scopes=["openid","profile","email"]
+usernameclaim="preferred_username"
 defaultrole="user"
 
 [apikey]

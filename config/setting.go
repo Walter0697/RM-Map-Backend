@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/spf13/viper"
 )
@@ -13,6 +14,7 @@ type AppEnv struct {
 	JWT           string `mapstructure:"jwtkey"`
 	Port          string `mapstructure:"port"`
 	AllowedOrigin string `mapstructure:"allowedorigin"`
+	AuthMode      string `mapstructure:"authmode"`
 }
 
 type Database struct {
@@ -34,6 +36,21 @@ type LDAPSetting struct {
 	DefaultRole  string `mapstructure:"defaultrole"`
 }
 
+type OIDCSetting struct {
+	Enable              bool     `mapstructure:"enable"`
+	Issuer              string   `mapstructure:"issuer"`
+	ClientID            string   `mapstructure:"clientid"`
+	ClientSecret        string   `mapstructure:"clientsecret"`
+	RedirectURL         string   `mapstructure:"redirecturl"`
+	FrontendRedirectURL string   `mapstructure:"frontendredirecturl"`
+	AuthEndpoint        string   `mapstructure:"authendpoint"`
+	TokenEndpoint       string   `mapstructure:"tokenendpoint"`
+	UserInfoEndpoint    string   `mapstructure:"userinfoendpoint"`
+	Scopes              []string `mapstructure:"scopes"`
+	UsernameClaim       string   `mapstructure:"usernameclaim"`
+	DefaultRole         string   `mapstructure:"defaultrole"`
+}
+
 type APIKeySetting struct {
 	MovieDB   string `mapstructure:"moviedb"`
 	TomTomMap string `mapstructure:"tomtommap"`
@@ -53,6 +70,7 @@ type Config struct {
 	DB     Database      `mapstructure:"database"`
 	App    AppEnv        `mapstructure:"app"`
 	LDAP   LDAPSetting   `mapstructure:"ldap"`
+	OIDC   OIDCSetting   `mapstructure:"oidc"`
 	APIKEY APIKeySetting `mapstructure:"apikey"`
 	Seed   SeedSetting   `mapstructure:"seed"`
 }
@@ -66,5 +84,13 @@ func Init() {
 
 	if err := viper.Unmarshal(&Data); err != nil {
 		panic(fmt.Errorf("unable to decode into struct: %s \n", err))
+	}
+
+	if err := ValidateAuthConfig(); err != nil {
+		panic(fmt.Errorf("invalid auth config: %s \n", err))
+	}
+
+	if mode, err := ResolveAuthMode(); err == nil {
+		log.Printf("Authentication mode resolved to: %s", mode)
 	}
 }
