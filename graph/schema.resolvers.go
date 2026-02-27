@@ -21,9 +21,13 @@ import (
 
 func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) (string, error) {
 	// ADMIN
-	// create user if ldap is not enabled
+	// create user if local-password mode is enabled
 
-	if config.Data.LDAP.Enable {
+	mode, err := config.ResolveAuthMode()
+	if err != nil {
+		return "", err
+	}
+	if mode != config.AuthModeLocalPassword {
 		return "", &helper.LDAPLoginEnabledError{}
 	}
 
@@ -46,7 +50,7 @@ func (r *mutationResolver) CreateUser(ctx context.Context, input model.NewUser) 
 		return "", &helper.SameUserNameExistError{}
 	}
 
-	_, err := service.CreateUser(input)
+	_, err = service.CreateUser(input)
 	if err != nil {
 		return "", err
 	}

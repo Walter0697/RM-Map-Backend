@@ -6,12 +6,34 @@
 ### Technologies
 - GoFiber
 - Postgres
-- LDAP (togglable)
+- OIDC (default) with local password fallback for development
 - GraphQL
 - Simple Web scrapping using GoQuery
 
 ### Environment
-- most of them are pretty easy to follow according to `config.example.toml`, `enable` under `[ldap]` section indicate that if you want to use LDAP to login, any new login in this system with LDAP will use `defaultrole` as their role
+- Follow `config.example.toml`.
+- `app.authmode` controls auth behavior:
+  - `oidc` for OpenID Connect login (recommended)
+  - `local-password` for development/local testing only
+- `GET /auth/mode` shows active auth mode.
+- `GET /auth/health` provides auth diagnostics.
+
+### Auth Docs
+- Migration checklist: `docs/auth-migration-checklist.md`
+- Local Authentik guide: `docs/local-authentik-oidc.md`
+- API key integration guide: `docs/api-key-integration.md`
+- API key rollout checklist: `docs/api-key-rollout-checklist.md`
 
 ### Notes to self
 run `go run -mod=mod github.com/99designs/gqlgen generate` if schema changed
+
+### GitHub Actions CI and Delivery
+- PRs run backend CI (`go test ./...`) and do not require repository secrets.
+- Delivery runs only when the pushed branch equals the repository default branch.
+- Backend image is published to GHCR as `ghcr.io/<owner>/rm-map-backend` with three tags:
+  - commit SHA (first 12 chars)
+  - version extracted from `server.go` (`current_version`)
+  - `latest`
+- Required repository permissions for delivery workflow job:
+  - `contents: read`
+  - `packages: write`

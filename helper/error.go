@@ -51,7 +51,7 @@ func (m *IncorrectPasswordError) Error() string {
 type LDAPLoginEnabledError struct{}
 
 func (m *LDAPLoginEnabledError) Error() string {
-	return "ldap login enabled, cannot create user"
+	return "password-based user creation is disabled for current auth mode"
 }
 
 type UploadFileNotImageError struct{}
@@ -118,4 +118,16 @@ type RestaurantNotFound struct{}
 
 func (n *RestaurantNotFound) Error() string {
 	return "restaurant not found"
+}
+
+type APIKeyUnauthorizedError struct{}
+
+func (n *APIKeyUnauthorizedError) Error() string {
+	return "invalid api key"
+}
+
+type APIKeyScopeDeniedError struct{}
+
+func (n *APIKeyScopeDeniedError) Error() string {
+	return "api key scope denied"
 }

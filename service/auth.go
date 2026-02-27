@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -15,10 +16,23 @@ func (m *UnauthorizationError) Error() string {
 	return "wrong username or password"
 }
 
+type OIDCLoginRequiredError struct{}
+
+func (m *OIDCLoginRequiredError) Error() string {
+	return "oidc login is enabled; use /auth/oidc/start"
+}
+
 func Login(username string, password string) (string, error) {
-	if config.Data.LDAP.Enable {
-		return ldapLogin(username, password)
+	mode, err := config.ResolveAuthMode()
+	if err != nil {
+		log.Printf("cannot resolve auth mode for login: %v", err)
+		return "", err
 	}
+
+	if mode == config.AuthModeOIDC {
+		return "", &OIDCLoginRequiredError{}
+	}
+
 	return normalLogin(username, password)
 }
 
@@ -55,20 +69,7 @@ func ldapLogin(username string, password string) (string, error) {
 		return "", err
 	}
 
-	if user.LoginToken == "" {
-		newtoken := utils.GenerateLoginKey()
-		user.LoginToken = newtoken
-		if err := user.Update(database.Connection); err != nil {
-			return "", err
-		}
-	}
-
-	jwtToken, err := utils.GenerateToken(user.Username, user.LoginToken)
-	if err != nil {
-		return "", err
-	}
-
-	return jwtToken, nil
+	return issueTokenForUser(&user)
 }
 
 func normalLogin(username string, password string) (string, error) {
@@ -86,21 +87,7 @@ func normalLogin(username string, password string) (string, error) {
 		return "", &UnauthorizationError{}
 	}
 
-	// login successfully, now retrieve or generate a random key
-	if user.LoginToken == "" {
-		newtoken := utils.GenerateLoginKey()
-		user.LoginToken = newtoken
-		if err := user.Update(database.Connection); err != nil {
-			return "", err
-		}
-	}
-
-	jwtToken, err := utils.GenerateToken(user.Username, user.LoginToken)
-	if err != nil {
-		return "", err
-	}
-
-	return jwtToken, nil
+	return issueTokenForUser(&user)
 }
 
 func ValidateToken(token string) *dbmodel.User {
@@ -124,4 +111,50 @@ func ValidateToken(token string) *dbmodel.User {
 	}
 
 	return &user
+}
+
+func upsertUserAndGenerateToken(username string, defaultRole string) (string, error) {
+	var user dbmodel.User
+	user.Username = username
+	exist := user.CheckUsernameExist(database.Connection)
+	if !exist {
+		user.Password = ""
+		user.Role = defaultRole
+		user.IsActivated = true
+		newtoken := utils.GenerateLoginKey()
+		user.LoginToken = newtoken
+		if err := user.Create(database.Connection); err != nil {
+			return "", err
+		}
+	}
+
+	if err := user.GetUserByUsername(database.Connection); err != nil {
+		return "", err
+	}
+
+	if user.Role == "" {
+		user.Role = defaultRole
+	}
+	user.IsActivated = true
+	if err := user.Update(database.Connection); err != nil {
+		return "", err
+	}
+
+	return issueTokenForUser(&user)
+}
+
+func issueTokenForUser(user *dbmodel.User) (string, error) {
+	if user.LoginToken == "" {
+		user.LoginToken = utils.GenerateLoginKey()
+		if err := user.Update(database.Connection); err != nil {
+			return "", err
+		}
+	}
+
+	jwtToken, err := utils.GenerateToken(user.Username, user.LoginToken)
+	if err != nil {
+		return "", err
+	}
+
+	return jwtToken, nil
 }

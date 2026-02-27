@@ -1,0 +1,35 @@
+name: Backend CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    name: Backend Tests (go test ./...)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Print Go Environment
+        run: |
+          go version
+          go env GOPATH GOMODCACHE GOCACHE
+
+      - name: Run backend tests
+        env:
+          GOCACHE: ${{ runner.temp }}/go-build
+        run: go test -v ./...
