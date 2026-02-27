@@ -34,7 +34,8 @@ jobs:
             exit 1
           fi
 
-          IMAGE="ghcr.io/${{ github.repository_owner }}/rm-map-backend"
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER_LOWER}/rm-map-backend"
           SHA_TAG="${GITHUB_SHA::12}"
 
           {
