@@ -3,6 +3,8 @@ name: Backend CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  push:
+    branches: [oyster]
   workflow_dispatch:
 
 permissions:
