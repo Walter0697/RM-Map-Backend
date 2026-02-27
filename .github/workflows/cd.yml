@@ -1,7 +1,9 @@
 name: Backend Delivery
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Backend CI"]
+    types: [completed]
 
 permissions:
   contents: read
@@ -9,7 +11,10 @@ permissions:
 jobs:
   build-and-push:
     name: Build and Push Backend Image
-    if: github.ref_name == github.event.repository.default_branch
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == github.event.repository.default_branch
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -17,6 +22,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
 
       - name: Validate backend version source
         run: |
@@ -36,7 +43,7 @@ jobs:
 
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE="ghcr.io/${OWNER_LOWER}/rm-map-backend"
-          SHA_TAG="${GITHUB_SHA::12}"
+          SHA_TAG="$(echo "${{ github.event.workflow_run.head_sha }}" | cut -c1-12)"
 
           {
             echo "version=$VERSION"

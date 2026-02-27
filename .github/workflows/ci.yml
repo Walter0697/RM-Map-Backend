@@ -3,17 +3,29 @@ name: Backend CI
 on:
   pull_request:
     types: [opened, synchronize, reopened]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  backend-tests:
-    name: Backend Tests (go test ./...)
+  dependency-review:
+    name: Dependency Review
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: .
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,4 +44,66 @@ jobs:
       - name: Run backend tests
         env:
           GOCACHE: ${{ runner.temp }}/go-build
-        run: go test -v ./...
+          GOMODCACHE: ${{ runner.temp }}/go-mod
+        run: go test -race -coverprofile=coverage.out ./...
+
+      - name: Verify coverage file exists
+        run: test -s coverage.out
+
+  go-vulncheck:
+    name: Go Vulnerability Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        env:
+          GOCACHE: ${{ runner.temp }}/go-build
+          GOMODCACHE: ${{ runner.temp }}/go-mod
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        env:
+          GOCACHE: ${{ runner.temp }}/go-build
+          GOMODCACHE: ${{ runner.temp }}/go-mod
+        run: govulncheck ./...
+
+  gosec:
+    name: Go Static Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run gosec
+        uses: securego/gosec@v2.22.2
+        with:
+          args: ./...
+
+  go-mod-tidy-check:
+    name: Go Mod Tidy Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify go.mod and go.sum are tidy
+        env:
+          GOCACHE: ${{ runner.temp }}/go-build
+          GOMODCACHE: ${{ runner.temp }}/go-mod
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
