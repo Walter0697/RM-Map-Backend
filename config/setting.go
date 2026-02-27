@@ -55,6 +55,15 @@ type APIKeySetting struct {
 	MovieDB   string `mapstructure:"moviedb"`
 	TomTomMap string `mapstructure:"tomtommap"`
 }
+
+type IntegrationAuthSetting struct {
+	EnableCleanup          bool `mapstructure:"enablecleanup"`
+	LogRetentionDays       int  `mapstructure:"logretentiondays"`
+	MaxAuditLogRows        int  `mapstructure:"maxauditlogrows"`
+	RevokedKeyRetentionDay int  `mapstructure:"revokedkeyretentiondays"`
+	CleanupIntervalHours   int  `mapstructure:"cleanupintervalhours"`
+}
+
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
@@ -67,12 +76,13 @@ type SeedSetting struct {
 }
 
 type Config struct {
-	DB     Database      `mapstructure:"database"`
-	App    AppEnv        `mapstructure:"app"`
-	LDAP   LDAPSetting   `mapstructure:"ldap"`
-	OIDC   OIDCSetting   `mapstructure:"oidc"`
-	APIKEY APIKeySetting `mapstructure:"apikey"`
-	Seed   SeedSetting   `mapstructure:"seed"`
+	DB              Database               `mapstructure:"database"`
+	App             AppEnv                 `mapstructure:"app"`
+	LDAP            LDAPSetting            `mapstructure:"ldap"`
+	OIDC            OIDCSetting            `mapstructure:"oidc"`
+	APIKEY          APIKeySetting          `mapstructure:"apikey"`
+	IntegrationAuth IntegrationAuthSetting `mapstructure:"integrationauth"`
+	Seed            SeedSetting            `mapstructure:"seed"`
 }
 
 func Init() {

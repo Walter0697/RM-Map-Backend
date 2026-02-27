@@ -119,3 +119,15 @@ type RestaurantNotFound struct{}
 func (n *RestaurantNotFound) Error() string {
 	return "restaurant not found"
 }
+
+type APIKeyUnauthorizedError struct{}
+
+func (n *APIKeyUnauthorizedError) Error() string {
+	return "invalid api key"
+}
+
+type APIKeyScopeDeniedError struct{}
+
+func (n *APIKeyScopeDeniedError) Error() string {
+	return "api key scope denied"
+}

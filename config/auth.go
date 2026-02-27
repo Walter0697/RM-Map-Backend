@@ -50,6 +50,8 @@ func ResolveAuthMode() (string, error) {
 }
 
 func ValidateAuthConfig() error {
+	applyIntegrationDefaults()
+
 	mode, err := ResolveAuthMode()
 	if err != nil {
 		return err
@@ -83,4 +85,19 @@ func ValidateAuthConfig() error {
 	}
 
 	return nil
+}
+
+func applyIntegrationDefaults() {
+	if Data.IntegrationAuth.LogRetentionDays <= 0 {
+		Data.IntegrationAuth.LogRetentionDays = 30
+	}
+	if Data.IntegrationAuth.MaxAuditLogRows <= 0 {
+		Data.IntegrationAuth.MaxAuditLogRows = 200000
+	}
+	if Data.IntegrationAuth.RevokedKeyRetentionDay <= 0 {
+		Data.IntegrationAuth.RevokedKeyRetentionDay = 30
+	}
+	if Data.IntegrationAuth.CleanupIntervalHours <= 0 {
+		Data.IntegrationAuth.CleanupIntervalHours = 24
+	}
 }

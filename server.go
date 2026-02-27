@@ -27,6 +27,7 @@ func main() {
 	config.SetupGoGuardian()
 	database.Init()
 	dbmodel.AutoMigration()
+	service.StartAPIKeyCleanupWorker()
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -124,6 +125,26 @@ func startServer() {
 	router.Get("/auth/health", service.AuthHealthHandler)
 	router.Get("/auth/oidc/start", service.OIDCStartHandler)
 	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
+	router.Route("/auth/apikeys", func(r chi.Router) {
+		r.Get("/options", service.ListAPIKeyOptionsHandler)
+		r.Get("/", service.ListAPIKeysHandler)
+		r.Post("/", service.CreateAPIKeyHandler)
+		r.Post("/{id}/revoke", service.RevokeAPIKeyHandler)
+		r.Post("/{id}/rotate", service.RotateAPIKeyHandler)
+	})
+	router.Route("/integration", func(r chi.Router) {
+		r.Get("/markers", service.IntegrationListMarkersHandler)
+		r.Post("/markers", service.IntegrationCreateMarkerHandler)
+		r.Put("/markers/{id}", service.IntegrationUpdateMarkerHandler)
+		r.Get("/schedules", service.IntegrationListSchedulesHandler)
+		r.Post("/schedules", service.IntegrationCreateScheduleHandler)
+		r.Get("/stations", service.IntegrationListStationsHandler)
+		r.Put("/stations", service.IntegrationUpdateStationHandler)
+		r.Get("/settings/pins", service.IntegrationListSettingsPinsHandler)
+		r.Get("/settings/marker-types", service.IntegrationListSettingsMarkerTypesHandler)
+		r.Get("/settings/default-pins", service.IntegrationListSettingsDefaultPinsHandler)
+		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
+	})
 	router.Handle("/query", server)
 
 	if config.Data.App.Environment == "development" {

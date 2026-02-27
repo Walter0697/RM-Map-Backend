@@ -28,6 +28,8 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&ReleaseNote{})
 	database.Connection.AutoMigrate(&DataRecord{})
 	database.Connection.AutoMigrate(&User{})
+	database.Connection.AutoMigrate(&APIKey{})
+	database.Connection.AutoMigrate(&APIKeyAuditLog{})
 	database.Connection.AutoMigrate(&UserRelation{})
 	database.Connection.AutoMigrate(&UserPreference{})
 	database.Connection.AutoMigrate(&Marker{})

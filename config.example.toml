@@ -40,6 +40,13 @@ defaultrole="user"
 moviedb=""
 tomtommap=""
 
+[integrationauth]
+enablecleanup=true
+logretentiondays=30
+maxauditlogrows=200000
+revokedkeyretentiondays=30
+cleanupintervalhours=24
+
 [seed]
 enableSeed=true
 markerNums=20

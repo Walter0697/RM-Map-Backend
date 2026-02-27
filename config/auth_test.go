@@ -68,4 +68,16 @@ func TestValidateAuthConfigDefaults(t *testing.T) {
 	if Data.OIDC.UsernameClaim == "" {
 		t.Fatalf("expected default username claim to be set")
 	}
+	if Data.IntegrationAuth.LogRetentionDays <= 0 {
+		t.Fatalf("expected positive log retention default")
+	}
+	if Data.IntegrationAuth.MaxAuditLogRows <= 0 {
+		t.Fatalf("expected positive max audit log rows default")
+	}
+	if Data.IntegrationAuth.RevokedKeyRetentionDay <= 0 {
+		t.Fatalf("expected positive revoked key retention default")
+	}
+	if Data.IntegrationAuth.CleanupIntervalHours <= 0 {
+		t.Fatalf("expected positive cleanup interval default")
+	}
 }
