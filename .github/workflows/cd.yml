@@ -69,6 +69,6 @@ jobs:
         run: |
           {
             echo "### Backend image published"
-            echo "- Image: \\`${{ steps.meta.outputs.image }}\\`"
-            echo "- Tags: \\`${{ steps.meta.outputs.sha_tag }}\\`, \\`${{ steps.meta.outputs.version }}\\`, \\`latest\\`"
+            echo '- Image: `${{ steps.meta.outputs.image }}`'
+            echo '- Tags: `${{ steps.meta.outputs.sha_tag }}`, `${{ steps.meta.outputs.version }}`, `latest`'
           } >> "$GITHUB_STEP_SUMMARY"
