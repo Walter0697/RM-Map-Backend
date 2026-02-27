@@ -26,3 +26,14 @@
 
 ### Notes to self
 run `go run -mod=mod github.com/99designs/gqlgen generate` if schema changed
+
+### GitHub Actions CI and Delivery
+- PRs run backend CI (`go test ./...`) and do not require repository secrets.
+- Delivery runs only when the pushed branch equals the repository default branch.
+- Backend image is published to GHCR as `ghcr.io/<owner>/rm-map-backend` with three tags:
+  - commit SHA (first 12 chars)
+  - version extracted from `server.go` (`current_version`)
+  - `latest`
+- Required repository permissions for delivery workflow job:
+  - `contents: read`
+  - `packages: write`
