@@ -23,6 +23,7 @@
 - Local Authentik guide: `docs/local-authentik-oidc.md`
 - API key integration guide: `docs/api-key-integration.md`
 - API key rollout checklist: `docs/api-key-rollout-checklist.md`
+- Train station admin workflow: `docs/train-station-admin-workflow.md`
 
 ### Notes to self
 run `go run -mod=mod github.com/99designs/gqlgen generate` if schema changed

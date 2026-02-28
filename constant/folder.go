@@ -15,6 +15,7 @@ const (
 	PinImagePath      string = "/pins/"
 	PreviewImagePath  string = "/previews/"
 	TypePinImagePath  string = "/typepins/"
+	StationMapPath    string = "/station_maps/"
 )
 
 func GetImageLinkName(filetype string, url string) string {

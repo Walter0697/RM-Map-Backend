@@ -105,6 +105,8 @@ func startServer() {
 	fileServer(router, "/image/previews", previewsDir)
 	moviesDir := http.Dir(filepath.Join(workDir, "uploads/movies"))
 	fileServer(router, "/image/movies", moviesDir)
+	stationMapsDir := http.Dir(filepath.Join(workDir, "uploads/station_maps"))
+	fileServer(router, "/image/station_maps", stationMapsDir)
 
 	// for non dynamic asset that is required when nothing is set
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
@@ -139,6 +141,18 @@ func startServer() {
 		r.Get("/settings/default-pins", service.IntegrationListSettingsDefaultPinsHandler)
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
 	})
+	router.Route("/admin", func(r chi.Router) {
+		r.Get("/train-station-maps", service.AdminListTrainStationMapsHandler)
+		r.Post("/train-station-maps", service.AdminCreateTrainStationMapHandler)
+		r.Delete("/train-station-maps/{map_name}", service.AdminDeleteTrainStationMapHandler)
+		r.Get("/stations", service.AdminListStationsHandler)
+		r.Put("/stations", service.AdminUpsertStationHandler)
+		r.Put("/stations/lines", service.AdminUpdateStationLinesHandler)
+		r.Get("/stations/export/{map_name}", service.AdminExportStationJSONHandler)
+		r.Get("/station-maps/{map_name}", service.AdminGetStationMapAssetHandler)
+		r.Post("/station-maps/{map_name}", service.AdminUploadStationMapAssetHandler)
+	})
+	router.Get("/station-maps/{map_name}", service.GetStationMapAssetHandler)
 	router.Handle("/query", server)
 
 	if config.Data.App.Environment == "development" {
