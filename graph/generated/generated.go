@@ -162,38 +162,35 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateCountryLocation    func(childComplexity int, input model.NewCountryLocation) int
-		CreateCountryPoint       func(childComplexity int, input model.NewCountryPoint) int
-		CreateFavouriteMovie     func(childComplexity int, input model.NewFavouriteMovie) int
-		CreateMarker             func(childComplexity int, input model.NewMarker) int
-		CreateMarkerType         func(childComplexity int, input model.NewMarkerType) int
-		CreateMovieSchedule      func(childComplexity int, input model.NewMovieSchedule) int
-		CreatePin                func(childComplexity int, input model.NewPin) int
-		CreateRoroadList         func(childComplexity int, input model.NewRoroadList) int
-		CreateSchedule           func(childComplexity int, input model.NewSchedule) int
-		CreateUser               func(childComplexity int, input model.NewUser) int
-		EditMarker               func(childComplexity int, input model.UpdateMarker) int
-		EditMarkerType           func(childComplexity int, input model.UpdatedMarkerType) int
-		EditPin                  func(childComplexity int, input model.UpdatedPin) int
-		EditSchedule             func(childComplexity int, input model.UpdateSchedule) int
-		Login                    func(childComplexity int, input model.Login) int
-		Logout                   func(childComplexity int, input model.Logout) int
-		ManageMultipleRoroadList func(childComplexity int, input model.ManageRoroadList) int
-		PreviewPin               func(childComplexity int, input model.PreviewPinInput) int
-		RemoveFavouriteMovie     func(childComplexity int, input model.RemoveModel) int
-		RemoveMarker             func(childComplexity int, input model.RemoveModel) int
-		RemoveMarkerType         func(childComplexity int, input model.RemoveModel) int
-		RemovePin                func(childComplexity int, input model.RemoveModel) int
-		RemoveSchedule           func(childComplexity int, input model.RemoveModel) int
-		RevokeMarker             func(childComplexity int, input model.UpdateModel) int
-		UpdateDefault            func(childComplexity int, input model.UpdatedDefault) int
-		UpdateMarkerFav          func(childComplexity int, input model.UpdateMarkerFavourite) int
-		UpdatePreferredPin       func(childComplexity int, input model.UpdatePreferredPin) int
-		UpdateRelation           func(childComplexity int, input model.UpdateRelation) int
-		UpdateRoroadList         func(childComplexity int, input model.UpdateRoroadList) int
-		UpdateScheduleStatus     func(childComplexity int, input model.ScheduleStatusList) int
-		UpdateStation            func(childComplexity int, input model.UpdateStation) int
-		WebsiteScrap             func(childComplexity int, input model.WebsiteScrapInput) int
+		CreateCountryLocation func(childComplexity int, input model.NewCountryLocation) int
+		CreateCountryPoint    func(childComplexity int, input model.NewCountryPoint) int
+		CreateFavouriteMovie  func(childComplexity int, input model.NewFavouriteMovie) int
+		CreateMarker          func(childComplexity int, input model.NewMarker) int
+		CreateMarkerType      func(childComplexity int, input model.NewMarkerType) int
+		CreateMovieSchedule   func(childComplexity int, input model.NewMovieSchedule) int
+		CreatePin             func(childComplexity int, input model.NewPin) int
+		CreateSchedule        func(childComplexity int, input model.NewSchedule) int
+		CreateUser            func(childComplexity int, input model.NewUser) int
+		EditMarker            func(childComplexity int, input model.UpdateMarker) int
+		EditMarkerType        func(childComplexity int, input model.UpdatedMarkerType) int
+		EditPin               func(childComplexity int, input model.UpdatedPin) int
+		EditSchedule          func(childComplexity int, input model.UpdateSchedule) int
+		Login                 func(childComplexity int, input model.Login) int
+		Logout                func(childComplexity int, input model.Logout) int
+		PreviewPin            func(childComplexity int, input model.PreviewPinInput) int
+		RemoveFavouriteMovie  func(childComplexity int, input model.RemoveModel) int
+		RemoveMarker          func(childComplexity int, input model.RemoveModel) int
+		RemoveMarkerType      func(childComplexity int, input model.RemoveModel) int
+		RemovePin             func(childComplexity int, input model.RemoveModel) int
+		RemoveSchedule        func(childComplexity int, input model.RemoveModel) int
+		RevokeMarker          func(childComplexity int, input model.UpdateModel) int
+		UpdateDefault         func(childComplexity int, input model.UpdatedDefault) int
+		UpdateMarkerFav       func(childComplexity int, input model.UpdateMarkerFavourite) int
+		UpdatePreferredPin    func(childComplexity int, input model.UpdatePreferredPin) int
+		UpdateRelation        func(childComplexity int, input model.UpdateRelation) int
+		UpdateScheduleStatus  func(childComplexity int, input model.ScheduleStatusList) int
+		UpdateStation         func(childComplexity int, input model.UpdateStation) int
+		WebsiteScrap          func(childComplexity int, input model.WebsiteScrapInput) int
 	}
 
 	Pin struct {
@@ -345,9 +342,6 @@ type MutationResolver interface {
 	UpdateStation(ctx context.Context, input model.UpdateStation) (*model.Station, error)
 	CreateFavouriteMovie(ctx context.Context, input model.NewFavouriteMovie) (*model.Movie, error)
 	RemoveFavouriteMovie(ctx context.Context, input model.RemoveModel) (string, error)
-	CreateRoroadList(ctx context.Context, input model.NewRoroadList) (*model.RoroadList, error)
-	UpdateRoroadList(ctx context.Context, input model.UpdateRoroadList) (*model.RoroadList, error)
-	ManageMultipleRoroadList(ctx context.Context, input model.ManageRoroadList) ([]*model.RoroadList, error)
 	CreateCountryPoint(ctx context.Context, input model.NewCountryPoint) (*model.CountryPoint, error)
 	CreateCountryLocation(ctx context.Context, input model.NewCountryLocation) (*model.CountryLocation, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
@@ -375,8 +369,6 @@ type QueryResolver interface {
 	Specificreleasenote(ctx context.Context, filter model.ReleaseNoteFilter) (*model.ReleaseNote, error)
 	Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error)
 	Stations(ctx context.Context) ([]*model.Station, error)
-	Roroadlists(ctx context.Context) ([]*model.RoroadList, error)
-	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
 	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
 	Watchedmovies(ctx context.Context) ([]*model.Schedule, error)
 	Countrypoints(ctx context.Context) ([]*model.CountryPoint, error)
@@ -1057,18 +1049,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreatePin(childComplexity, args["input"].(model.NewPin)), true
 
-	case "Mutation.createRoroadList":
-		if e.complexity.Mutation.CreateRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateRoroadList(childComplexity, args["input"].(model.NewRoroadList)), true
-
 	case "Mutation.createSchedule":
 		if e.complexity.Mutation.CreateSchedule == nil {
 			break
@@ -1164,18 +1144,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity, args["input"].(model.Logout)), true
-
-	case "Mutation.manageMultipleRoroadList":
-		if e.complexity.Mutation.ManageMultipleRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_manageMultipleRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.ManageMultipleRoroadList(childComplexity, args["input"].(model.ManageRoroadList)), true
 
 	case "Mutation.previewPin":
 		if e.complexity.Mutation.PreviewPin == nil {
@@ -1308,18 +1276,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
-
-	case "Mutation.updateRoroadList":
-		if e.complexity.Mutation.UpdateRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateRoroadList(childComplexity, args["input"].(model.UpdateRoroadList)), true
 
 	case "Mutation.updateScheduleStatus":
 		if e.complexity.Mutation.UpdateScheduleStatus == nil {
@@ -1577,25 +1533,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Releasenotes(childComplexity), true
 
-	case "Query.roroadlists":
-		if e.complexity.Query.Roroadlists == nil {
-			break
-		}
-
-		return e.complexity.Query.Roroadlists(childComplexity), true
-
-	case "Query.roroadlistsbyname":
-		if e.complexity.Query.Roroadlistsbyname == nil {
-			break
-		}
-
-		args, err := ec.field_Query_roroadlistsbyname_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Roroadlistsbyname(childComplexity, args["params"].(model.RoroadListSearchFilter)), true
-
 	case "Query.schedules":
 		if e.complexity.Query.Schedules == nil {
 			break
@@ -1821,48 +1758,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Restaurant.Website(childComplexity), true
-
-	case "RoroadList.checked":
-		if e.complexity.RoroadList.Checked == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Checked(childComplexity), true
-
-	case "RoroadList.hidden":
-		if e.complexity.RoroadList.Hidden == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Hidden(childComplexity), true
-
-	case "RoroadList.id":
-		if e.complexity.RoroadList.ID == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.ID(childComplexity), true
-
-	case "RoroadList.list_type":
-		if e.complexity.RoroadList.ListType == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.ListType(childComplexity), true
-
-	case "RoroadList.name":
-		if e.complexity.RoroadList.Name == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Name(childComplexity), true
-
-	case "RoroadList.target_user":
-		if e.complexity.RoroadList.TargetUser == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.TargetUser(childComplexity), true
 
 	case "Schedule.created_at":
 		if e.complexity.Schedule.CreatedAt == nil {
@@ -2195,11 +2090,6 @@ input MovieFilter {
   query: String
 }
 
-input RoroadListSearchFilter {
-  name: String
-  hidden: Boolean
-}
-
 input ReleaseNoteFilter {
   version: String!
 }
@@ -2385,15 +2275,6 @@ type Station {
   line_info: String!
 }
 
-type RoroadList {
-  id: Int!
-  name: String!
-  list_type: String!
-  checked: Boolean!
-  hidden: Boolean!
-  target_user: String!
-}
-
 type CountryCodeMap {
   country_code: String!
   country_name: String!
@@ -2441,8 +2322,6 @@ type Query {
   specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
   releasenotes: [ReleaseNote]!
   stations: [Station]!
-  roroadlists: [RoroadList]!
-  roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   countrycodemap: [CountryCodeMap]!
   watchedmovies: [Schedule]!
   countrypoints: [CountryPoint]!
@@ -2615,26 +2494,6 @@ input UpdateStation {
   active: Boolean!
 }
 
-input NewRoroadList {
-  name: String!
-  target_user: String!
-  list_type: String!
-}
-
-input UpdateRoroadList {
-  id: Int!
-  name: String
-  list_type: String
-  checked: Boolean
-  hidden: Boolean
-  target_user: String
-}
-
-input ManageRoroadList {
-  ids: [Int]!
-  hidden: Boolean
-}
-
 input NewCountryPoint {
   label: String!
   map_name: String!
@@ -2693,9 +2552,6 @@ type Mutation {
   updateStation(input: UpdateStation!): Station!
   createFavouriteMovie(input: NewFavouriteMovie!): Movie!
   removeFavouriteMovie(input: RemoveModel!): String!
-  createRoroadList(input: NewRoroadList!): RoroadList!
-  updateRoroadList(input: UpdateRoroadList!): RoroadList!
-  manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
   createCountryPoint(input: NewCountryPoint!): CountryPoint!
   createCountryLocation(input: NewCountryLocation!): CountryLocation!
   login(input: Login!): LoginResult!
@@ -2806,21 +2662,6 @@ func (ec *executionContext) field_Mutation_createPin_args(ctx context.Context, r
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewRoroadList(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2941,21 +2782,6 @@ func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_manageMultipleRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ManageRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNManageRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐManageRoroadList(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -3129,21 +2955,6 @@ func (ec *executionContext) field_Mutation_updateRelation_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updateRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRoroadList(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_updateScheduleStatus_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3231,21 +3042,6 @@ func (ec *executionContext) field_Query_moviefetch_args(ctx context.Context, raw
 		}
 	}
 	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_roroadlistsbyname_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RoroadListSearchFilter
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNRoroadListSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadListSearchFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
 	return args, nil
 }
 
@@ -7226,132 +7022,6 @@ func (ec *executionContext) _Mutation_removeFavouriteMovie(ctx context.Context, 
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_createRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateRoroadList(rctx, args["input"].(model.NewRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateRoroadList(rctx, args["input"].(model.UpdateRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_manageMultipleRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_manageMultipleRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ManageMultipleRoroadList(rctx, args["input"].(model.ManageRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Mutation_createCountryPoint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -14016,21 +13686,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "removeFavouriteMovie":
 			out.Values[i] = ec._Mutation_removeFavouriteMovie(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "createRoroadList":
-			out.Values[i] = ec._Mutation_createRoroadList(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "updateRoroadList":
-			out.Values[i] = ec._Mutation_updateRoroadList(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "manageMultipleRoroadList":
-			out.Values[i] = ec._Mutation_manageMultipleRoroadList(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}

@@ -431,26 +431,6 @@ input UpdateStation {
   active: Boolean!
 }
 
-input NewRoroadList {
-  name: String!
-  target_user: String!
-  list_type: String!
-}
-
-input UpdateRoroadList {
-  id: Int!
-  name: String
-  list_type: String
-  checked: Boolean
-  hidden: Boolean
-  target_user: String
-}
-
-input ManageRoroadList {
-  ids: [Int]!
-  hidden: Boolean
-}
-
 input NewCountryPoint {
   label: String!
   map_name: String!
@@ -509,9 +489,6 @@ type Mutation {
   updateStation(input: UpdateStation!): Station!
   createFavouriteMovie(input: NewFavouriteMovie!): Movie!
   removeFavouriteMovie(input: RemoveModel!): String!
-  createRoroadList(input: NewRoroadList!): RoroadList!
-  updateRoroadList(input: UpdateRoroadList!): RoroadList!
-  manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
   createCountryPoint(input: NewCountryPoint!): CountryPoint!
   createCountryLocation(input: NewCountryLocation!): CountryLocation!
   login(input: Login!): LoginResult!
