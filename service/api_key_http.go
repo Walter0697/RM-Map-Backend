@@ -284,6 +284,34 @@ func RotateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func DeleteAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
+	operator := currentUserFromRequest(r)
+	if operator == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+	if err := helper.IsAuthorize(*operator, helper.Admin); err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || id <= 0 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+
+	if err := DeleteAPIKey(uint(id)); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"status": "deleted",
+		"id":     id,
+	})
+}
+
 func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	allowedSort := map[string]string{
 		"created_at": "created_at",

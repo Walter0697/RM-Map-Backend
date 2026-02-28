@@ -193,6 +193,24 @@ func RotateAPIKey(id uint, operator *dbmodel.User) (*dbmodel.APIKey, string, err
 	return newKey, raw, nil
 }
 
+func DeleteAPIKey(id uint) error {
+	var apiKey dbmodel.APIKey
+	apiKey.ID = id
+	if err := apiKey.GetByID(database.Connection); err != nil {
+		return err
+	}
+
+	if err := database.Connection.Where("api_key_id = ?", apiKey.ID).Delete(&dbmodel.APIKeyAuditLog{}).Error; err != nil {
+		return err
+	}
+
+	if err := database.Connection.Delete(&apiKey).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func AuthenticateAPIKey(raw string, event APIKeyAuditEvent) (*dbmodel.APIKey, error) {
 	keyID, secret, err := ParseRawAPIKey(raw)
 	if err != nil {
