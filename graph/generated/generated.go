@@ -142,36 +142,33 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateFavouriteMovie     func(childComplexity int, input model.NewFavouriteMovie) int
-		CreateMarker             func(childComplexity int, input model.NewMarker) int
-		CreateMarkerType         func(childComplexity int, input model.NewMarkerType) int
-		CreateMovieSchedule      func(childComplexity int, input model.NewMovieSchedule) int
-		CreatePin                func(childComplexity int, input model.NewPin) int
-		CreateRoroadList         func(childComplexity int, input model.NewRoroadList) int
-		CreateSchedule           func(childComplexity int, input model.NewSchedule) int
-		CreateUser               func(childComplexity int, input model.NewUser) int
-		EditMarker               func(childComplexity int, input model.UpdateMarker) int
-		EditMarkerType           func(childComplexity int, input model.UpdatedMarkerType) int
-		EditPin                  func(childComplexity int, input model.UpdatedPin) int
-		EditSchedule             func(childComplexity int, input model.UpdateSchedule) int
-		Login                    func(childComplexity int, input model.Login) int
-		Logout                   func(childComplexity int, input model.Logout) int
-		ManageMultipleRoroadList func(childComplexity int, input model.ManageRoroadList) int
-		PreviewPin               func(childComplexity int, input model.PreviewPinInput) int
-		RemoveFavouriteMovie     func(childComplexity int, input model.RemoveModel) int
-		RemoveMarker             func(childComplexity int, input model.RemoveModel) int
-		RemoveMarkerType         func(childComplexity int, input model.RemoveModel) int
-		RemovePin                func(childComplexity int, input model.RemoveModel) int
-		RemoveSchedule           func(childComplexity int, input model.RemoveModel) int
-		RevokeMarker             func(childComplexity int, input model.UpdateModel) int
-		UpdateDefault            func(childComplexity int, input model.UpdatedDefault) int
-		UpdateMarkerFav          func(childComplexity int, input model.UpdateMarkerFavourite) int
-		UpdatePreferredPin       func(childComplexity int, input model.UpdatePreferredPin) int
-		UpdateRelation           func(childComplexity int, input model.UpdateRelation) int
-		UpdateRoroadList         func(childComplexity int, input model.UpdateRoroadList) int
-		UpdateScheduleStatus     func(childComplexity int, input model.ScheduleStatusList) int
-		UpdateStation            func(childComplexity int, input model.UpdateStation) int
-		WebsiteScrap             func(childComplexity int, input model.WebsiteScrapInput) int
+		CreateFavouriteMovie func(childComplexity int, input model.NewFavouriteMovie) int
+		CreateMarker         func(childComplexity int, input model.NewMarker) int
+		CreateMarkerType     func(childComplexity int, input model.NewMarkerType) int
+		CreateMovieSchedule  func(childComplexity int, input model.NewMovieSchedule) int
+		CreatePin            func(childComplexity int, input model.NewPin) int
+		CreateSchedule       func(childComplexity int, input model.NewSchedule) int
+		CreateUser           func(childComplexity int, input model.NewUser) int
+		EditMarker           func(childComplexity int, input model.UpdateMarker) int
+		EditMarkerType       func(childComplexity int, input model.UpdatedMarkerType) int
+		EditPin              func(childComplexity int, input model.UpdatedPin) int
+		EditSchedule         func(childComplexity int, input model.UpdateSchedule) int
+		Login                func(childComplexity int, input model.Login) int
+		Logout               func(childComplexity int, input model.Logout) int
+		PreviewPin           func(childComplexity int, input model.PreviewPinInput) int
+		RemoveFavouriteMovie func(childComplexity int, input model.RemoveModel) int
+		RemoveMarker         func(childComplexity int, input model.RemoveModel) int
+		RemoveMarkerType     func(childComplexity int, input model.RemoveModel) int
+		RemovePin            func(childComplexity int, input model.RemoveModel) int
+		RemoveSchedule       func(childComplexity int, input model.RemoveModel) int
+		RevokeMarker         func(childComplexity int, input model.UpdateModel) int
+		UpdateDefault        func(childComplexity int, input model.UpdatedDefault) int
+		UpdateMarkerFav      func(childComplexity int, input model.UpdateMarkerFavourite) int
+		UpdatePreferredPin   func(childComplexity int, input model.UpdatePreferredPin) int
+		UpdateRelation       func(childComplexity int, input model.UpdateRelation) int
+		UpdateScheduleStatus func(childComplexity int, input model.ScheduleStatusList) int
+		UpdateStation        func(childComplexity int, input model.UpdateStation) int
+		WebsiteScrap         func(childComplexity int, input model.WebsiteScrapInput) int
 	}
 
 	Pin struct {
@@ -206,8 +203,6 @@ type ComplexityRoot struct {
 		Preference          func(childComplexity int) int
 		Previousmarkers     func(childComplexity int) int
 		Releasenotes        func(childComplexity int) int
-		Roroadlists         func(childComplexity int) int
-		Roroadlistsbyname   func(childComplexity int, params model.RoroadListSearchFilter) int
 		Schedules           func(childComplexity int, params model.CurrentTime) int
 		Scrapimage          func(childComplexity int, params model.WebLink) int
 		Specificreleasenote func(childComplexity int, filter model.ReleaseNoteFilter) int
@@ -242,15 +237,6 @@ type ComplexityRoot struct {
 		SourceID       func(childComplexity int) int
 		Telephone      func(childComplexity int) int
 		Website        func(childComplexity int) int
-	}
-
-	RoroadList struct {
-		Checked    func(childComplexity int) int
-		Hidden     func(childComplexity int) int
-		ID         func(childComplexity int) int
-		ListType   func(childComplexity int) int
-		Name       func(childComplexity int) int
-		TargetUser func(childComplexity int) int
 	}
 
 	Schedule struct {
@@ -332,9 +318,6 @@ type MutationResolver interface {
 	UpdateStation(ctx context.Context, input model.UpdateStation) (*model.Station, error)
 	CreateFavouriteMovie(ctx context.Context, input model.NewFavouriteMovie) (*model.Movie, error)
 	RemoveFavouriteMovie(ctx context.Context, input model.RemoveModel) (string, error)
-	CreateRoroadList(ctx context.Context, input model.NewRoroadList) (*model.RoroadList, error)
-	UpdateRoroadList(ctx context.Context, input model.UpdateRoroadList) (*model.RoroadList, error)
-	ManageMultipleRoroadList(ctx context.Context, input model.ManageRoroadList) ([]*model.RoroadList, error)
 	Login(ctx context.Context, input model.Login) (*model.LoginResult, error)
 	Logout(ctx context.Context, input model.Logout) (string, error)
 }
@@ -360,8 +343,6 @@ type QueryResolver interface {
 	Specificreleasenote(ctx context.Context, filter model.ReleaseNoteFilter) (*model.ReleaseNote, error)
 	Releasenotes(ctx context.Context) ([]*model.ReleaseNote, error)
 	Stations(ctx context.Context) ([]*model.Station, error)
-	Roroadlists(ctx context.Context) ([]*model.RoroadList, error)
-	Roroadlistsbyname(ctx context.Context, params model.RoroadListSearchFilter) ([]*model.RoroadList, error)
 	Countrycodemap(ctx context.Context) ([]*model.CountryCodeMap, error)
 	Watchedmovies(ctx context.Context) ([]*model.Schedule, error)
 	Me(ctx context.Context) (string, error)
@@ -918,18 +899,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreatePin(childComplexity, args["input"].(model.NewPin)), true
 
-	case "Mutation.createRoroadList":
-		if e.complexity.Mutation.CreateRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_createRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.CreateRoroadList(childComplexity, args["input"].(model.NewRoroadList)), true
-
 	case "Mutation.createSchedule":
 		if e.complexity.Mutation.CreateSchedule == nil {
 			break
@@ -1025,18 +994,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.Logout(childComplexity, args["input"].(model.Logout)), true
-
-	case "Mutation.manageMultipleRoroadList":
-		if e.complexity.Mutation.ManageMultipleRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_manageMultipleRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.ManageMultipleRoroadList(childComplexity, args["input"].(model.ManageRoroadList)), true
 
 	case "Mutation.previewPin":
 		if e.complexity.Mutation.PreviewPin == nil {
@@ -1169,18 +1126,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateRelation(childComplexity, args["input"].(model.UpdateRelation)), true
-
-	case "Mutation.updateRoroadList":
-		if e.complexity.Mutation.UpdateRoroadList == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateRoroadList_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateRoroadList(childComplexity, args["input"].(model.UpdateRoroadList)), true
 
 	case "Mutation.updateScheduleStatus":
 		if e.complexity.Mutation.UpdateScheduleStatus == nil {
@@ -1424,25 +1369,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Releasenotes(childComplexity), true
 
-	case "Query.roroadlists":
-		if e.complexity.Query.Roroadlists == nil {
-			break
-		}
-
-		return e.complexity.Query.Roroadlists(childComplexity), true
-
-	case "Query.roroadlistsbyname":
-		if e.complexity.Query.Roroadlistsbyname == nil {
-			break
-		}
-
-		args, err := ec.field_Query_roroadlistsbyname_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Query.Roroadlistsbyname(childComplexity, args["params"].(model.RoroadListSearchFilter)), true
-
 	case "Query.schedules":
 		if e.complexity.Query.Schedules == nil {
 			break
@@ -1668,48 +1594,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Restaurant.Website(childComplexity), true
-
-	case "RoroadList.checked":
-		if e.complexity.RoroadList.Checked == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Checked(childComplexity), true
-
-	case "RoroadList.hidden":
-		if e.complexity.RoroadList.Hidden == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Hidden(childComplexity), true
-
-	case "RoroadList.id":
-		if e.complexity.RoroadList.ID == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.ID(childComplexity), true
-
-	case "RoroadList.list_type":
-		if e.complexity.RoroadList.ListType == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.ListType(childComplexity), true
-
-	case "RoroadList.name":
-		if e.complexity.RoroadList.Name == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.Name(childComplexity), true
-
-	case "RoroadList.target_user":
-		if e.complexity.RoroadList.TargetUser == nil {
-			break
-		}
-
-		return e.complexity.RoroadList.TargetUser(childComplexity), true
 
 	case "Schedule.created_at":
 		if e.complexity.Schedule.CreatedAt == nil {
@@ -2042,11 +1926,6 @@ input MovieFilter {
   query: String
 }
 
-input RoroadListSearchFilter {
-  name: String
-  hidden: Boolean
-}
-
 input ReleaseNoteFilter {
   version: String!
 }
@@ -2232,15 +2111,6 @@ type Station {
   line_info: String!
 }
 
-type RoroadList {
-  id: Int!
-  name: String!
-  list_type: String!
-  checked: Boolean!
-  hidden: Boolean!
-  target_user: String!
-}
-
 type CountryCodeMap {
   country_code: String!
   country_name: String!
@@ -2268,8 +2138,6 @@ type Query {
   specificreleasenote(filter: ReleaseNoteFilter!): ReleaseNote!
   releasenotes: [ReleaseNote]!
   stations: [Station]!
-  roroadlists: [RoroadList]!
-  roroadlistsbyname(params: RoroadListSearchFilter!): [RoroadList]!
   countrycodemap: [CountryCodeMap]!
   watchedmovies: [Schedule]!
   me: String!
@@ -2440,26 +2308,6 @@ input UpdateStation {
   active: Boolean!
 }
 
-input NewRoroadList {
-  name: String!
-  target_user: String!
-  list_type: String!
-}
-
-input UpdateRoroadList {
-  id: Int!
-  name: String
-  list_type: String
-  checked: Boolean
-  hidden: Boolean
-  target_user: String
-}
-
-input ManageRoroadList {
-  ids: [Int]!
-  hidden: Boolean
-}
-
 input Login {
   username: String!
   password: String!
@@ -2500,12 +2348,10 @@ type Mutation {
   updateStation(input: UpdateStation!): Station!
   createFavouriteMovie(input: NewFavouriteMovie!): Movie!
   removeFavouriteMovie(input: RemoveModel!): String!
-  createRoroadList(input: NewRoroadList!): RoroadList!
-  updateRoroadList(input: UpdateRoroadList!): RoroadList!
-  manageMultipleRoroadList(input: ManageRoroadList!): [RoroadList]!
   login(input: Login!): LoginResult!
   logout(input: Logout!): String!
-}`, BuiltIn: false},
+}
+`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -2580,21 +2426,6 @@ func (ec *executionContext) field_Mutation_createPin_args(ctx context.Context, r
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewPin(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_createRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.NewRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNNewRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewRoroadList(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2715,21 +2546,6 @@ func (ec *executionContext) field_Mutation_logout_args(ctx context.Context, rawA
 	if tmp, ok := rawArgs["input"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
 		arg0, err = ec.unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_manageMultipleRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.ManageRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNManageRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐManageRoroadList(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -2903,21 +2719,6 @@ func (ec *executionContext) field_Mutation_updateRelation_args(ctx context.Conte
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updateRoroadList_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.UpdateRoroadList
-	if tmp, ok := rawArgs["input"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("input"))
-		arg0, err = ec.unmarshalNUpdateRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRoroadList(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["input"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_updateScheduleStatus_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3005,21 +2806,6 @@ func (ec *executionContext) field_Query_moviefetch_args(ctx context.Context, raw
 		}
 	}
 	args["filter"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_roroadlistsbyname_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 model.RoroadListSearchFilter
-	if tmp, ok := rawArgs["params"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
-		arg0, err = ec.unmarshalNRoroadListSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadListSearchFilter(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["params"] = arg0
 	return args, nil
 }
 
@@ -6530,132 +6316,6 @@ func (ec *executionContext) _Mutation_removeFavouriteMovie(ctx context.Context, 
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Mutation_createRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_createRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateRoroadList(rctx, args["input"].(model.NewRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_updateRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_updateRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateRoroadList(rctx, args["input"].(model.UpdateRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Mutation_manageMultipleRoroadList(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Mutation_manageMultipleRoroadList_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().ManageMultipleRoroadList(rctx, args["input"].(model.ManageRoroadList))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -7945,83 +7605,6 @@ func (ec *executionContext) _Query_stations(ctx context.Context, field graphql.C
 	return ec.marshalNStation2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐStation(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_roroadlists(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Roroadlists(rctx)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Query_roroadlistsbyname(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "Query",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	rawArgs := field.ArgumentMap(ec.Variables)
-	args, err := ec.field_Query_roroadlistsbyname_args(ctx, rawArgs)
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	fc.Args = args
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Roroadlistsbyname(rctx, args["params"].(model.RoroadListSearchFilter))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.([]*model.RoroadList)
-	fc.Result = res
-	return ec.marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Query_countrycodemap(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -8851,216 +8434,6 @@ func (ec *executionContext) _Restaurant_other_info(ctx context.Context, field gr
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_id(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(int)
-	fc.Result = res
-	return ec.marshalNInt2int(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_name(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_list_type(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ListType, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_checked(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Checked, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_hidden(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Hidden, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(bool)
-	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _RoroadList_target_user(ctx context.Context, field graphql.CollectedField, obj *model.RoroadList) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:     "RoroadList",
-		Field:      field,
-		Args:       nil,
-		IsMethod:   false,
-		IsResolver: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.TargetUser, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Schedule_id(ctx context.Context, field graphql.CollectedField, obj *model.Schedule) (ret graphql.Marshaler) {
@@ -11401,34 +10774,6 @@ func (ec *executionContext) unmarshalInputLogout(ctx context.Context, obj interf
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputManageRoroadList(ctx context.Context, obj interface{}) (model.ManageRoroadList, error) {
-	var it model.ManageRoroadList
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "ids":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("ids"))
-			it.Ids, err = ec.unmarshalNInt2ᚕᚖint(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "hidden":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
-			it.Hidden, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj interface{}) (model.MovieFilter, error) {
 	var it model.MovieFilter
 	var asMap = obj.(map[string]interface{})
@@ -11789,42 +11134,6 @@ func (ec *executionContext) unmarshalInputNewPin(ctx context.Context, obj interf
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputNewRoroadList(ctx context.Context, obj interface{}) (model.NewRoroadList, error) {
-	var it model.NewRoroadList
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "target_user":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target_user"))
-			it.TargetUser, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "list_type":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("list_type"))
-			it.ListType, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputNewSchedule(ctx context.Context, obj interface{}) (model.NewSchedule, error) {
 	var it model.NewSchedule
 	var asMap = obj.(map[string]interface{})
@@ -11996,34 +11305,6 @@ func (ec *executionContext) unmarshalInputRemoveModel(ctx context.Context, obj i
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
 			it.ID, err = ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputRoroadListSearchFilter(ctx context.Context, obj interface{}) (model.RoroadListSearchFilter, error) {
-	var it model.RoroadListSearchFilter
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "hidden":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
-			it.Hidden, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -12316,66 +11597,6 @@ func (ec *executionContext) unmarshalInputUpdateRelation(ctx context.Context, ob
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
 			it.Username, err = ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		}
-	}
-
-	return it, nil
-}
-
-func (ec *executionContext) unmarshalInputUpdateRoroadList(ctx context.Context, obj interface{}) (model.UpdateRoroadList, error) {
-	var it model.UpdateRoroadList
-	var asMap = obj.(map[string]interface{})
-
-	for k, v := range asMap {
-		switch k {
-		case "id":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-			it.ID, err = ec.unmarshalNInt2int(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "name":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			it.Name, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "list_type":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("list_type"))
-			it.ListType, err = ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "checked":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("checked"))
-			it.Checked, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "hidden":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hidden"))
-			it.Hidden, err = ec.unmarshalOBoolean2ᚖbool(ctx, v)
-			if err != nil {
-				return it, err
-			}
-		case "target_user":
-			var err error
-
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("target_user"))
-			it.TargetUser, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -13390,21 +12611,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "createRoroadList":
-			out.Values[i] = ec._Mutation_createRoroadList(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "updateRoroadList":
-			out.Values[i] = ec._Mutation_updateRoroadList(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "manageMultipleRoroadList":
-			out.Values[i] = ec._Mutation_manageMultipleRoroadList(ctx, field)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "login":
 			out.Values[i] = ec._Mutation_login(ctx, field)
 			if out.Values[i] == graphql.Null {
@@ -13811,34 +13017,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
-		case "roroadlists":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_roroadlists(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
-		case "roroadlistsbyname":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Query_roroadlistsbyname(ctx, field)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "countrycodemap":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
@@ -13984,58 +13162,6 @@ func (ec *executionContext) _Restaurant(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._Restaurant_website(ctx, field, obj)
 		case "other_info":
 			out.Values[i] = ec._Restaurant_other_info(ctx, field, obj)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var roroadListImplementors = []string{"RoroadList"}
-
-func (ec *executionContext) _RoroadList(ctx context.Context, sel ast.SelectionSet, obj *model.RoroadList) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, roroadListImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("RoroadList")
-		case "id":
-			out.Values[i] = ec._RoroadList_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "name":
-			out.Values[i] = ec._RoroadList_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "list_type":
-			out.Values[i] = ec._RoroadList_list_type(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "checked":
-			out.Values[i] = ec._RoroadList_checked(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "hidden":
-			out.Values[i] = ec._RoroadList_hidden(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "target_user":
-			out.Values[i] = ec._RoroadList_target_user(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -14733,36 +13859,6 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
-func (ec *executionContext) unmarshalNInt2ᚕᚖint(ctx context.Context, v interface{}) ([]*int, error) {
-	var vSlice []interface{}
-	if v != nil {
-		if tmp1, ok := v.([]interface{}); ok {
-			vSlice = tmp1
-		} else {
-			vSlice = []interface{}{v}
-		}
-	}
-	var err error
-	res := make([]*int, len(vSlice))
-	for i := range vSlice {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
-		res[i], err = ec.unmarshalOInt2ᚖint(ctx, vSlice[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return res, nil
-}
-
-func (ec *executionContext) marshalNInt2ᚕᚖint(ctx context.Context, sel ast.SelectionSet, v []*int) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	for i := range v {
-		ret[i] = ec.marshalOInt2ᚖint(ctx, sel, v[i])
-	}
-
-	return ret
-}
-
 func (ec *executionContext) unmarshalNLogin2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogin(ctx context.Context, v interface{}) (model.Login, error) {
 	res, err := ec.unmarshalInputLogin(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -14784,11 +13880,6 @@ func (ec *executionContext) marshalNLoginResult2ᚖmapmarkerᚋbackendᚋgraph�
 
 func (ec *executionContext) unmarshalNLogout2mapmarkerᚋbackendᚋgraphᚋmodelᚐLogout(ctx context.Context, v interface{}) (model.Logout, error) {
 	res, err := ec.unmarshalInputLogout(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNManageRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐManageRoroadList(ctx context.Context, v interface{}) (model.ManageRoroadList, error) {
-	res, err := ec.unmarshalInputManageRoroadList(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -15063,11 +14154,6 @@ func (ec *executionContext) unmarshalNNewPin2mapmarkerᚋbackendᚋgraphᚋmodel
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNNewRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewRoroadList(ctx context.Context, v interface{}) (model.NewRoroadList, error) {
-	res, err := ec.unmarshalInputNewRoroadList(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNNewSchedule2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewSchedule(ctx context.Context, v interface{}) (model.NewSchedule, error) {
 	res, err := ec.unmarshalInputNewSchedule(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -15192,62 +14278,6 @@ func (ec *executionContext) unmarshalNReleaseNoteFilter2mapmarkerᚋbackendᚋgr
 
 func (ec *executionContext) unmarshalNRemoveModel2mapmarkerᚋbackendᚋgraphᚋmodelᚐRemoveModel(ctx context.Context, v interface{}) (model.RemoveModel, error) {
 	res, err := ec.unmarshalInputRemoveModel(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalNRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx context.Context, sel ast.SelectionSet, v model.RoroadList) graphql.Marshaler {
-	return ec._RoroadList(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNRoroadList2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx context.Context, sel ast.SelectionSet, v []*model.RoroadList) graphql.Marshaler {
-	ret := make(graphql.Array, len(v))
-	var wg sync.WaitGroup
-	isLen1 := len(v) == 1
-	if !isLen1 {
-		wg.Add(len(v))
-	}
-	for i := range v {
-		i := i
-		fc := &graphql.FieldContext{
-			Index:  &i,
-			Result: &v[i],
-		}
-		ctx := graphql.WithFieldContext(ctx, fc)
-		f := func(i int) {
-			defer func() {
-				if r := recover(); r != nil {
-					ec.Error(ctx, ec.Recover(ctx, r))
-					ret = nil
-				}
-			}()
-			if !isLen1 {
-				defer wg.Done()
-			}
-			ret[i] = ec.marshalORoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx, sel, v[i])
-		}
-		if isLen1 {
-			f(i)
-		} else {
-			go f(i)
-		}
-
-	}
-	wg.Wait()
-	return ret
-}
-
-func (ec *executionContext) marshalNRoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx context.Context, sel ast.SelectionSet, v *model.RoroadList) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	return ec._RoroadList(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNRoroadListSearchFilter2mapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadListSearchFilter(ctx context.Context, v interface{}) (model.RoroadListSearchFilter, error) {
-	res, err := ec.unmarshalInputRoroadListSearchFilter(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -15430,11 +14460,6 @@ func (ec *executionContext) unmarshalNUpdatePreferredPin2mapmarkerᚋbackendᚋg
 
 func (ec *executionContext) unmarshalNUpdateRelation2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRelation(ctx context.Context, v interface{}) (model.UpdateRelation, error) {
 	res, err := ec.unmarshalInputUpdateRelation(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) unmarshalNUpdateRoroadList2mapmarkerᚋbackendᚋgraphᚋmodelᚐUpdateRoroadList(ctx context.Context, v interface{}) (model.UpdateRoroadList, error) {
-	res, err := ec.unmarshalInputUpdateRoroadList(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -15896,13 +14921,6 @@ func (ec *executionContext) marshalORestaurant2ᚖmapmarkerᚋbackendᚋgraphᚋ
 		return graphql.Null
 	}
 	return ec._Restaurant(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalORoroadList2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐRoroadList(ctx context.Context, sel ast.SelectionSet, v *model.RoroadList) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._RoroadList(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx context.Context, sel ast.SelectionSet, v *model.Schedule) graphql.Marshaler {

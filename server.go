@@ -51,13 +51,6 @@ func main() {
 func prepareReleaseNote() {
 	current_version := "2.8.0"
 	// notes := []string{
-	// 	"[b]New Feature:",
-	// 	"Adding RoroadList, alongside with previous roroadlists revoke!",
-	// 	"Sorting Markers will be available in Filter Page",
-	// 	"[b]Quality Of Life",
-	// 	"Clicking Address will now open Google Map",
-	// }
-	// notes := []string{
 	// 	"[b]Bug Fixed:",
 	// 	"Openrice scrapper removing and editing issue",
 	// }
