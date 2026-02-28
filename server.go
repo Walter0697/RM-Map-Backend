@@ -124,6 +124,7 @@ func startServer() {
 		r.Post("/", service.CreateAPIKeyHandler)
 		r.Post("/{id}/revoke", service.RevokeAPIKeyHandler)
 		r.Post("/{id}/rotate", service.RotateAPIKeyHandler)
+		r.Delete("/{id}", service.DeleteAPIKeyHandler)
 	})
 	router.Route("/integration", func(r chi.Router) {
 		r.Get("/markers", service.IntegrationListMarkersHandler)
