@@ -49,18 +49,27 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.8.0"
+	current_version := "2.9.4"
 	// notes := []string{
 	// 	"[b]Bug Fixed:",
 	// 	"Openrice scrapper removing and editing issue",
+	// 	"[b]New Feature:",
+	// 	"Country Map!",
+	// 	"Canada Map for both Country map and Station map!",
+	// 	"[b]Bug Fixed:",
+	// 	"Fixing issue where movie item cannot be saved",
+	// 	"Marker Country selection dropdown will sometimes block map view previously",
+	// 	"[b]Quality Of Life",
+	// 	"Sharing marker preview will also copy the link to clipboard (we cannot override the text for most social media app so this is alternative)",
+	// 	"Totally different Home Page experience!!!",
+	// }
+	// notes := []string{
+	// 	"[b]Bug Fixed:",
+	// 	"Fixing issue where you cannot edit schedule",
 	// }
 	notes := []string{
-		"[b]New Feature:",
-		"Group markers by country and location",
-		"Watched Movies List",
-		"LatLon Form for adding location in map",
-		"[b]Layout:",
-		"Most listing buttons are now at Setting page instead of Home page",
+		"[b]Bug Fixed:",
+		"Fixing issue where you cannot edit marker",
 	}
 
 	log.Println("Current version " + current_version)
@@ -107,6 +116,8 @@ func startServer() {
 	fileServer(router, "/image/movies", moviesDir)
 	stationMapsDir := http.Dir(filepath.Join(workDir, "uploads/station_maps"))
 	fileServer(router, "/image/station_maps", stationMapsDir)
+	countriesDir := http.Dir(filepath.Join(workDir, "uploads/countries"))
+	fileServer(router, "/image/countries", countriesDir)
 
 	// for non dynamic asset that is required when nothing is set
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
