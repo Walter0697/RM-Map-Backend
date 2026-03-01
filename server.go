@@ -155,6 +155,11 @@ func startServer() {
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
 	})
 	router.Route("/admin", func(r chi.Router) {
+		r.Get("/cleanup/markers", service.AdminCleanupListMarkersHandler)
+		r.Get("/cleanup/schedules", service.AdminCleanupListSchedulesHandler)
+		r.Delete("/cleanup/markers/{id}", service.AdminCleanupDeleteMarkerHandler)
+		r.Delete("/cleanup/schedules/{id}", service.AdminCleanupDeleteScheduleHandler)
+		r.Post("/cleanup/jobs", service.AdminCleanupScheduleJobHandler)
 		r.Get("/train-station-maps", service.AdminListTrainStationMapsHandler)
 		r.Post("/train-station-maps", service.AdminCreateTrainStationMapHandler)
 		r.Put("/train-station-maps/{map_name}", service.AdminUpdateTrainStationMapHandler)
