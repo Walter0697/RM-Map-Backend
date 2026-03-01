@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"mapmarker/backend/database/dbmodel"
-	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
 	"mapmarker/backend/initdb/initmodel"
 	"net/http"
@@ -34,20 +33,71 @@ type adminStationLineItem struct {
 	Position  int    `json:"position"`
 }
 
+type adminStationLineCatalogItem struct {
+	ID        uint   `json:"id"`
+	Name      string `json:"name"`
+	LocalName string `json:"local_name"`
+	Colour    string `json:"colour"`
+}
+
 type adminUpdateStationLinesRequest struct {
 	MapName    string                 `json:"map_name"`
 	Identifier string                 `json:"identifier"`
 	Lines      []adminStationLineItem `json:"lines"`
 }
 
+type adminSaveStationLineCatalogRequest struct {
+	MapName string                        `json:"map_name"`
+	Lines   []adminStationLineCatalogItem `json:"lines"`
+}
+
 type stationMapAssetResponse struct {
-	MapName     string `json:"map_name"`
-	ImagePath   string `json:"image_path"`
-	ImageURL    string `json:"image_url"`
+	MapName   string `json:"map_name"`
+	ImagePath string `json:"image_path"`
+	ImageURL  string `json:"image_url"`
+	IconPath  string `json:"icon_path"`
+	IconURL   string `json:"icon_url"`
 }
 
 type adminTrainStationMapRequest struct {
-	MapName string `json:"map_name"`
+	MapName     string `json:"map_name"`
+	MapLabel    string `json:"map_label"`
+	NewMapName  string `json:"new_map_name"`
+	NewMapLabel string `json:"new_map_label"`
+}
+
+type adminImportStationJSONResponse struct {
+	MapName          string  `json:"map_name"`
+	ImportedStations int     `json:"imported_stations"`
+	Version          float64 `json:"version"`
+}
+
+type adminStationResponse struct {
+	Identifier string  `json:"identifier"`
+	Label      string  `json:"label"`
+	LocalName  string  `json:"local_name"`
+	PhotoX     float64 `json:"photo_x"`
+	PhotoY     float64 `json:"photo_y"`
+	MapX       float64 `json:"map_x"`
+	MapY       float64 `json:"map_y"`
+	Active     bool    `json:"active"`
+	MapName    string  `json:"map_name"`
+	LineInfo   string  `json:"line_info"`
+}
+
+func convertAdminStationResponse(input dbmodel.TrainStation) adminStationResponse {
+	return adminStationResponse{
+		Identifier: input.Identifier,
+		Label:      input.Label,
+		LocalName:  input.StationLocalName,
+		PhotoX:     input.PhotoX,
+		PhotoY:     input.PhotoY,
+		MapX:       input.MapX,
+		MapY:       input.MapY,
+		Active:     false,
+		MapName:    input.MapName,
+		LineInfo:   input.LineInfo,
+	}
 }
 
 func requireAdmin(w http.ResponseWriter, r *http.Request) *dbmodel.User {
@@ -84,10 +134,9 @@ func AdminListStationsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := make([]model.Station, 0, len(items))
+	result := make([]adminStationResponse, 0, len(items))
 	for _, item := range items {
-		output := helper.ConvertTrainStation(item)
-		output.Active = false
+		output := convertAdminStationResponse(item)
 		result = append(result, output)
 	}
 
@@ -142,8 +191,7 @@ func AdminUpsertStationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output := helper.ConvertTrainStation(*item)
-	output.Active = false
+	output := convertAdminStationResponse(*item)
 	respondJSON(w, http.StatusOK, output)
 }
 
@@ -184,9 +232,62 @@ func AdminUpdateStationLinesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	output := helper.ConvertTrainStation(*station)
-	output.Active = false
+	output := convertAdminStationResponse(*station)
 	respondJSON(w, http.StatusOK, output)
+}
+
+func AdminListStationLineCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	if requireAdmin(w, r) == nil {
+		return
+	}
+
+	mapName := strings.TrimSpace(r.URL.Query().Get("map_name"))
+	if mapName == "" {
+		http.Error(w, "map_name is required", http.StatusBadRequest)
+		return
+	}
+
+	items, err := ListTrainStationLineCatalog(mapName)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	respondJSON(w, http.StatusOK, items)
+}
+
+func AdminSaveStationLineCatalogHandler(w http.ResponseWriter, r *http.Request) {
+	if requireAdmin(w, r) == nil {
+		return
+	}
+
+	request := adminSaveStationLineCatalogRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	request.MapName = strings.TrimSpace(request.MapName)
+	if request.MapName == "" {
+		http.Error(w, "map_name is required", http.StatusBadRequest)
+		return
+	}
+
+	lines := make([]TrainStationLineCatalogItem, 0, len(request.Lines))
+	for _, line := range request.Lines {
+		lines = append(lines, TrainStationLineCatalogItem{
+			ID:        line.ID,
+			MapName:   request.MapName,
+			Name:      strings.TrimSpace(line.Name),
+			LocalName: strings.TrimSpace(line.LocalName),
+			Colour:    strings.TrimSpace(line.Colour),
+		})
+	}
+
+	items, err := SaveTrainStationLineCatalog(request.MapName, lines)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	respondJSON(w, http.StatusOK, items)
 }
 
 func AdminExportStationJSONHandler(w http.ResponseWriter, r *http.Request) {
@@ -209,6 +310,103 @@ func AdminExportStationJSONHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", "attachment; filename=\""+strings.ToLower(mapName)+"-stations.json\"")
 	_, _ = w.Write([]byte(payload))
+}
+
+func AdminImportStationJSONHandler(w http.ResponseWriter, r *http.Request) {
+	if requireAdmin(w, r) == nil {
+		return
+	}
+
+	mapName := strings.TrimSpace(chi.URLParam(r, "map_name"))
+	if mapName == "" {
+		http.Error(w, "map_name is required", http.StatusBadRequest)
+		return
+	}
+
+	file, _, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "file is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	raw, err := io.ReadAll(io.LimitReader(file, stationMapMaxUploadSize+1))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if int64(len(raw)) > stationMapMaxUploadSize {
+		http.Error(w, "upload too large", http.StatusBadRequest)
+		return
+	}
+
+	result, err := ImportTrainStationSeedJSON(mapName, raw)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, adminImportStationJSONResponse{
+		MapName:          result.MapName,
+		ImportedStations: result.ImportedStations,
+		Version:          result.Version,
+	})
+}
+
+func AdminUploadStationMapIconHandler(w http.ResponseWriter, r *http.Request) {
+	user := requireAdmin(w, r)
+	if user == nil {
+		return
+	}
+
+	mapName := strings.TrimSpace(chi.URLParam(r, "map_name"))
+	if mapName == "" {
+		http.Error(w, "map_name is required", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseMultipartForm(12 * 1000 * 1000); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		http.Error(w, "file is required", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	contentType := strings.TrimSpace(fileHeader.Header.Get("Content-Type"))
+	raw, err := io.ReadAll(io.LimitReader(file, stationMapMaxUploadSize+1))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if contentType == "" && len(raw) > 0 {
+		contentType = http.DetectContentType(raw)
+	}
+
+	upload := graphql.Upload{
+		File:        bytes.NewReader(raw),
+		Filename:    fileHeader.Filename,
+		Size:        int64(len(raw)),
+		ContentType: contentType,
+	}
+
+	asset, err := UploadTrainStationMapIconAsset(mapName, &upload, user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, stationMapAssetResponse{
+		MapName:   asset.MapName,
+		ImagePath: asset.ImagePath,
+		ImageURL:  "/image" + asset.ImagePath,
+		IconPath:  asset.IconPath,
+		IconURL:   "/image" + asset.IconPath,
+	})
 }
 
 func AdminGetStationMapAssetHandler(w http.ResponseWriter, r *http.Request) {
@@ -240,6 +438,8 @@ func AdminGetStationMapAssetHandler(w http.ResponseWriter, r *http.Request) {
 		MapName:   asset.MapName,
 		ImagePath: asset.ImagePath,
 		ImageURL:  "/image" + asset.ImagePath,
+		IconPath:  asset.IconPath,
+		IconURL:   "/image" + asset.IconPath,
 	})
 }
 
@@ -278,6 +478,8 @@ func GetStationMapAssetHandler(w http.ResponseWriter, r *http.Request) {
 		MapName:   asset.MapName,
 		ImagePath: asset.ImagePath,
 		ImageURL:  "/image" + asset.ImagePath,
+		IconPath:  asset.IconPath,
+		IconURL:   "/image" + asset.IconPath,
 	})
 }
 
@@ -336,6 +538,8 @@ func AdminUploadStationMapAssetHandler(w http.ResponseWriter, r *http.Request) {
 		MapName:   asset.MapName,
 		ImagePath: asset.ImagePath,
 		ImageURL:  "/image" + asset.ImagePath,
+		IconPath:  asset.IconPath,
+		IconURL:   "/image" + asset.IconPath,
 	})
 }
 
@@ -364,12 +568,38 @@ func AdminCreateTrainStationMapHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	item, err := CreateTrainStationMap(request.MapName, user)
+	item, err := CreateTrainStationMap(request.MapName, request.MapLabel, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	respondJSON(w, http.StatusCreated, item)
+}
+
+func AdminUpdateTrainStationMapHandler(w http.ResponseWriter, r *http.Request) {
+	user := requireAdmin(w, r)
+	if user == nil {
+		return
+	}
+
+	mapName := strings.TrimSpace(chi.URLParam(r, "map_name"))
+	if mapName == "" {
+		http.Error(w, "map_name is required", http.StatusBadRequest)
+		return
+	}
+
+	request := adminTrainStationMapRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	item, err := UpdateTrainStationMap(mapName, request.NewMapName, firstNonEmpty(request.NewMapLabel, request.MapLabel), user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	respondJSON(w, http.StatusOK, item)
 }
 
 func AdminDeleteTrainStationMapHandler(w http.ResponseWriter, r *http.Request) {
@@ -391,4 +621,14 @@ func AdminDeleteTrainStationMapHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]string{
 		"status": "ok",
 	})
+}
+
+func firstNonEmpty(candidates ...string) string {
+	for _, value := range candidates {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
