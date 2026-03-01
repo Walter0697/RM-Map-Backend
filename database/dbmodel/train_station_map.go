@@ -9,7 +9,9 @@ import (
 type TrainStationMap struct {
 	ObjectBase
 	MapName   string `json:"mapName" gorm:"uniqueIndex"`
+	MapLabel  string `json:"mapLabel"`
 	ImagePath string `json:"imagePath"`
+	IconPath  string `json:"iconPath"`
 }
 
 func (item *TrainStationMap) GetByMapName(db *gorm.DB) error {

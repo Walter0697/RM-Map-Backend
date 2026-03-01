@@ -42,6 +42,8 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&Restaurant{})
 	database.Connection.AutoMigrate(&TrainStation{})
 	database.Connection.AutoMigrate(&TrainStationMap{})
+	database.Connection.AutoMigrate(&TrainStationLine{})
+	database.Connection.AutoMigrate(&TrainStationStationLine{})
 	database.Connection.AutoMigrate(&TrainRecord{})
 	database.Connection.AutoMigrate(&RoRoadList{})
 	database.Connection.AutoMigrate(&CountryPoint{})

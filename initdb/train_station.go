@@ -9,6 +9,9 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/initdb/initmodel"
 	"os"
+	"strings"
+
+	"gorm.io/gorm"
 )
 
 func SeedAllTrainStation() error {
@@ -42,6 +45,24 @@ func SeedTrainStationData(jsonName, identifier string) error {
 			return err
 		}
 
+		stationIDs := make([]uint, 0)
+		if err := transaction.Model(&dbmodel.TrainStation{}).Where("map_name = ?", identifier).Pluck("id", &stationIDs).Error; err != nil {
+			transaction.Rollback()
+			return err
+		}
+		if len(stationIDs) > 0 {
+			if err := transaction.Unscoped().Where("station_id IN ?", stationIDs).Delete(&dbmodel.TrainStationStationLine{}).Error; err != nil {
+				transaction.Rollback()
+				return err
+			}
+		}
+		if err := transaction.Unscoped().Where("map_name = ?", identifier).Delete(&dbmodel.TrainStationLine{}).Error; err != nil {
+			transaction.Rollback()
+			return err
+		}
+
+		lineIDByKey := make(map[string]uint)
+
 		for _, stationData := range trainData.Data {
 			var trainStation dbmodel.TrainStation
 
@@ -63,6 +84,47 @@ func SeedTrainStationData(jsonName, identifier string) error {
 			if err := trainStation.UpdateByMapAndIdentifier(transaction); err != nil {
 				transaction.Rollback()
 				return err
+			}
+
+			for _, line := range stationData.Line {
+				name := strings.TrimSpace(line.Name)
+				localName := strings.TrimSpace(line.LocalName)
+				colour := strings.TrimSpace(line.Colour)
+				key := identifier + "|" + name + "|" + localName + "|" + colour
+
+				lineID, ok := lineIDByKey[key]
+				if !ok {
+					var existing dbmodel.TrainStationLine
+					if err := transaction.Where("map_name = ? AND name = ? AND local_name = ? AND colour = ?", identifier, name, localName, colour).First(&existing).Error; err != nil {
+						if err != gorm.ErrRecordNotFound {
+							transaction.Rollback()
+							return err
+						}
+						var created dbmodel.TrainStationLine
+						created.MapName = identifier
+						created.Name = name
+						created.LocalName = localName
+						created.Colour = colour
+						if createErr := transaction.Create(&created).Error; createErr != nil {
+							transaction.Rollback()
+							return createErr
+						}
+						lineID = created.ID
+					} else {
+						lineID = existing.ID
+					}
+					lineIDByKey[key] = lineID
+				}
+
+				relation := dbmodel.TrainStationStationLine{
+					StationID: trainStation.ID,
+					LineID:    lineID,
+					Position:  int(line.Position),
+				}
+				if err := transaction.Create(&relation).Error; err != nil {
+					transaction.Rollback()
+					return err
+				}
 			}
 		}
 

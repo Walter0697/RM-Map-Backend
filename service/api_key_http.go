@@ -765,11 +765,27 @@ func IntegrationUpdateStationHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "line_info must be valid JSON", http.StatusBadRequest)
 			return
 		}
+		if trimmed == "" {
+			trimmed = "[]"
+		}
 		station.LineInfo = trimmed
 	}
 	if err := station.Update(database.Connection); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+	if request.LineInfo != nil {
+		lines, err := parseLineInfoJSON(station.LineInfo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		updatedStation, err := UpdateTrainStationLines(station.MapName, station.Identifier, lines)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		station = *updatedStation
 	}
 
 	active := false
