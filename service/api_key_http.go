@@ -102,9 +102,16 @@ type integrationCreateScheduleRequest struct {
 }
 
 type integrationUpdateStationRequest struct {
-	MapName    string `json:"map_name"`
-	Identifier string `json:"identifier"`
-	Active     bool   `json:"active"`
+	MapName          string   `json:"map_name"`
+	Identifier       string   `json:"identifier"`
+	Active           *bool    `json:"active"`
+	Label            *string  `json:"label"`
+	StationLocalName *string  `json:"station_local_name"`
+	PhotoX           *float64 `json:"photo_x"`
+	PhotoY           *float64 `json:"photo_y"`
+	MapX             *float64 `json:"map_x"`
+	MapY             *float64 `json:"map_y"`
+	LineInfo         *string  `json:"line_info"`
 }
 
 type integrationUpdateDefaultPinRequest struct {
@@ -734,29 +741,85 @@ func IntegrationUpdateStationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var record dbmodel.TrainRecord
-	record.SelectedStation = station
-	record.Relation = apiKey.Relation
-	tx := database.Connection.Begin()
-	if err := record.GetOrCreate(tx); err != nil {
-		tx.Rollback()
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if request.Label != nil {
+		station.Label = strings.TrimSpace(*request.Label)
 	}
-	record.Active = request.Active
-	record.UpdatedBy = &apiKey.ActorUser
-	if err := record.Update(tx); err != nil {
-		tx.Rollback()
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	if request.StationLocalName != nil {
+		station.StationLocalName = strings.TrimSpace(*request.StationLocalName)
 	}
-	if err := tx.Commit().Error; err != nil {
+	if request.PhotoX != nil {
+		station.PhotoX = *request.PhotoX
+	}
+	if request.PhotoY != nil {
+		station.PhotoY = *request.PhotoY
+	}
+	if request.MapX != nil {
+		station.MapX = *request.MapX
+	}
+	if request.MapY != nil {
+		station.MapY = *request.MapY
+	}
+	if request.LineInfo != nil {
+		trimmed := strings.TrimSpace(*request.LineInfo)
+		if trimmed != "" && !json.Valid([]byte(trimmed)) {
+			http.Error(w, "line_info must be valid JSON", http.StatusBadRequest)
+			return
+		}
+		if trimmed == "" {
+			trimmed = "[]"
+		}
+		station.LineInfo = trimmed
+	}
+	if err := station.Update(database.Connection); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	if request.LineInfo != nil {
+		lines, err := parseLineInfoJSON(station.LineInfo)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		updatedStation, err := UpdateTrainStationLines(station.MapName, station.Identifier, lines)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		station = *updatedStation
+	}
+
+	active := false
+	if request.Active != nil {
+		var record dbmodel.TrainRecord
+		record.SelectedStation = station
+		record.Relation = apiKey.Relation
+		tx := database.Connection.Begin()
+		if err := record.GetOrCreate(tx); err != nil {
+			tx.Rollback()
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		record.Active = *request.Active
+		record.UpdatedBy = &apiKey.ActorUser
+		if err := record.Update(tx); err != nil {
+			tx.Rollback()
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		if err := tx.Commit().Error; err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		active = record.Active
+	} else {
+		var record dbmodel.TrainRecord
+		if err := database.Connection.Where("station_id = ? AND relation_id = ?", station.ID, apiKey.Relation.ID).First(&record).Error; err == nil {
+			active = record.Active
+		}
+	}
 
 	output := helper.ConvertTrainStation(station)
-	output.Active = record.Active
+	output.Active = active
 	respondJSON(w, http.StatusOK, output)
 }
 

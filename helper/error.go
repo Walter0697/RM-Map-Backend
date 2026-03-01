@@ -60,6 +60,12 @@ func (n *UploadFileNotImageError) Error() string {
 	return "upload file is not an image"
 }
 
+type UploadFileTooLargeError struct{}
+
+func (n *UploadFileTooLargeError) Error() string {
+	return "upload file exceeds allowed size"
+}
+
 type RelationWithYourselfError struct{}
 
 func (n *RelationWithYourselfError) Error() string {
@@ -112,6 +118,12 @@ type QueryCannotEmptyError struct{}
 
 func (n *QueryCannotEmptyError) Error() string {
 	return "query cannot be empty"
+}
+
+type InvalidJSONPayloadError struct{}
+
+func (n *InvalidJSONPayloadError) Error() string {
+	return "invalid JSON payload"
 }
 
 type RestaurantNotFound struct{}

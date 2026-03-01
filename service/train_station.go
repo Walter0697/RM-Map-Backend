@@ -12,6 +12,9 @@ func GetAllTrainStations() ([]dbmodel.TrainStation, error) {
 	if err := query.Find(&stations).Error; err != nil {
 		return stations, err
 	}
+	if err := HydrateTrainStationLineInfo(stations); err != nil {
+		return stations, err
+	}
 
 	return stations, nil
 }
@@ -21,6 +24,9 @@ func GetAllTrainStationByMapName(name string) ([]dbmodel.TrainStation, error) {
 
 	query := database.Connection.Where("map_name = ?", name)
 	if err := query.Find(&stations).Error; err != nil {
+		return stations, err
+	}
+	if err := HydrateTrainStationLineInfo(stations); err != nil {
 		return stations, err
 	}
 
