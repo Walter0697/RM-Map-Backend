@@ -247,11 +247,9 @@ func ListExternalAPIUsageSummary(filter ExternalAPIUsageFilter) (*ExternalAPIUsa
 	if err := query.Select(
 		"provider",
 		"COUNT(*) as total_calls",
-		"SUM(CASE WHEN status_class = ? THEN 1 ELSE 0 END) as success_count",
-		"SUM(CASE WHEN status_class = ? THEN 1 ELSE 0 END) as error_count",
+		"COUNT(*) FILTER (WHERE status_class = 'success') as success_count",
+		"COUNT(*) FILTER (WHERE status_class = 'error') as error_count",
 		"COALESCE(AVG(latency_ms), 0) as avg_latency_ms",
-		dbmodel.ExternalAPIAuditStatusSuccess,
-		dbmodel.ExternalAPIAuditStatusError,
 	).Group("provider").Scan(&rows).Error; err != nil {
 		return nil, err
 	}
