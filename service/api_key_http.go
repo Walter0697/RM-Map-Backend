@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -117,6 +118,53 @@ type integrationUpdateStationRequest struct {
 type integrationUpdateDefaultPinRequest struct {
 	PinID *int `json:"pin_id"`
 }
+
+type updateOwnPreviewPinRequest struct {
+	PinID *int `json:"pin_id"`
+}
+
+type integrationUpdateUserPreviewPinRequest struct {
+	PinID *int `json:"pin_id"`
+}
+
+type integrationUserPreviewPinResponse struct {
+	Username string `json:"username"`
+	PinID    *uint  `json:"pin_id,omitempty"`
+	PinLabel string `json:"pin_label,omitempty"`
+}
+
+type integrationStaticPreviewRequest struct {
+	Username       string   `json:"username"`
+	MarkerTypeName string   `json:"marker_type_name"`
+	Lat            *float64 `json:"lat,omitempty"`
+	Lon            *float64 `json:"lon,omitempty"`
+	StreetNumber   string   `json:"street_number,omitempty"`
+	StreetName     string   `json:"street_name,omitempty"`
+	Country        string   `json:"country,omitempty"`
+}
+
+type integrationStaticPreviewResponse struct {
+	Username    string  `json:"username"`
+	Lat         float64 `json:"lat"`
+	Lon         float64 `json:"lon"`
+	ImageBase64 string  `json:"image_base64"`
+	MimeType    string  `json:"mime_type"`
+	Format      string  `json:"format"`
+	Width       int     `json:"width"`
+	Height      int     `json:"height"`
+}
+
+type integrationErrorResponse struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+var integrationGetUserPreviewPinFn = GetUserPreviewPinSelection
+var integrationSetUserPreviewPinFn = SetUserPreviewPinSelection
+var integrationGenerateStaticMapFn = GenerateStaticMapPreviewByUsername
+var integrationGeocodeAddressFn = GeocodeStreetAddress
+var integrationAuthenticateRequestFn = authenticateIntegrationRequest
+var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	operator := currentUserFromRequest(r)
@@ -985,6 +1033,256 @@ func IntegrationUpdateSettingsDefaultPinHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 	respondJSON(w, http.StatusOK, updated)
+}
+
+func SettingsGetPreviewPinHandler(w http.ResponseWriter, r *http.Request) {
+	user := currentUserFromRequest(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	_, preference, err := GetUserPreviewPinSelection(user.Username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := integrationUserPreviewPinResponse{
+		Username: user.Username,
+	}
+	if preference != nil && preference.PreviewPinID != nil {
+		response.PinID = preference.PreviewPinID
+		if preference.PreviewPin != nil {
+			response.PinLabel = preference.PreviewPin.Label
+		}
+	}
+
+	respondJSON(w, http.StatusOK, response)
+}
+
+func SettingsUpdatePreviewPinHandler(w http.ResponseWriter, r *http.Request) {
+	user := currentUserFromRequest(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	request := updateOwnPreviewPinRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.PinID == nil || *request.PinID <= 0 {
+		http.Error(w, "pin_id is required", http.StatusBadRequest)
+		return
+	}
+
+	preference, pin, err := SetUserPreviewPinSelection(user.Username, uint(*request.PinID), user)
+	if err != nil {
+		if err == ErrPreviewPinInvalid {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_preview_pin", "pin_id must reference an existing pin")
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
+		Username: user.Username,
+		PinID:    preference.PreviewPinID,
+		PinLabel: pin.Label,
+	})
+}
+
+func IntegrationGetUserPreviewPinSelectionHandler(w http.ResponseWriter, r *http.Request) {
+	_, ok := integrationAuthenticateRequestFn(w, r, "integration.settings.preview_pin.get", constant.APIKeyScopeSettingsRead, "")
+	if !ok {
+		return
+	}
+
+	username := strings.TrimSpace(chi.URLParam(r, "username"))
+	if username == "" {
+		http.Error(w, "username is required", http.StatusBadRequest)
+		return
+	}
+
+	user, preference, err := integrationGetUserPreviewPinFn(username)
+	if err != nil {
+		if err == ErrUnknownUsername {
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := integrationUserPreviewPinResponse{
+		Username: user.Username,
+	}
+	if preference != nil && preference.PreviewPinID != nil {
+		response.PinID = preference.PreviewPinID
+		if preference.PreviewPin != nil {
+			response.PinLabel = preference.PreviewPin.Label
+		}
+	}
+
+	respondJSON(w, http.StatusOK, response)
+}
+
+func IntegrationUpdateUserPreviewPinSelectionHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.settings.preview_pin.update", constant.APIKeyScopeSettingsWrite, "")
+	if !ok {
+		return
+	}
+
+	username := strings.TrimSpace(chi.URLParam(r, "username"))
+	if username == "" {
+		http.Error(w, "username is required", http.StatusBadRequest)
+		return
+	}
+
+	request := integrationUpdateUserPreviewPinRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.PinID == nil || *request.PinID <= 0 {
+		http.Error(w, "pin_id is required", http.StatusBadRequest)
+		return
+	}
+
+	preference, pin, err := integrationSetUserPreviewPinFn(username, uint(*request.PinID), &apiKey.ActorUser)
+	if err != nil {
+		switch err {
+		case ErrUnknownUsername:
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+		case ErrPreviewPinInvalid:
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_preview_pin", "pin_id must reference an existing active pin")
+		default:
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
+		Username: username,
+		PinID:    preference.PreviewPinID,
+		PinLabel: pin.Label,
+	})
+}
+
+func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.static_preview.generate", constant.APIKeyScopeStaticPreview, "")
+	if !ok {
+		return
+	}
+
+	request := integrationStaticPreviewRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+	request.Username = strings.TrimSpace(request.Username)
+	request.MarkerTypeName = strings.TrimSpace(request.MarkerTypeName)
+	request.StreetNumber = strings.TrimSpace(request.StreetNumber)
+	request.StreetName = strings.TrimSpace(request.StreetName)
+	request.Country = strings.TrimSpace(request.Country)
+	if request.Username == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_username", "username is required")
+		return
+	}
+	if request.MarkerTypeName == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_marker_type", "marker_type_name is required")
+		return
+	}
+
+	var lat float64
+	var lon float64
+	if request.Lat != nil && request.Lon != nil {
+		lat = *request.Lat
+		lon = *request.Lon
+	} else if request.StreetName != "" && request.Country != "" {
+		var geocodeErr error
+		lat, lon, geocodeErr = integrationGeocodeAddressFn(request.StreetNumber, request.StreetName, request.Country)
+		if geocodeErr != nil {
+			recordStaticPreviewFailure(apiKey, requestSourceIP(r), geocodeErr.Error(), request.Username)
+			writeIntegrationError(w, http.StatusBadGateway, "geocode_dependency_failure", "failed to geocode address to coordinates")
+			return
+		}
+	} else {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_location_input", "provide either lat/lon or street_name + country")
+		return
+	}
+
+	result, err := integrationGenerateStaticMapFn(request.Username, request.MarkerTypeName, lat, lon)
+	if err != nil {
+		recordStaticPreviewFailure(apiKey, requestSourceIP(r), err.Error(), request.Username)
+		switch err {
+		case ErrUnknownUsername:
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+		case ErrPreviewPinSelectionRequired:
+			writeIntegrationError(w, http.StatusBadRequest, "preview_pin_not_configured", "preview pin selection is required for this user")
+		case ErrPreviewPinInvalid:
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_preview_pin", "configured preview pin is invalid")
+		case ErrUnknownMarkerType:
+			writeIntegrationError(w, http.StatusBadRequest, "unknown_marker_type", "marker_type_name does not match any marker type")
+		case ErrTypePinMissing:
+			writeIntegrationError(w, http.StatusBadRequest, "missing_type_pin_mapping", "no type-pin image exists for selected preview pin and marker type")
+		default:
+			if errors.Is(err, ErrInvalidCoordinates) {
+				writeIntegrationError(w, http.StatusBadRequest, "invalid_coordinates", "lat and lon must be within valid ranges")
+				return
+			}
+			if errors.Is(err, ErrTomTomStaticMap) {
+				writeIntegrationError(w, http.StatusBadGateway, "tomtom_dependency_failure", "failed to retrieve static map from TomTom")
+				return
+			}
+			if errors.Is(err, ErrImageComposition) {
+				writeIntegrationError(w, http.StatusInternalServerError, "image_composition_failure", "failed to compose preview image")
+				return
+			}
+			writeIntegrationError(w, http.StatusInternalServerError, "preview_generation_failed", "failed to generate static preview")
+		}
+		return
+	}
+
+	_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+		Operation: "integration.static_preview.generate.result",
+		SourceIP:  requestSourceIP(r),
+		Success:   true,
+		Reason:    fmt.Sprintf("username=%s", result.User.Username),
+	})
+
+	respondJSON(w, http.StatusOK, integrationStaticPreviewResponse{
+		Username:    result.User.Username,
+		Lat:         lat,
+		Lon:         lon,
+		ImageBase64: StaticPreviewToBase64(result.Image),
+		MimeType:    result.MimeType,
+		Format:      result.Format,
+		Width:       result.Width,
+		Height:      result.Height,
+	})
+}
+
+func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {
+	respondJSON(w, statusCode, integrationErrorResponse{
+		Code:    strings.TrimSpace(code),
+		Message: strings.TrimSpace(message),
+	})
+}
+
+func recordStaticPreviewFailure(apiKey *dbmodel.APIKey, sourceIP string, reason string, username string) {
+	if apiKey == nil {
+		return
+	}
+	_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+		Operation: "integration.static_preview.generate.result",
+		SourceIP:  strings.TrimSpace(sourceIP),
+		Success:   false,
+		Reason:    fmt.Sprintf("username=%s; reason=%s", strings.TrimSpace(username), strings.TrimSpace(reason)),
+	})
 }
 
 func authenticateIntegrationRequest(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {

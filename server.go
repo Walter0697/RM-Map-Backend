@@ -133,6 +133,10 @@ func startServer() {
 	router.Get("/auth/health", service.AuthHealthHandler)
 	router.Get("/auth/oidc/start", service.OIDCStartHandler)
 	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
+	router.Route("/settings", func(r chi.Router) {
+		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
+		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
+	})
 	router.Route("/auth/apikeys", func(r chi.Router) {
 		r.Get("/options", service.ListAPIKeyOptionsHandler)
 		r.Get("/", service.ListAPIKeysHandler)
@@ -153,6 +157,9 @@ func startServer() {
 		r.Get("/settings/marker-types", service.IntegrationListSettingsMarkerTypesHandler)
 		r.Get("/settings/default-pins", service.IntegrationListSettingsDefaultPinsHandler)
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
+		r.Get("/settings/users/{username}/preview-pin", service.IntegrationGetUserPreviewPinSelectionHandler)
+		r.Put("/settings/users/{username}/preview-pin", service.IntegrationUpdateUserPreviewPinSelectionHandler)
+		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
 	})
 	router.Route("/admin", func(r chi.Router) {
 		r.Get("/cleanup/markers", service.AdminCleanupListMarkersHandler)
