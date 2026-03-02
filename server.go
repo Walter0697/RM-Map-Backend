@@ -29,6 +29,7 @@ func main() {
 	service.InitAuthStateManager()
 	dbmodel.AutoMigration()
 	service.StartAPIKeyCleanupWorker()
+	service.StartExternalAPIAuditCleanupWorker()
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -156,6 +157,9 @@ func startServer() {
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
 	})
 	router.Route("/admin", func(r chi.Router) {
+		r.Get("/api-usage/providers", service.AdminExternalAPIUsageProvidersHandler)
+		r.Get("/api-usage/summary", service.AdminExternalAPIUsageSummaryHandler)
+		r.Get("/api-usage/trends", service.AdminExternalAPIUsageTrendsHandler)
 		r.Get("/cleanup/markers", service.AdminCleanupListMarkersHandler)
 		r.Get("/cleanup/schedules", service.AdminCleanupListSchedulesHandler)
 		r.Delete("/cleanup/markers/{id}", service.AdminCleanupDeleteMarkerHandler)

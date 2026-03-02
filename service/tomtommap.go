@@ -34,14 +34,13 @@ func reverseGeocodeRequest(lat, lon float64) string {
 func GetReverseGeocode(lat, lon float64) (*TomTomResponse, error) {
 	url := reverseGeocodeRequest(lat, lon)
 
-	body, err := GetRequest(url)
-	if err != nil {
-		return nil, err
-	}
-
 	var tomtomResp TomTomResponse
-
-	err = json.Unmarshal(body, &tomtomResp)
+	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderTomTomMap, "reverse_geocode", url, func(body []byte) error {
+		if unmarshalErr := json.Unmarshal(body, &tomtomResp); unmarshalErr != nil {
+			return fmt.Errorf("decode response: %w", unmarshalErr)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
