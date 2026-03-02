@@ -53,3 +53,11 @@ func EditDefaultPin(input model.UpdatedDefault, user dbmodel.User) (*dbmodel.Def
 
 	return nil, nil
 }
+
+func GetDefaultPinByLabel(label string) (*dbmodel.DefaultValue, error) {
+	value := dbmodel.DefaultValue{Label: label}
+	if err := value.GetOrCreatePin(database.Connection); err != nil {
+		return nil, err
+	}
+	return &value, nil
+}

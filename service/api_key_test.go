@@ -40,12 +40,18 @@ func TestParseRawAPIKeyInvalidValues(t *testing.T) {
 }
 
 func TestHasScope(t *testing.T) {
-	key := &dbmodel.APIKey{Scopes: "markers:read,schedules:write"}
+	key := &dbmodel.APIKey{Scopes: "markers:read,schedules:write,static-preview:generate"}
 	if !HasScope(key, "markers:read") {
 		t.Fatalf("expected markers:read scope")
 	}
+	if !HasScope(key, "static-preview:generate") {
+		t.Fatalf("expected static-preview:generate scope")
+	}
 	if HasScope(key, "markers:write") {
 		t.Fatalf("did not expect markers:write scope")
+	}
+	if HasScope(key, "settings:read") {
+		t.Fatalf("did not expect settings:read scope")
 	}
 }
 
@@ -67,14 +73,15 @@ func TestNormalizeScopesFiltersInvalidValues(t *testing.T) {
 	result := normalizeScopes([]string{
 		"markers:read",
 		"markers:read",
+		"static-preview:generate",
 		"invalid:scope",
 		" settings:write ",
 		"",
 	})
-	if len(result) != 2 {
-		t.Fatalf("expected 2 scopes, got %d (%v)", len(result), result)
+	if len(result) != 3 {
+		t.Fatalf("expected 3 scopes, got %d (%v)", len(result), result)
 	}
-	if result[0] != "markers:read" || result[1] != "settings:write" {
+	if result[0] != "markers:read" || result[1] != "settings:write" || result[2] != "static-preview:generate" {
 		t.Fatalf("unexpected normalized scopes: %v", result)
 	}
 }

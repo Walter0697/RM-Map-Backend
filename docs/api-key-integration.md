@@ -13,6 +13,7 @@ Supported scopes:
 - `stations:write`
 - `settings:read`
 - `settings:write`
+- `static-preview:generate`
 
 ## Management Endpoints
 
@@ -55,6 +56,9 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 - `GET /integration/settings/marker-types`
 - `GET /integration/settings/default-pins`
 - `PUT /integration/settings/default-pins/{label}`
+- `GET /integration/settings/users/{username}/preview-pin`
+- `PUT /integration/settings/users/{username}/preview-pin`
+- `POST /integration/static-map-preview`
 
 JWT user auth is not required for these integration endpoints and should not be used for automation.
 
@@ -81,6 +85,109 @@ Endpoint-specific filters:
   - `label`, `value`, `hidden`
 - `GET /integration/settings/default-pins`
   - `label`
+
+### Static Preview Generation Contract
+
+Request:
+
+```json
+{
+  "username": "alice",
+  "marker_type_name": "food",
+  "lat": 22.302711,
+  "lon": 114.177216
+}
+```
+
+Response:
+
+```json
+{
+  "username": "alice",
+  "lat": 22.302711,
+  "lon": 114.177216,
+  "image_base64": "<base64-png>",
+  "mime_type": "image/png",
+  "format": "png",
+  "width": 600,
+  "height": 400
+}
+```
+
+Error response format:
+
+```json
+{
+  "code": "invalid_coordinates",
+  "message": "lat and lon must be within valid ranges"
+}
+```
+
+Common error codes for `POST /integration/static-map-preview`:
+- `invalid_payload`
+- `invalid_username`
+- `invalid_marker_type`
+- `invalid_coordinates`
+- `invalid_location_input`
+- `unknown_username`
+- `preview_pin_not_configured`
+- `invalid_preview_pin`
+- `unknown_marker_type`
+- `missing_type_pin_mapping`
+- `geocode_dependency_failure`
+- `tomtom_dependency_failure`
+- `image_composition_failure`
+
+Address-mode request example (street -> geocode -> preview):
+
+```json
+{
+  "username": "alice",
+  "marker_type_name": "food",
+  "street_number": "100",
+  "street_name": "Nathan Road",
+  "country": "Hong Kong"
+}
+```
+
+### User Preview Pin Setup
+
+1. Ensure API key includes `settings:write` and `settings:read`.
+2. Inspect available pins via `GET /integration/settings/pins`.
+3. Save user preview pin with `PUT /integration/settings/users/{username}/preview-pin`:
+
+```json
+{
+  "pin_id": 12
+}
+```
+
+4. Verify selection with `GET /integration/settings/users/{username}/preview-pin`.
+5. Call `POST /integration/static-map-preview` using key with `static-preview:generate`.
+
+### Operational Troubleshooting
+
+- `unknown_username`: username must exactly match an existing user record.
+- `preview_pin_not_configured`: set a preview pin selection for the target username first.
+- `invalid_preview_pin`: selected pin no longer exists or is inactive.
+- `tomtom_dependency_failure`: verify TomTom API key and outbound connectivity.
+- `image_composition_failure`: verify pin image assets exist under `uploads/pins`.
+
+### Non-Production Validation (n8n-style)
+
+Example cURL flow:
+
+```bash
+curl -X PUT "$BASE_URL/integration/settings/users/alice/preview-pin" \
+  -H "X-API-Key: $SETTINGS_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"pin_id":12}'
+
+curl -X POST "$BASE_URL/integration/static-map-preview" \
+  -H "X-API-Key: $PREVIEW_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"username":"alice","lat":22.302711,"lon":114.177216}'
+```
 
 List responses include metadata:
 

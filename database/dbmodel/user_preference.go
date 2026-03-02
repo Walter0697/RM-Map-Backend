@@ -16,6 +16,8 @@ type UserPreference struct {
 	SpinId           *uint
 	HurryPin         *Pin `gorm:"foreignKey:hpin_id;reference:id"`
 	HpinId           *uint
+	PreviewPin       *Pin `gorm:"foreignKey:preview_pin_id;reference:id"`
+	PreviewPinID     *uint
 }
 
 func (preference *UserPreference) Create(db *gorm.DB) error {
@@ -48,6 +50,7 @@ func (preference *UserPreference) GetByUserId(db *gorm.DB) error {
 		Preload("FavouritePin").
 		Preload("SelectedPin").
 		Preload("HurryPin").
+		Preload("PreviewPin").
 		Where("user_id = ?", preference.UserId).
 		First(preference).Error; err != nil {
 		return err
