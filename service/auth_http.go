@@ -66,6 +66,12 @@ func AuthHealthHandler(w http.ResponseWriter, _ *http.Request) {
 		"environment":          config.Data.App.Environment,
 		"localPasswordAllowed": mode == config.AuthModeLocalPassword,
 		"oidcEnabled":          config.Data.OIDC.Enable,
+		"authState": map[string]interface{}{
+			"migrationMode": config.Data.AuthState.MigrationMode,
+			"redisEnabled":  config.Data.Redis.Enable,
+			"sessionTTL":    config.Data.AuthState.SessionTTLSeconds,
+			"metrics":       AuthStateMetrics(),
+		},
 	})
 }
 

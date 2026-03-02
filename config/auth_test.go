@@ -53,6 +53,9 @@ func TestValidateAuthConfigDefaults(t *testing.T) {
 			ClientSecret: "secret",
 			RedirectURL:  "http://localhost:1998/auth/oidc/callback",
 		},
+		Redis: RedisSetting{
+			Enable: true,
+		},
 	}
 
 	if err := ValidateAuthConfig(); err != nil {
@@ -79,5 +82,47 @@ func TestValidateAuthConfigDefaults(t *testing.T) {
 	}
 	if Data.IntegrationAuth.CleanupIntervalHours <= 0 {
 		t.Fatalf("expected positive cleanup interval default")
+	}
+	if Data.AuthState.MigrationMode == "" {
+		t.Fatalf("expected auth state migration mode default")
+	}
+	if Data.AuthState.SessionTTLSeconds <= 0 {
+		t.Fatalf("expected positive auth state session ttl")
+	}
+	if Data.AuthState.KeyPrefix == "" {
+		t.Fatalf("expected auth state key prefix default")
+	}
+}
+
+func TestValidateAuthStateConfigModeValidation(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+
+	Data = Config{
+		Redis: RedisSetting{
+			Enable: true,
+		},
+		AuthState: AuthStateSetting{
+			MigrationMode:       AuthStateModeRedisPrimary,
+			KeyPrefix:           "auth:v1",
+			SessionTTLSeconds:   3600,
+			RedisDialTimeoutMS:  1000,
+			RedisReadTimeoutMS:  1000,
+			RedisWriteTimeoutMS: 1000,
+		},
+	}
+	if err := ValidateAuthStateConfig(); err != nil {
+		t.Fatalf("ValidateAuthStateConfig returned error: %v", err)
+	}
+
+	Data.AuthState.MigrationMode = "unknown"
+	if err := ValidateAuthStateConfig(); err == nil {
+		t.Fatalf("expected mode validation error")
+	}
+
+	Data.AuthState.MigrationMode = AuthStateModePostgresOff
+	Data.Redis.Enable = false
+	if err := ValidateAuthStateConfig(); err == nil {
+		t.Fatalf("expected redis enabled validation error")
 	}
 }

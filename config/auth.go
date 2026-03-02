@@ -51,6 +51,9 @@ func ResolveAuthMode() (string, error) {
 
 func ValidateAuthConfig() error {
 	applyIntegrationDefaults()
+	if err := ValidateAuthStateConfig(); err != nil {
+		return err
+	}
 
 	mode, err := ResolveAuthMode()
 	if err != nil {

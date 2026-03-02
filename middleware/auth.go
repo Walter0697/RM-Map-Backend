@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/service"
 	"net/http"
@@ -25,7 +26,16 @@ func Middleware() func(http.Handler) http.Handler {
 
 			// validate jwt token
 			tokenStr := header
-			user := service.ValidateToken(tokenStr)
+			user, err := service.ValidateToken(tokenStr)
+			if err != nil {
+				var unavailable *service.AuthStateUnavailableError
+				if errors.As(err, &unavailable) {
+					http.Error(w, "auth state unavailable", http.StatusServiceUnavailable)
+					return
+				}
+				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				return
+			}
 			if user == nil {
 				http.Error(w, "Invalid token", http.StatusUnauthorized)
 				return

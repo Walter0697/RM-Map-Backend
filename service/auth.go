@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
@@ -37,13 +38,7 @@ func Login(username string, password string) (string, error) {
 }
 
 func Logout(user *dbmodel.User) error {
-	user.LoginToken = ""
-
-	if err := user.Update(database.Connection); err != nil {
-		return err
-	}
-
-	return nil
+	return getAuthStateManager().Revoke(user)
 }
 
 func ldapLogin(username string, password string) (string, error) {
@@ -90,27 +85,32 @@ func normalLogin(username string, password string) (string, error) {
 	return issueTokenForUser(&user)
 }
 
-func ValidateToken(token string) *dbmodel.User {
+func ValidateToken(token string) (*dbmodel.User, error) {
 	jwtInfo, err := utils.ParseToken(token)
 	if err != nil {
-		return nil
+		return nil, nil
+	}
+
+	valid, err := getAuthStateManager().Validate(jwtInfo.Username, jwtInfo.Secret)
+	if err != nil {
+		var unavailable *AuthStateUnavailableError
+		if errors.As(err, &unavailable) {
+			return nil, unavailable
+		}
+		log.Printf("token validation failed for username=%s: %v", jwtInfo.Username, err)
+		return nil, nil
+	}
+	if !valid {
+		return nil, nil
 	}
 
 	var user dbmodel.User
 	user.Username = jwtInfo.Username
 	if err := user.GetUserByUsername(database.Connection); err != nil {
-		return nil
+		return nil, nil
 	}
 
-	if user.LoginToken == "" {
-		return nil
-	}
-
-	if user.LoginToken != jwtInfo.Secret {
-		return nil
-	}
-
-	return &user
+	return &user, nil
 }
 
 func upsertUserAndGenerateToken(username string, defaultRole string) (string, error) {
@@ -144,11 +144,9 @@ func upsertUserAndGenerateToken(username string, defaultRole string) (string, er
 }
 
 func issueTokenForUser(user *dbmodel.User) (string, error) {
-	if user.LoginToken == "" {
-		user.LoginToken = utils.GenerateLoginKey()
-		if err := user.Update(database.Connection); err != nil {
-			return "", err
-		}
+	user.LoginToken = utils.GenerateLoginKey()
+	if err := getAuthStateManager().Issue(user, user.LoginToken); err != nil {
+		return "", err
 	}
 
 	jwtToken, err := utils.GenerateToken(user.Username, user.LoginToken)

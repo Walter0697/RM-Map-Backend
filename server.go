@@ -26,6 +26,7 @@ func main() {
 	config.Init()
 	config.SetupGoGuardian()
 	database.Init()
+	service.InitAuthStateManager()
 	dbmodel.AutoMigration()
 	service.StartAPIKeyCleanupWorker()
 

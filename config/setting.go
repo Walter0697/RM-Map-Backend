@@ -3,6 +3,9 @@ package config
 import (
 	"fmt"
 	"log"
+	"os"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/viper"
 )
@@ -75,8 +78,27 @@ type SeedSetting struct {
 	CenterOffset     float64 `mapstructure:"centerOffset"`
 }
 
+type RedisSetting struct {
+	Enable   bool   `mapstructure:"enable"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
+type AuthStateSetting struct {
+	MigrationMode       string `mapstructure:"migrationmode"`
+	KeyPrefix           string `mapstructure:"keyprefix"`
+	SessionTTLSeconds   int    `mapstructure:"sessionttlseconds"`
+	RedisDialTimeoutMS  int    `mapstructure:"redisdialtimeoutms"`
+	RedisReadTimeoutMS  int    `mapstructure:"redisreadtimeoutms"`
+	RedisWriteTimeoutMS int    `mapstructure:"rediswritetimeoutms"`
+}
+
 type Config struct {
 	DB              Database               `mapstructure:"database"`
+	Redis           RedisSetting           `mapstructure:"redis"`
+	AuthState       AuthStateSetting       `mapstructure:"authstate"`
 	App             AppEnv                 `mapstructure:"app"`
 	LDAP            LDAPSetting            `mapstructure:"ldap"`
 	OIDC            OIDCSetting            `mapstructure:"oidc"`
@@ -96,6 +118,10 @@ func Init() {
 		panic(fmt.Errorf("unable to decode into struct: %s \n", err))
 	}
 
+	if err := applyRedisEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid redis config: %s \n", err))
+	}
+
 	if err := ValidateAuthConfig(); err != nil {
 		panic(fmt.Errorf("invalid auth config: %s \n", err))
 	}
@@ -103,4 +129,28 @@ func Init() {
 	if mode, err := ResolveAuthMode(); err == nil {
 		log.Printf("Authentication mode resolved to: %s", mode)
 	}
+}
+
+func applyRedisEnvOverrides() error {
+	if dbValue, exists := os.LookupEnv("REDIS_DB"); exists {
+		parsedDB, err := strconv.Atoi(strings.TrimSpace(dbValue))
+		if err != nil {
+			return fmt.Errorf("REDIS_DB must be an integer, got %q", dbValue)
+		}
+		if parsedDB < 0 {
+			return fmt.Errorf("REDIS_DB must be >= 0, got %d", parsedDB)
+		}
+		Data.Redis.DB = parsedDB
+	}
+	if modeValue, exists := os.LookupEnv("AUTH_STATE_MIGRATION_MODE"); exists {
+		Data.AuthState.MigrationMode = strings.TrimSpace(modeValue)
+	}
+	if ttlValue, exists := os.LookupEnv("AUTH_STATE_SESSION_TTL_SECONDS"); exists {
+		parsedTTL, err := strconv.Atoi(strings.TrimSpace(ttlValue))
+		if err != nil {
+			return fmt.Errorf("AUTH_STATE_SESSION_TTL_SECONDS must be an integer, got %q", ttlValue)
+		}
+		Data.AuthState.SessionTTLSeconds = parsedTTL
+	}
+	return nil
 }
