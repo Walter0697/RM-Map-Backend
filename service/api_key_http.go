@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -1083,5 +1084,10 @@ func currentUserFromRequest(r *http.Request) *dbmodel.User {
 		header = strings.TrimSpace(header[7:])
 	}
 
-	return ValidateToken(header)
+	user, err := ValidateToken(header)
+	if err != nil {
+		log.Printf("failed to validate current user from request: %v", err)
+		return nil
+	}
+	return user
 }

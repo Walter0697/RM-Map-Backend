@@ -12,6 +12,21 @@ dbname="mapmarker"
 username=""
 password=""
 
+[redis]
+enable=false
+host="localhost"
+port="6379"
+password=""
+db=0
+
+[authstate]
+migrationmode="dual-write" # dual-write | redis-primary | postgres-off
+keyprefix="auth:v1"
+sessionttlseconds=2592000
+redisdialtimeoutms=1500
+redisreadtimeoutms=1500
+rediswritetimeoutms=1500
+
 [ldap]
 enable=true
 basedn=""

@@ -17,4 +17,12 @@
 6. Confirm local fallback behavior:
 - In local/development only, set `[app].authmode="local-password"` to test password login.
 - In non-local environments, `local-password` mode is rejected at startup.
-7. Remove LDAP-specific operational runbooks and update on-call docs to use OIDC troubleshooting.
+7. Configure auth state migration:
+- Enable Redis connection in `[redis]` and choose `[authstate].migrationmode`.
+- Start with `dual-write`, then move to `redis-primary`, then `postgres-off` after validation.
+- Use `AUTH_STATE_MIGRATION_MODE` for fast rollback/cutover without file edits.
+- Follow detailed setup/cutover/rollback guidance in `docs/auth-token-state-runbook.md`.
+8. Validate auth state migration health:
+- `GET /auth/health` should include `authState.migrationMode`, `authState.redisEnabled`, and auth-state metrics.
+- Monitor `validateFallbackCount` and `validateErrorCount` during cutover.
+9. Remove LDAP-specific operational runbooks and update on-call docs to use OIDC troubleshooting.
