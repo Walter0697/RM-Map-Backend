@@ -1507,6 +1507,7 @@ func authenticateIntegrationRequest(w http.ResponseWriter, r *http.Request, oper
 		return nil, false
 	}
 
+	log.Printf("api-key request key_id=%d key_name=%s operation=%s scope=%s source_ip=%s", apiKey.ID, apiKey.Name, operationWithContext, requiredScope, sourceIP)
 	return apiKey, true
 }
 

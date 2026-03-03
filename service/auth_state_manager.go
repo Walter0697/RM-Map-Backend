@@ -194,7 +194,6 @@ func (m *defaultAuthStateManager) Issue(user *dbmodel.User, secret string) error
 func (m *defaultAuthStateManager) Validate(username string, secret string) (bool, error) {
 	start := time.Now()
 	fallbackUsed := false
-	outcome := "invalid"
 
 	defer func() {
 		latencyMs := uint64(time.Since(start).Milliseconds())
@@ -203,7 +202,6 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 		if fallbackUsed {
 			m.metrics.validateFallbackCount.Add(1)
 		}
-		log.Printf("auth-state validate mode=%s outcome=%s fallback=%t latency_ms=%d", m.mode, outcome, fallbackUsed, latencyMs)
 	}()
 
 	switch m.mode {
@@ -211,7 +209,6 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 		valid, err := m.validatePostgresFn(username, secret)
 		if err != nil {
 			m.metrics.validateErrorCount.Add(1)
-			outcome = "error"
 			return false, err
 		}
 		if valid && m.redisEnabled {
@@ -221,9 +218,6 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 				}
 			}
 		}
-		if valid {
-			outcome = "valid"
-		}
 		return valid, nil
 	case config.AuthStateModeRedisPrimary:
 		redisResult, err := m.validateRedis(username, secret)
@@ -232,19 +226,16 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 			valid, pgErr := m.validatePostgresFn(username, secret)
 			if pgErr != nil {
 				m.metrics.validateErrorCount.Add(1)
-				outcome = "error"
 				return false, pgErr
 			}
 			if valid {
 				if backfillErr := m.writeRedis(username, secret); backfillErr != nil {
 					log.Printf("auth-state: redis backfill failed after redis error username=%s: %v", username, backfillErr)
 				}
-				outcome = "valid"
 			}
 			return valid, nil
 		}
 		if redisResult == authStateLookupValid {
-			outcome = "valid"
 			return true, nil
 		}
 		if redisResult == authStateLookupInvalid {
@@ -255,31 +246,26 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 		valid, pgErr := m.validatePostgresFn(username, secret)
 		if pgErr != nil {
 			m.metrics.validateErrorCount.Add(1)
-			outcome = "error"
 			return false, pgErr
 		}
 		if valid {
 			if backfillErr := m.writeRedis(username, secret); backfillErr != nil {
 				log.Printf("auth-state: redis backfill failed after miss username=%s: %v", username, backfillErr)
 			}
-			outcome = "valid"
 		}
 		return valid, nil
 	case config.AuthStateModePostgresOff:
 		redisResult, err := m.validateRedis(username, secret)
 		if err != nil {
 			m.metrics.validateErrorCount.Add(1)
-			outcome = "error"
 			return false, &AuthStateUnavailableError{Cause: err}
 		}
 		if redisResult == authStateLookupValid {
-			outcome = "valid"
 			return true, nil
 		}
 		return false, nil
 	default:
 		m.metrics.validateErrorCount.Add(1)
-		outcome = "error"
 		return false, fmt.Errorf("unsupported auth state mode %q", m.mode)
 	}
 }
