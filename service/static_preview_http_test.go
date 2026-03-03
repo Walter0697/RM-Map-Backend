@@ -42,28 +42,34 @@ func TestIntegrationGenerateStaticMapPreviewHandlerAuthScopeDenied(t *testing.T)
 	}
 }
 
-func TestIntegrationGenerateStaticMapPreviewHandlerRejectsMarkerTypeInput(t *testing.T) {
+func TestIntegrationGenerateStaticMapPreviewHandlerAcceptsMarkerTypeInput(t *testing.T) {
 	resetStaticPreviewHooks()
 	defer resetStaticPreviewHooks()
 
 	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
 		return &dbmodel.APIKey{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 1}}, Name: "key"}, true
 	}
+	integrationGenerateStaticMapFn = func(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
+		if markerTypeName != "food" {
+			t.Fatalf("expected marker_type_name food, got %s", markerTypeName)
+		}
+		return &staticPreviewResult{
+			User:     &dbmodel.User{Username: username},
+			Image:    []byte("png-bytes"),
+			MimeType: "image/png",
+			Format:   "png",
+			Width:    600,
+			Height:   400,
+		}, nil
+	}
+	integrationCreateAuditLogFn = func(apiKeyID *uint, apiKeyName string, event APIKeyAuditEvent) error { return nil }
 
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodPost, "/integration/static-map-preview", bytes.NewBufferString(`{"username":"alice","marker_type_name":"food","lat":22.3,"lon":114.2}`))
 	IntegrationGenerateStaticMapPreviewHandler(recorder, request)
 
-	if recorder.Code != http.StatusBadRequest {
-		t.Fatalf("expected status 400, got %d", recorder.Code)
-	}
-
-	response := integrationErrorResponse{}
-	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
-		t.Fatalf("expected json error response: %v", err)
-	}
-	if response.Code != "unsupported_marker_type_input" {
-		t.Fatalf("expected error code unsupported_marker_type_input, got %s", response.Code)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
 	}
 }
 
@@ -76,6 +82,7 @@ func TestIntegrationGenerateStaticMapPreviewHandlerErrorMapping(t *testing.T) {
 	}{
 		{name: "invalid coordinates", serviceErr: ErrInvalidCoordinates, statusCode: http.StatusBadRequest, errorCode: "invalid_coordinates"},
 		{name: "unknown username", serviceErr: ErrUnknownUsername, statusCode: http.StatusNotFound, errorCode: "unknown_username"},
+		{name: "invalid marker type", serviceErr: ErrMarkerTypeNotFound, statusCode: http.StatusBadRequest, errorCode: "invalid_marker_type_input"},
 		{name: "missing preview pin", serviceErr: ErrPreviewPinSelectionRequired, statusCode: http.StatusBadRequest, errorCode: "preview_pin_not_configured"},
 		{name: "invalid preview pin", serviceErr: ErrPreviewPinInvalid, statusCode: http.StatusBadRequest, errorCode: "invalid_preview_pin"},
 		{name: "tomtom failure", serviceErr: ErrTomTomStaticMap, statusCode: http.StatusBadGateway, errorCode: "tomtom_dependency_failure"},
@@ -90,7 +97,7 @@ func TestIntegrationGenerateStaticMapPreviewHandlerErrorMapping(t *testing.T) {
 			integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
 				return &dbmodel.APIKey{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 1}}, Name: "key"}, true
 			}
-			integrationGenerateStaticMapFn = func(username string, lat float64, lon float64) (*staticPreviewResult, error) {
+			integrationGenerateStaticMapFn = func(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
 				return nil, testCase.serviceErr
 			}
 			integrationCreateAuditLogFn = func(apiKeyID *uint, apiKeyName string, event APIKeyAuditEvent) error { return nil }
@@ -121,7 +128,7 @@ func TestIntegrationGenerateStaticMapPreviewHandlerSuccess(t *testing.T) {
 	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
 		return &dbmodel.APIKey{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 1}}, Name: "key"}, true
 	}
-	integrationGenerateStaticMapFn = func(username string, lat float64, lon float64) (*staticPreviewResult, error) {
+	integrationGenerateStaticMapFn = func(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
 		return &staticPreviewResult{
 			User:     &dbmodel.User{Username: username},
 			Image:    []byte("png-bytes"),
@@ -270,7 +277,7 @@ func TestIntegrationStaticPreviewTwoStepFlow(t *testing.T) {
 	integrationGeocodeAddressFn = func(streetNumber string, streetName string, country string) (float64, float64, error) {
 		return 22.301, 114.172, nil
 	}
-	integrationGenerateStaticMapFn = func(username string, lat float64, lon float64) (*staticPreviewResult, error) {
+	integrationGenerateStaticMapFn = func(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
 		if lat != 22.301 || lon != 114.172 {
 			t.Fatalf("expected geocoded coordinates, got %f %f", lat, lon)
 		}

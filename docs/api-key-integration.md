@@ -151,7 +151,7 @@ Common error codes for `POST /integration/static-map-preview/geocode`:
 Common error codes for `POST /integration/static-map-preview`:
 - `invalid_payload`
 - `invalid_username`
-- `unsupported_marker_type_input`
+- `invalid_marker_type_input`
 - `invalid_location_input`
 - `invalid_coordinates`
 - `unknown_username`
@@ -189,7 +189,7 @@ Address-mode flow (street -> geocode -> preview):
 - `invalid_preview_pin`: selected pin no longer exists or is inactive.
 - `tomtom_dependency_failure`: verify TomTom API key and outbound connectivity.
 - `image_composition_failure`: verify pin image assets exist under `uploads/pins`.
-- `unsupported_marker_type_input`: remove `marker_type_name` from preview requests.
+- `invalid_marker_type_input`: ensure `marker_type_name` matches an existing marker type `value` or `label`.
 
 ### Non-Production Validation (n8n-style)
 
@@ -209,7 +209,7 @@ curl -X POST "$BASE_URL/integration/static-map-preview/geocode" \
 curl -X POST "$BASE_URL/integration/static-map-preview" \
   -H "X-API-Key: $PREVIEW_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","lat":22.302711,"lon":114.177216}'
+  -d '{"username":"alice","marker_type_name":"food","lat":22.302711,"lon":114.177216}'
 ```
 
 List responses include metadata:

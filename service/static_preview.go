@@ -15,9 +15,11 @@ import (
 
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
+	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 
 	"github.com/disintegration/imaging"
+	"gorm.io/gorm"
 )
 
 const (
@@ -36,11 +38,13 @@ var (
 	ErrInvalidCoordinates = errors.New("invalid coordinates")
 	ErrTomTomStaticMap    = errors.New("tomtom static map failure")
 	ErrImageComposition   = errors.New("image composition failure")
+	ErrMarkerTypeNotFound = errors.New("marker type not found")
 )
 
 var resolveUserPreviewPinByUsernameFn = ResolveUserPreviewPinByUsername
 var fetchTomTomStaticMapImageFn = fetchTomTomStaticMapImage
 var composeStaticPreviewImageFn = composeStaticPreviewImage
+var resolveMarkerTypeByNameFn = resolveMarkerTypeByName
 
 type staticPreviewResult struct {
 	User     *dbmodel.User
@@ -52,7 +56,7 @@ type staticPreviewResult struct {
 	Height   int
 }
 
-func GenerateStaticMapPreviewByUsername(username string, lat float64, lon float64) (*staticPreviewResult, error) {
+func GenerateStaticMapPreviewByUsername(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
 	if err := validateCoordinates(lat, lon); err != nil {
 		return nil, err
 	}
@@ -66,12 +70,21 @@ func GenerateStaticMapPreviewByUsername(username string, lat float64, lon float6
 		return nil, ErrPreviewPinInvalid
 	}
 
+	var markerType *dbmodel.MarkerType
+	markerTypeName = strings.TrimSpace(markerTypeName)
+	if markerTypeName != "" {
+		markerType, err = resolveMarkerTypeByNameFn(markerTypeName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	staticBytes, err := fetchTomTomStaticMapImageFn(lat, lon)
 	if err != nil {
 		return nil, err
 	}
 
-	composed, width, height, err := composeStaticPreviewImageFn(staticBytes, pinImagePath)
+	composed, width, height, err := composeStaticPreviewImageFn(staticBytes, *pin, markerType)
 	if err != nil {
 		return nil, err
 	}
@@ -145,8 +158,9 @@ func fetchTomTomStaticMapImage(lat float64, lon float64) ([]byte, error) {
 	return payload, nil
 }
 
-func composeStaticPreviewImage(staticMapImage []byte, overlayImagePath string) ([]byte, int, int, error) {
-	if strings.TrimSpace(overlayImagePath) == "" {
+func composeStaticPreviewImage(staticMapImage []byte, pin dbmodel.Pin, markerType *dbmodel.MarkerType) ([]byte, int, int, error) {
+	overlayImagePath := strings.TrimSpace(pin.ImagePath)
+	if overlayImagePath == "" {
 		return nil, 0, 0, fmt.Errorf("%w: overlay image path is required", ErrImageComposition)
 	}
 
@@ -159,6 +173,28 @@ func composeStaticPreviewImage(staticMapImage []byte, overlayImagePath string) (
 	pinImage, err := imaging.Open(resolvedPath)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("%w: open overlay image: %v", ErrImageComposition, err)
+	}
+
+	if markerType != nil {
+		typeIconPath := strings.TrimSpace(markerType.IconPath)
+		if typeIconPath == "" {
+			return nil, 0, 0, fmt.Errorf("%w: marker type icon path is required", ErrImageComposition)
+		}
+
+		typeIconResolvedPath := filepath.Join(constant.BasePath, strings.TrimPrefix(typeIconPath, "/"))
+		typeImage, typeErr := imaging.Open(typeIconResolvedPath)
+		if typeErr != nil {
+			return nil, 0, 0, fmt.Errorf("%w: open marker type image: %v", ErrImageComposition, typeErr)
+		}
+
+		iconWidth := pin.BottomRightX - pin.TopLeftX
+		iconHeight := pin.BottomRightY - pin.TopLeftY
+		if iconWidth <= 0 || iconHeight <= 0 {
+			return nil, 0, 0, fmt.Errorf("%w: pin icon bounds are invalid", ErrImageComposition)
+		}
+
+		smallTypeIcon := imaging.Resize(typeImage, iconWidth, iconHeight, imaging.Lanczos)
+		pinImage = imaging.Overlay(pinImage, smallTypeIcon, imagePoint(pin.TopLeftX, pin.TopLeftY), 1.0)
 	}
 
 	pinOverlay := imaging.Fit(pinImage, 96, 96, imaging.Lanczos)
@@ -178,4 +214,21 @@ func composeStaticPreviewImage(staticMapImage []byte, overlayImagePath string) (
 
 func imagePoint(x int, y int) image.Point {
 	return image.Pt(x, y)
+}
+
+func resolveMarkerTypeByName(markerTypeName string) (*dbmodel.MarkerType, error) {
+	name := strings.TrimSpace(markerTypeName)
+	if name == "" {
+		return nil, ErrMarkerTypeNotFound
+	}
+
+	markerType := dbmodel.MarkerType{}
+	if err := database.Connection.Where("LOWER(value) = LOWER(?) OR LOWER(label) = LOWER(?)", name, name).First(&markerType).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, ErrMarkerTypeNotFound
+		}
+		return nil, err
+	}
+
+	return &markerType, nil
 }

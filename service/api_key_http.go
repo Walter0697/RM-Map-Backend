@@ -137,9 +137,10 @@ type integrationUserPreviewPinResponse struct {
 }
 
 type integrationStaticPreviewRequest struct {
-	Username string   `json:"username"`
-	Lat      *float64 `json:"lat,omitempty"`
-	Lon      *float64 `json:"lon,omitempty"`
+	Username       string   `json:"username"`
+	MarkerTypeName string   `json:"marker_type_name,omitempty"`
+	Lat            *float64 `json:"lat,omitempty"`
+	Lon            *float64 `json:"lon,omitempty"`
 }
 
 type integrationStaticPreviewResponse struct {
@@ -1253,22 +1254,13 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	var raw map[string]json.RawMessage
-	if err := json.Unmarshal(requestPayload, &raw); err != nil {
-		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
-		return
-	}
-	if _, exists := raw["marker_type_name"]; exists {
-		writeIntegrationError(w, http.StatusBadRequest, "unsupported_marker_type_input", "marker_type_name is not supported for this endpoint")
-		return
-	}
-
 	request := integrationStaticPreviewRequest{}
 	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
 		return
 	}
 	request.Username = strings.TrimSpace(request.Username)
+	request.MarkerTypeName = strings.TrimSpace(request.MarkerTypeName)
 	if request.Username == "" {
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_username", "username is required")
 		return
@@ -1281,12 +1273,14 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 	lat := *request.Lat
 	lon := *request.Lon
 
-	result, err := integrationGenerateStaticMapFn(request.Username, lat, lon)
+	result, err := integrationGenerateStaticMapFn(request.Username, request.MarkerTypeName, lat, lon)
 	if err != nil {
 		recordStaticPreviewFailure(apiKey, requestSourceIP(r), err.Error(), request.Username)
 		switch err {
 		case ErrUnknownUsername:
 			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+		case ErrMarkerTypeNotFound:
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_marker_type_input", "marker_type_name does not match an existing marker type")
 		case ErrPreviewPinSelectionRequired:
 			writeIntegrationError(w, http.StatusBadRequest, "preview_pin_not_configured", "preview pin selection is required for this user")
 		case ErrPreviewPinInvalid:
