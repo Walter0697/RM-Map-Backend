@@ -17,6 +17,17 @@ var (
 	ErrPreviewPinInvalid           = errors.New("preview pin selection is invalid")
 )
 
+var getUserPreviewPinSelectionFn = GetUserPreviewPinSelection
+var getDefaultPinByLabelFn = GetDefaultPinByLabel
+var getPinByIDFn = func(pinID uint) (*dbmodel.Pin, error) {
+	var pin dbmodel.Pin
+	pin.ID = pinID
+	if err := pin.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+	return &pin, nil
+}
+
 func SetUserPreviewPinSelection(username string, pinID uint, actor *dbmodel.User) (*dbmodel.UserPreference, *dbmodel.Pin, error) {
 	trimmedUsername := strings.TrimSpace(username)
 	if trimmedUsername == "" {
@@ -86,12 +97,12 @@ func GetUserPreviewPinSelection(username string) (*dbmodel.User, *dbmodel.UserPr
 }
 
 func ResolveUserPreviewPinByUsername(username string) (*dbmodel.User, *dbmodel.Pin, error) {
-	user, preference, err := GetUserPreviewPinSelection(username)
+	user, preference, err := getUserPreviewPinSelectionFn(username)
 	if err != nil {
 		return nil, nil, err
 	}
 	if preference == nil || preference.PreviewPinID == nil || *preference.PreviewPinID == 0 {
-		defaultPreviewPin, defaultErr := GetDefaultPinByLabel(constant.PreviewPin)
+		defaultPreviewPin, defaultErr := getDefaultPinByLabelFn(constant.PreviewPin)
 		if defaultErr != nil {
 			return nil, nil, defaultErr
 		}
@@ -104,14 +115,13 @@ func ResolveUserPreviewPinByUsername(username string) (*dbmodel.User, *dbmodel.P
 		return user, preference.PreviewPin, nil
 	}
 
-	var pin dbmodel.Pin
-	pin.ID = *preference.PreviewPinID
-	if err := pin.GetById(database.Connection); err != nil {
+	pin, err := getPinByIDFn(*preference.PreviewPinID)
+	if err != nil {
 		if utils.RecordNotFound(err) {
 			return nil, nil, ErrPreviewPinInvalid
 		}
 		return nil, nil, err
 	}
 
-	return user, &pin, nil
+	return user, pin, nil
 }

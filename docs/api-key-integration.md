@@ -48,6 +48,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 - `GET /integration/markers`
 - `POST /integration/markers`
 - `PUT /integration/markers/{id}`
+- `DELETE /integration/markers/{id}`
 - `GET /integration/schedules?time=YYYY-MM-DD`
 - `POST /integration/schedules`
 - `GET /integration/stations`
@@ -58,6 +59,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 - `PUT /integration/settings/default-pins/{label}`
 - `GET /integration/settings/users/{username}/preview-pin`
 - `PUT /integration/settings/users/{username}/preview-pin`
+- `POST /integration/static-map-preview/geocode`
 - `POST /integration/static-map-preview`
 
 JWT user auth is not required for these integration endpoints and should not be used for automation.
@@ -88,18 +90,36 @@ Endpoint-specific filters:
 
 ### Static Preview Generation Contract
 
-Request:
+Geocoding request:
 
 ```json
 {
-  "username": "alice",
-  "marker_type_name": "food",
+  "street_number": "100",
+  "street_name": "Nathan Road",
+  "country": "Hong Kong"
+}
+```
+
+Geocoding response:
+
+```json
+{
   "lat": 22.302711,
   "lon": 114.177216
 }
 ```
 
-Response:
+Preview request:
+
+```json
+{
+  "username": "alice",
+  "lat": 22.302711,
+  "lon": 114.177216
+}
+```
+
+Preview response:
 
 ```json
 {
@@ -123,32 +143,28 @@ Error response format:
 }
 ```
 
+Common error codes for `POST /integration/static-map-preview/geocode`:
+- `invalid_payload`
+- `invalid_address_input`
+- `geocode_dependency_failure`
+
 Common error codes for `POST /integration/static-map-preview`:
 - `invalid_payload`
 - `invalid_username`
-- `invalid_marker_type`
-- `invalid_coordinates`
+- `invalid_marker_type_input`
 - `invalid_location_input`
+- `invalid_coordinates`
 - `unknown_username`
 - `preview_pin_not_configured`
 - `invalid_preview_pin`
-- `unknown_marker_type`
-- `missing_type_pin_mapping`
-- `geocode_dependency_failure`
 - `tomtom_dependency_failure`
 - `image_composition_failure`
 
-Address-mode request example (street -> geocode -> preview):
+Address-mode flow (street -> geocode -> preview):
 
-```json
-{
-  "username": "alice",
-  "marker_type_name": "food",
-  "street_number": "100",
-  "street_name": "Nathan Road",
-  "country": "Hong Kong"
-}
-```
+1. Call `POST /integration/static-map-preview/geocode`.
+2. Use returned `lat` and `lon` in `POST /integration/static-map-preview`.
+
 
 ### User Preview Pin Setup
 
@@ -164,14 +180,16 @@ Address-mode request example (street -> geocode -> preview):
 
 4. Verify selection with `GET /integration/settings/users/{username}/preview-pin`.
 5. Call `POST /integration/static-map-preview` using key with `static-preview:generate`.
+   If you have street-style input, call `POST /integration/static-map-preview/geocode` first.
 
 ### Operational Troubleshooting
 
 - `unknown_username`: username must exactly match an existing user record.
-- `preview_pin_not_configured`: set a preview pin selection for the target username first.
+- `preview_pin_not_configured`: ensure a user-selected preview pin exists or configure the system default preview pin.
 - `invalid_preview_pin`: selected pin no longer exists or is inactive.
 - `tomtom_dependency_failure`: verify TomTom API key and outbound connectivity.
 - `image_composition_failure`: verify pin image assets exist under `uploads/pins`.
+- `invalid_marker_type_input`: ensure `marker_type_name` matches an existing marker type `value` or `label`.
 
 ### Non-Production Validation (n8n-style)
 
@@ -183,10 +201,15 @@ curl -X PUT "$BASE_URL/integration/settings/users/alice/preview-pin" \
   -H "Content-Type: application/json" \
   -d '{"pin_id":12}'
 
+curl -X POST "$BASE_URL/integration/static-map-preview/geocode" \
+  -H "X-API-Key: $PREVIEW_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"street_number":"100","street_name":"Nathan Road","country":"Hong Kong"}'
+
 curl -X POST "$BASE_URL/integration/static-map-preview" \
   -H "X-API-Key: $PREVIEW_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","lat":22.302711,"lon":114.177216}'
+  -d '{"username":"alice","marker_type_name":"food","lat":22.302711,"lon":114.177216}'
 ```
 
 List responses include metadata:
@@ -200,6 +223,23 @@ List responses include metadata:
   "sort_by": "label",
   "order": "asc"
 }
+```
+
+### Marker Creation Indicators (Integration API)
+
+Integration marker create/update/list responses include extra fields:
+- `integration_source`: always `api_key`
+- `created_ago`: humanized age from `created_at` (for example, `just now`, `3 hours ago`)
+- `editable_with_same_api_key`: boolean
+- `removable_with_same_api_key`: boolean
+
+You still get the marker `id` in create response, so you can immediately update or remove it.
+
+Delete marker example:
+
+```bash
+curl -X DELETE "$BASE_URL/integration/markers/123" \
+  -H "X-API-Key: $MARKER_WRITE_KEY"
 ```
 
 ## Audit Logging
