@@ -150,6 +150,7 @@ func startServer() {
 		r.Get("/markers", service.IntegrationListMarkersHandler)
 		r.Post("/markers", service.IntegrationCreateMarkerHandler)
 		r.Put("/markers/{id}", service.IntegrationUpdateMarkerHandler)
+		r.Delete("/markers/{id}", service.IntegrationDeleteMarkerHandler)
 		r.Get("/schedules", service.IntegrationListSchedulesHandler)
 		r.Post("/schedules", service.IntegrationCreateScheduleHandler)
 		r.Get("/stations", service.IntegrationListStationsHandler)
@@ -160,6 +161,7 @@ func startServer() {
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
 		r.Get("/settings/users/{username}/preview-pin", service.IntegrationGetUserPreviewPinSelectionHandler)
 		r.Put("/settings/users/{username}/preview-pin", service.IntegrationUpdateUserPreviewPinSelectionHandler)
+		r.Post("/static-map-preview/geocode", service.IntegrationGeocodeStaticMapPreviewHandler)
 		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
 	})
 	router.Route("/admin", func(r chi.Router) {

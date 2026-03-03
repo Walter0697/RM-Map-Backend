@@ -1,9 +1,11 @@
 package service
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -135,13 +137,9 @@ type integrationUserPreviewPinResponse struct {
 }
 
 type integrationStaticPreviewRequest struct {
-	Username       string   `json:"username"`
-	MarkerTypeName string   `json:"marker_type_name"`
-	Lat            *float64 `json:"lat,omitempty"`
-	Lon            *float64 `json:"lon,omitempty"`
-	StreetNumber   string   `json:"street_number,omitempty"`
-	StreetName     string   `json:"street_name,omitempty"`
-	Country        string   `json:"country,omitempty"`
+	Username string   `json:"username"`
+	Lat      *float64 `json:"lat,omitempty"`
+	Lon      *float64 `json:"lon,omitempty"`
 }
 
 type integrationStaticPreviewResponse struct {
@@ -155,6 +153,25 @@ type integrationStaticPreviewResponse struct {
 	Height      int     `json:"height"`
 }
 
+type integrationStaticPreviewGeocodeRequest struct {
+	StreetNumber string `json:"street_number"`
+	StreetName   string `json:"street_name"`
+	Country      string `json:"country"`
+}
+
+type integrationStaticPreviewGeocodeResponse struct {
+	Lat float64 `json:"lat"`
+	Lon float64 `json:"lon"`
+}
+
+type integrationMarkerResponse struct {
+	model.Marker
+	IntegrationSource       string `json:"integration_source"`
+	CreatedAgo              string `json:"created_ago"`
+	EditableWithSameAPIKey  bool   `json:"editable_with_same_api_key"`
+	RemovableWithSameAPIKey bool   `json:"removable_with_same_api_key"`
+}
+
 type integrationErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -166,6 +183,18 @@ var integrationGenerateStaticMapFn = GenerateStaticMapPreviewByUsername
 var integrationGeocodeAddressFn = GeocodeStreetAddress
 var integrationAuthenticateRequestFn = authenticateIntegrationRequest
 var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
+var integrationNowFn = time.Now
+var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
+	marker := &dbmodel.Marker{}
+	marker.ID = id
+	if err := marker.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+	return marker, nil
+}
+var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
+	return marker.Update(database.Connection)
+}
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	operator := currentUserFromRequest(r)
@@ -434,7 +463,11 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	for _, item := range markers {
 		response = append(response, helper.ConvertMarker(item))
 	}
-	respondJSON(w, http.StatusOK, integrationListResponse(response, total, queryOption))
+	decorated := make([]integrationMarkerResponse, 0, len(response))
+	for _, marker := range response {
+		decorated = append(decorated, buildIntegrationMarkerResponse(marker))
+	}
+	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption))
 }
 
 func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -484,7 +517,7 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, helper.ConvertMarker(*marker))
+	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
 }
 
 func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -541,7 +574,42 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, helper.ConvertMarker(*marker))
+	respondJSON(w, http.StatusOK, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
+}
+
+func IntegrationDeleteMarkerHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.delete", constant.APIKeyScopeMarkersWrite, "")
+	if !ok {
+		return
+	}
+
+	markerID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || markerID <= 0 {
+		http.Error(w, "invalid marker id", http.StatusBadRequest)
+		return
+	}
+
+	marker, err := integrationGetMarkerByIDFn(uint(markerID))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if marker.RelationId != apiKey.Relation.ID {
+		http.Error(w, "api key cannot delete marker outside assigned relation", http.StatusForbidden)
+		return
+	}
+
+	marker.Status = constant.Cancelled
+	marker.UpdatedBy = &apiKey.ActorUser
+	if err := integrationUpdateMarkerModelFn(marker); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"id":     markerID,
+		"status": "cancelled",
+	})
 }
 
 func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
@@ -1179,44 +1247,41 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(requestPayload, &raw); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+	if _, exists := raw["marker_type_name"]; exists {
+		writeIntegrationError(w, http.StatusBadRequest, "unsupported_marker_type_input", "marker_type_name is not supported for this endpoint")
+		return
+	}
+
 	request := integrationStaticPreviewRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
 		return
 	}
 	request.Username = strings.TrimSpace(request.Username)
-	request.MarkerTypeName = strings.TrimSpace(request.MarkerTypeName)
-	request.StreetNumber = strings.TrimSpace(request.StreetNumber)
-	request.StreetName = strings.TrimSpace(request.StreetName)
-	request.Country = strings.TrimSpace(request.Country)
 	if request.Username == "" {
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_username", "username is required")
 		return
 	}
-	if request.MarkerTypeName == "" {
-		writeIntegrationError(w, http.StatusBadRequest, "invalid_marker_type", "marker_type_name is required")
+	if request.Lat == nil || request.Lon == nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_location_input", "lat and lon are required")
 		return
 	}
 
-	var lat float64
-	var lon float64
-	if request.Lat != nil && request.Lon != nil {
-		lat = *request.Lat
-		lon = *request.Lon
-	} else if request.StreetName != "" && request.Country != "" {
-		var geocodeErr error
-		lat, lon, geocodeErr = integrationGeocodeAddressFn(request.StreetNumber, request.StreetName, request.Country)
-		if geocodeErr != nil {
-			recordStaticPreviewFailure(apiKey, requestSourceIP(r), geocodeErr.Error(), request.Username)
-			writeIntegrationError(w, http.StatusBadGateway, "geocode_dependency_failure", "failed to geocode address to coordinates")
-			return
-		}
-	} else {
-		writeIntegrationError(w, http.StatusBadRequest, "invalid_location_input", "provide either lat/lon or street_name + country")
-		return
-	}
+	lat := *request.Lat
+	lon := *request.Lon
 
-	result, err := integrationGenerateStaticMapFn(request.Username, request.MarkerTypeName, lat, lon)
+	result, err := integrationGenerateStaticMapFn(request.Username, lat, lon)
 	if err != nil {
 		recordStaticPreviewFailure(apiKey, requestSourceIP(r), err.Error(), request.Username)
 		switch err {
@@ -1226,10 +1291,6 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusBadRequest, "preview_pin_not_configured", "preview pin selection is required for this user")
 		case ErrPreviewPinInvalid:
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_preview_pin", "configured preview pin is invalid")
-		case ErrUnknownMarkerType:
-			writeIntegrationError(w, http.StatusBadRequest, "unknown_marker_type", "marker_type_name does not match any marker type")
-		case ErrTypePinMissing:
-			writeIntegrationError(w, http.StatusBadRequest, "missing_type_pin_mapping", "no type-pin image exists for selected preview pin and marker type")
 		default:
 			if errors.Is(err, ErrInvalidCoordinates) {
 				writeIntegrationError(w, http.StatusBadRequest, "invalid_coordinates", "lat and lon must be within valid ranges")
@@ -1265,6 +1326,120 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 		Width:       result.Width,
 		Height:      result.Height,
 	})
+}
+
+func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.static_preview.geocode", constant.APIKeyScopeStaticPreview, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationStaticPreviewGeocodeRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.StreetNumber = strings.TrimSpace(request.StreetNumber)
+	request.StreetName = strings.TrimSpace(request.StreetName)
+	request.Country = strings.TrimSpace(request.Country)
+	if request.StreetNumber == "" || request.StreetName == "" || request.Country == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_address_input", "street_number, street_name, and country are required")
+		return
+	}
+
+	lat, lon, geocodeErr := integrationGeocodeAddressFn(request.StreetNumber, request.StreetName, request.Country)
+	if geocodeErr != nil {
+		_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+			Operation: "integration.static_preview.geocode.result",
+			SourceIP:  requestSourceIP(r),
+			Success:   false,
+			Reason:    geocodeErr.Error(),
+		})
+		writeIntegrationError(w, http.StatusBadGateway, "geocode_dependency_failure", "failed to geocode address to coordinates")
+		return
+	}
+
+	_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+		Operation: "integration.static_preview.geocode.result",
+		SourceIP:  requestSourceIP(r),
+		Success:   true,
+		Reason:    fmt.Sprintf("lat=%f; lon=%f", lat, lon),
+	})
+
+	respondJSON(w, http.StatusOK, integrationStaticPreviewGeocodeResponse{
+		Lat: lat,
+		Lon: lon,
+	})
+}
+
+func readJSONBody(r *http.Request) ([]byte, error) {
+	body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		return nil, err
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return nil, fmt.Errorf("empty payload")
+	}
+	return body, nil
+}
+
+func decodeStrictJSONPayload(payload []byte, target interface{}) error {
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(target); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return fmt.Errorf("multiple JSON values are not allowed")
+	}
+	return nil
+}
+
+func buildIntegrationMarkerResponse(marker model.Marker) integrationMarkerResponse {
+	return integrationMarkerResponse{
+		Marker:                  marker,
+		IntegrationSource:       "api_key",
+		CreatedAgo:              humanizeRFC3339Duration(marker.CreatedAt, integrationNowFn()),
+		EditableWithSameAPIKey:  true,
+		RemovableWithSameAPIKey: true,
+	}
+}
+
+func humanizeRFC3339Duration(timestamp string, now time.Time) string {
+	parsed, err := time.Parse(time.RFC3339, strings.TrimSpace(timestamp))
+	if err != nil {
+		return ""
+	}
+	diff := now.Sub(parsed)
+	if diff < time.Minute {
+		return "just now"
+	}
+	if diff < time.Hour {
+		minutes := int(diff / time.Minute)
+		if minutes == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", minutes)
+	}
+	if diff < 24*time.Hour {
+		hours := int(diff / time.Hour)
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	}
+	days := int(diff / (24 * time.Hour))
+	if days == 1 {
+		return "1 day ago"
+	}
+	return fmt.Sprintf("%d days ago", days)
 }
 
 func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {

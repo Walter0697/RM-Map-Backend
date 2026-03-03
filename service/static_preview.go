@@ -36,9 +36,11 @@ var (
 	ErrInvalidCoordinates = errors.New("invalid coordinates")
 	ErrTomTomStaticMap    = errors.New("tomtom static map failure")
 	ErrImageComposition   = errors.New("image composition failure")
-	ErrUnknownMarkerType  = errors.New("unknown marker type")
-	ErrTypePinMissing     = errors.New("type pin mapping missing")
 )
+
+var resolveUserPreviewPinByUsernameFn = ResolveUserPreviewPinByUsername
+var fetchTomTomStaticMapImageFn = fetchTomTomStaticMapImage
+var composeStaticPreviewImageFn = composeStaticPreviewImage
 
 type staticPreviewResult struct {
 	User     *dbmodel.User
@@ -50,26 +52,26 @@ type staticPreviewResult struct {
 	Height   int
 }
 
-func GenerateStaticMapPreviewByUsername(username string, markerTypeName string, lat float64, lon float64) (*staticPreviewResult, error) {
+func GenerateStaticMapPreviewByUsername(username string, lat float64, lon float64) (*staticPreviewResult, error) {
 	if err := validateCoordinates(lat, lon); err != nil {
 		return nil, err
 	}
 
-	user, pin, err := ResolveUserPreviewPinByUsername(username)
+	user, pin, err := resolveUserPreviewPinByUsernameFn(username)
 	if err != nil {
 		return nil, err
 	}
-	typePinPath, err := ResolveTypePinImagePath(pin.ID, markerTypeName)
+	pinImagePath := strings.TrimSpace(pin.ImagePath)
+	if pinImagePath == "" {
+		return nil, ErrPreviewPinInvalid
+	}
+
+	staticBytes, err := fetchTomTomStaticMapImageFn(lat, lon)
 	if err != nil {
 		return nil, err
 	}
 
-	staticBytes, err := fetchTomTomStaticMapImage(lat, lon)
-	if err != nil {
-		return nil, err
-	}
-
-	composed, width, height, err := composeStaticPreviewImage(staticBytes, typePinPath)
+	composed, width, height, err := composeStaticPreviewImageFn(staticBytes, pinImagePath)
 	if err != nil {
 		return nil, err
 	}
