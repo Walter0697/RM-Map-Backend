@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
@@ -46,14 +47,14 @@ func GetUpcoming(country *string) (*MovieResponse, error) {
 	if country != nil {
 		url = url + "&region=" + *country
 	}
-	body, err := GetRequest(url)
-	if err != nil {
-		return nil, err
-	}
 
 	var movieResp MovieResponse
-
-	err = json.Unmarshal(body, &movieResp)
+	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_upcoming", url, func(body []byte) error {
+		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
+			return fmt.Errorf("decode response: %w", unmarshalErr)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -67,14 +68,13 @@ func GetNowPlaying(country *string) (*MovieResponse, error) {
 		url = url + "&region=" + *country
 	}
 
-	body, err := GetRequest(url)
-	if err != nil {
-		return nil, err
-	}
-
 	var movieResp MovieResponse
-
-	err = json.Unmarshal(body, &movieResp)
+	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_now_playing", url, func(body []byte) error {
+		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
+			return fmt.Errorf("decode response: %w", unmarshalErr)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -85,14 +85,13 @@ func GetNowPlaying(country *string) (*MovieResponse, error) {
 func SearchByName(query string) (*MovieResponse, error) {
 	url := getRequestLink(SearchURL) + "&query=" + query
 
-	body, err := GetRequest(url)
-	if err != nil {
-		return nil, err
-	}
-
 	var movieResp MovieResponse
-
-	err = json.Unmarshal(body, &movieResp)
+	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "search_movie", url, func(body []byte) error {
+		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
+			return fmt.Errorf("decode response: %w", unmarshalErr)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -147,13 +146,13 @@ func GetMovieList(filter model.MovieFilter) ([]*model.MovieOutput, error) {
 func FetchMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	url := getByIdRequest(movie_rid)
 
-	body, err := GetRequest(url)
-	if err != nil {
-		return nil, err
-	}
-
 	var movieDetail MovieDetail
-	err = json.Unmarshal(body, &movieDetail)
+	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_movie_by_id", url, func(body []byte) error {
+		if unmarshalErr := json.Unmarshal(body, &movieDetail); unmarshalErr != nil {
+			return fmt.Errorf("decode response: %w", unmarshalErr)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}

@@ -30,6 +30,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&User{})
 	database.Connection.AutoMigrate(&APIKey{})
 	database.Connection.AutoMigrate(&APIKeyAuditLog{})
+	database.Connection.AutoMigrate(&ExternalAPIAuditEvent{})
 	database.Connection.AutoMigrate(&AdminCleanupJob{})
 	database.Connection.AutoMigrate(&UserRelation{})
 	database.Connection.AutoMigrate(&UserPreference{})
@@ -49,6 +50,9 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&RoRoadList{})
 	database.Connection.AutoMigrate(&CountryPoint{})
 	database.Connection.AutoMigrate(&CountryLocation{})
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_provider_request_time ON external_api_audit_events (provider, request_time)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_request_time ON external_api_audit_events (request_time)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_status_request_time ON external_api_audit_events (status_class, request_time)")
 
 	log.Println("auto migration completed")
 }
