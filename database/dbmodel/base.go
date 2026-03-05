@@ -39,6 +39,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&Pin{})
 	database.Connection.AutoMigrate(&TypePin{})
 	database.Connection.AutoMigrate(&DefaultValue{})
+	database.Connection.AutoMigrate(&SystemSetting{})
 	database.Connection.AutoMigrate(&Schedule{})
 	database.Connection.AutoMigrate(&Movie{})
 	database.Connection.AutoMigrate(&Restaurant{})
