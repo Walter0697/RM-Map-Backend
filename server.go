@@ -176,6 +176,8 @@ func startServer() {
 		r.Post("/static-map-preview/geocode", service.IntegrationGeocodeStaticMapPreviewHandler)
 		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
 	})
+	router.Get("/weather/planning", service.PlanningWeatherHandler)
+	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
 	router.Route("/admin", func(r chi.Router) {
 		r.Get("/settings/ios-shortcut-install-url", service.AdminGetIOSShortcutInstallURLHandler)
 		r.Put("/settings/ios-shortcut-install-url", service.AdminUpdateIOSShortcutInstallURLHandler)

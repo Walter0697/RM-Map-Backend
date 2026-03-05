@@ -62,6 +62,18 @@ timeoutms=3000
 easythresholdminutes=20
 difficultthresholdminutes=45
 
+[weather]
+enable=false
+provider="open_meteo"
+baseurl="https://api.open-meteo.com"
+timeoutms=5000
+ratelimitperminute=120
+cachettlseconds=600
+stalettlseconds=3600
+maxforecasthours=192
+maxviewportspan=30
+maxviewportpointstep=0.2
+
 [integrationauth]
 enablecleanup=true
 logretentiondays=30

@@ -67,6 +67,19 @@ type ScheduleTravelSetting struct {
 	DifficultThresholdMinutes int    `mapstructure:"difficultthresholdminutes"`
 }
 
+type WeatherSetting struct {
+	Enable               bool    `mapstructure:"enable"`
+	Provider             string  `mapstructure:"provider"`
+	BaseURL              string  `mapstructure:"baseurl"`
+	TimeoutMS            int     `mapstructure:"timeoutms"`
+	RateLimitPerMinute   int     `mapstructure:"ratelimitperminute"`
+	CacheTTLSeconds      int     `mapstructure:"cachettlseconds"`
+	StaleTTLSeconds      int     `mapstructure:"stalettlseconds"`
+	MaxForecastHours     int     `mapstructure:"maxforecasthours"`
+	MaxViewportSpan      float64 `mapstructure:"maxviewportspan"`
+	MaxViewportPointStep float64 `mapstructure:"maxviewportpointstep"`
+}
+
 type IntegrationAuthSetting struct {
 	EnableCleanup          bool `mapstructure:"enablecleanup"`
 	LogRetentionDays       int  `mapstructure:"logretentiondays"`
@@ -112,6 +125,7 @@ type Config struct {
 	OIDC            OIDCSetting            `mapstructure:"oidc"`
 	APIKEY          APIKeySetting          `mapstructure:"apikey"`
 	ScheduleTravel  ScheduleTravelSetting  `mapstructure:"scheduletravel"`
+	Weather         WeatherSetting         `mapstructure:"weather"`
 	IntegrationAuth IntegrationAuthSetting `mapstructure:"integrationauth"`
 	Seed            SeedSetting            `mapstructure:"seed"`
 }
