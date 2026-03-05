@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -62,14 +63,53 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 
 	var marker dbmodel.Marker
 
+	log.Printf(
+		"marker geocode request lat=%.6f lon=%.6f relation_id=%d actor=%s",
+		input.Latitude,
+		input.Longitude,
+		relation.ID,
+		strings.TrimSpace(user.Username),
+	)
 	tomtomResp, err := GetReverseGeocode(input.Latitude, input.Longitude)
 	if err != nil {
+		log.Printf(
+			"marker geocode error lat=%.6f lon=%.6f relation_id=%d actor=%s err=%v",
+			input.Latitude,
+			input.Longitude,
+			relation.ID,
+			strings.TrimSpace(user.Username),
+			err,
+		)
 		return nil, err
 	}
 
-	marker.Country = tomtomResp.Addresses[0].Address.Country
-	marker.CountryCode = tomtomResp.Addresses[0].Address.CountryCode
-	marker.CountryPart = tomtomResp.Addresses[0].Address.LocalName
+	marker.Country, marker.CountryCode, marker.CountryPart = ResolveCountryFields(tomtomResp)
+	if len(tomtomResp.Addresses) > 0 {
+		address := tomtomResp.Addresses[0].Address
+		log.Printf(
+			"marker geocode response lat=%.6f lon=%.6f addresses=%d raw_country=%q raw_country_code=%q raw_local_name=%q raw_municipality=%q raw_municipality_subdivision=%q resolved_country=%q resolved_country_code=%q resolved_country_part=%q",
+			input.Latitude,
+			input.Longitude,
+			len(tomtomResp.Addresses),
+			strings.TrimSpace(address.Country),
+			strings.TrimSpace(address.CountryCode),
+			strings.TrimSpace(address.LocalName),
+			strings.TrimSpace(address.Municipality),
+			strings.TrimSpace(address.MunicipalitySubdivision),
+			marker.Country,
+			marker.CountryCode,
+			marker.CountryPart,
+		)
+	} else {
+		log.Printf(
+			"marker geocode response lat=%.6f lon=%.6f addresses=0 resolved_country=%q resolved_country_code=%q resolved_country_part=%q",
+			input.Latitude,
+			input.Longitude,
+			marker.Country,
+			marker.CountryCode,
+			marker.CountryPart,
+		)
+	}
 
 	marker.Label = input.Label
 	marker.Latitude = input.Latitude

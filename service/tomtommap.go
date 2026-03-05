@@ -10,9 +10,14 @@ import (
 )
 
 type AddressInfo struct {
-	Country     string `json:"country"`
-	CountryCode string `json:"countryCode"`
-	LocalName   string `json:"localName"`
+	Country                     string `json:"country"`
+	CountryCode                 string `json:"countryCode"`
+	LocalName                   string `json:"localName"`
+	Municipality                string `json:"municipality"`
+	MunicipalitySubdivision     string `json:"municipalitySubdivision"`
+	CountrySubdivision          string `json:"countrySubdivision"`
+	CountrySecondarySubdivision string `json:"countrySecondarySubdivision"`
+	CountryTertiarySubdivision  string `json:"countryTertiarySubdivision"`
 }
 
 type AddressWrapper struct {
@@ -62,6 +67,37 @@ func GetReverseGeocode(lat, lon float64) (*TomTomResponse, error) {
 	}
 
 	return &tomtomResp, nil
+}
+
+func ResolveCountryFields(resp *TomTomResponse) (string, string, string) {
+	if resp == nil || len(resp.Addresses) == 0 {
+		return "", "", ""
+	}
+
+	address := resp.Addresses[0].Address
+	country := strings.TrimSpace(address.Country)
+	countryCode := strings.TrimSpace(address.CountryCode)
+	countryPart := firstNonEmptyString(
+		address.LocalName,
+		address.MunicipalitySubdivision,
+		address.Municipality,
+		address.CountrySecondarySubdivision,
+		address.CountrySubdivision,
+		address.CountryTertiarySubdivision,
+		address.Country,
+	)
+
+	return country, countryCode, countryPart
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
 }
 
 func GeocodeStreetAddress(streetNumber string, streetName string, country string) (float64, float64, error) {
