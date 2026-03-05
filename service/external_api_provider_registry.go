@@ -5,6 +5,8 @@ import "strings"
 const (
 	ExternalAPIProviderTomTomMap = "tomtom_map"
 	ExternalAPIProviderMovieDB   = "movie_db"
+	ExternalAPIProviderOpenMeteo = "open_meteo"
+	ExternalAPIProviderWeatherUI = "weather_overlay_client"
 )
 
 type ExternalAPIProviderMetadata struct {
@@ -20,6 +22,14 @@ var managedExternalAPIProviders = []ExternalAPIProviderMetadata{
 	{
 		ID:    ExternalAPIProviderMovieDB,
 		Label: "Movie DB",
+	},
+	{
+		ID:    ExternalAPIProviderOpenMeteo,
+		Label: "Open-Meteo",
+	},
+	{
+		ID:    ExternalAPIProviderWeatherUI,
+		Label: "Weather Overlay Client",
 	},
 }
 
