@@ -13,7 +13,7 @@ func (setting *SystemSetting) GetByKey(db *gorm.DB) error {
 }
 
 func (setting *SystemSetting) UpsertByKey(db *gorm.DB) error {
-	return db.Where("key = ?", setting.Key).Assign(SystemSetting{
-		Value: setting.Value,
+	return db.Where("key = ?", setting.Key).Assign(map[string]interface{}{
+		"value": setting.Value,
 	}).FirstOrCreate(setting).Error
 }
