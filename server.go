@@ -137,6 +137,7 @@ func startServer() {
 	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
 	router.Route("/settings", func(r chi.Router) {
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
+		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
 	})
 	router.Route("/auth/apikeys", func(r chi.Router) {
@@ -166,6 +167,8 @@ func startServer() {
 		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
 	})
 	router.Route("/admin", func(r chi.Router) {
+		r.Get("/settings/ios-shortcut-install-url", service.AdminGetIOSShortcutInstallURLHandler)
+		r.Put("/settings/ios-shortcut-install-url", service.AdminUpdateIOSShortcutInstallURLHandler)
 		r.Get("/api-usage/providers", service.AdminExternalAPIUsageProvidersHandler)
 		r.Get("/api-usage/summary", service.AdminExternalAPIUsageSummaryHandler)
 		r.Get("/api-usage/trends", service.AdminExternalAPIUsageTrendsHandler)
