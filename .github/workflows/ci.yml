@@ -103,7 +103,7 @@ jobs:
 
       - name: Run gosec
         continue-on-error: true
-        uses: securego/gosec@v2.22.2
+        uses: securego/gosec@v2.24.7
         with:
           args: ./...
 
