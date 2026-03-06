@@ -47,6 +47,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 
 - `GET /integration/markers`
 - `POST /integration/markers`
+- `POST /integration/markers/outcomes`
 - `PUT /integration/markers/{id}`
 - `DELETE /integration/markers/{id}`
 - `GET /integration/schedules?time=YYYY-MM-DD`
@@ -246,6 +247,58 @@ Delete marker example:
 curl -X DELETE "$BASE_URL/integration/markers/123" \
   -H "X-API-Key: $MARKER_WRITE_KEY"
 ```
+
+### Marker Creation Outcome Callback Contract
+
+`POST /integration/markers/outcomes` records n8n callback status for marker creation attempts.
+
+Required scope:
+- `markers:write`
+
+Request payload:
+
+```json
+{
+  "link": "https://social.example/post/42",
+  "markerId": 12345,
+  "externalRunId": "wf-2026-03-05-0001",
+  "status": "failed",
+  "failureReason": "image_download_failed",
+  "failureMessage": "HTTP 403 from source media URL"
+}
+```
+
+Fields:
+- `link` (required): source social/media URL
+- `status` (required): `success` or `failed`
+- `markerId` (optional): backend marker id created/updated by the workflow
+- `externalRunId` (optional): workflow execution/run correlation id
+- `failureReason` (optional): short category for failure
+- `failureMessage` (optional): diagnostic detail
+
+For `status=success`, at least one of `markerId` or `externalRunId` is required.
+
+Success response (`201 Created`):
+
+```json
+{
+  "id": 99,
+  "link": "https://social.example/post/42",
+  "markerId": 12345,
+  "externalRunId": "wf-2026-03-05-0001",
+  "status": "failed",
+  "failureReason": "image_download_failed",
+  "failureMessage": "HTTP 403 from source media URL",
+  "created_at": "2026-03-05T12:34:56Z"
+}
+```
+
+Common error codes:
+- `invalid_payload`
+- `invalid_link`
+- `invalid_status`
+- `invalid_success_reference`
+- `outcome_log_persist_failed`
 
 ## Audit Logging
 
