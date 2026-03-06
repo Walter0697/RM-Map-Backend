@@ -12,6 +12,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
+	"math"
 	"net"
 	"net/http"
 	"strconv"
@@ -198,11 +199,36 @@ type integrationErrorResponse struct {
 	Message string `json:"message"`
 }
 
+type integrationNearbySearchQuery struct {
+	Latitude     float64
+	Longitude    float64
+	RadiusMeters float64
+	Limit        int
+}
+
+type integrationNearbyMarkerRow struct {
+	dbmodel.Marker
+	DistanceMeters float64 `json:"distance_meters" gorm:"column:distance_meters"`
+}
+
+type integrationNearbyMarkerResponse struct {
+	integrationMarkerResponse
+	DistanceMeters float64 `json:"distance_meters"`
+}
+
+const (
+	integrationNearbyDefaultLimit      = 20
+	integrationNearbyMaxLimit          = 50
+	integrationNearbyMaxRadiusMeters   = 50000.0
+	integrationNearbyEarthRadiusMeters = 6371000.0
+)
+
 var integrationGetUserPreviewPinFn = GetUserPreviewPinSelection
 var integrationSetUserPreviewPinFn = SetUserPreviewPinSelection
 var integrationGenerateStaticMapFn = GenerateStaticMapPreviewByUsername
 var integrationGeocodeAddressFn = GeocodeStreetAddress
 var integrationAuthenticateRequestFn = authenticateIntegrationRequest
+var integrationAuthenticateNearbyRequestFn = authenticateIntegrationRequestJSON
 var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
 var integrationCreateMarkerOutcomeLogFn = CreateMarkerCreationOutcomeLog
 var integrationNowFn = time.Now
@@ -217,6 +243,7 @@ var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
+var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	operator := currentUserFromRequest(r)
@@ -544,6 +571,45 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		nextCursor = strconv.FormatUint(uint64(markers[len(markers)-1].ID), 10)
 	}
 	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption, nextCursor))
+}
+
+func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Request) {
+	searchQuery, err := parseIntegrationNearbySearchQuery(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_nearby_search_input", err.Error())
+		return
+	}
+
+	queryContext := fmt.Sprintf("lat=%.6f;lon=%.6f;radius=%.2f;limit=%d", searchQuery.Latitude, searchQuery.Longitude, searchQuery.RadiusMeters, searchQuery.Limit)
+	apiKey, ok := integrationAuthenticateNearbyRequestFn(w, r, "integration.markers.nearby_search", constant.APIKeyScopeMarkersRead, queryContext)
+	if !ok {
+		return
+	}
+
+	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "nearby_search_failed", "failed to retrieve nearby markers")
+		return
+	}
+
+	items := make([]integrationNearbyMarkerResponse, 0, len(rows))
+	for _, row := range rows {
+		decorated := buildIntegrationMarkerResponse(helper.ConvertMarker(row.Marker))
+		items = append(items, integrationNearbyMarkerResponse{
+			integrationMarkerResponse: decorated,
+			DistanceMeters:            row.DistanceMeters,
+		})
+	}
+
+	responseQuery := integrationListQuery{
+		Limit:   searchQuery.Limit,
+		Offset:  0,
+		Cursor:  0,
+		SortBy:  "distance_meters",
+		Order:   "asc",
+		Filters: map[string]string{},
+	}
+	respondJSON(w, http.StatusOK, integrationListResponse(items, int64(len(items)), responseQuery, ""))
 }
 
 func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -1674,6 +1740,172 @@ func authenticateIntegrationRequest(w http.ResponseWriter, r *http.Request, oper
 
 	log.Printf("api-key request key_id=%d key_name=%s operation=%s scope=%s source_ip=%s", apiKey.ID, apiKey.Name, operationWithContext, requiredScope, sourceIP)
 	return apiKey, true
+}
+
+func authenticateIntegrationRequestJSON(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+	operationWithContext := strings.TrimSpace(operation)
+	if strings.TrimSpace(queryContext) != "" {
+		operationWithContext = operationWithContext + " [" + strings.TrimSpace(queryContext) + "]"
+	}
+
+	raw := strings.TrimSpace(r.Header.Get("X-API-Key"))
+	if raw == "" {
+		authHeader := strings.TrimSpace(r.Header.Get("Authorization"))
+		if strings.HasPrefix(strings.ToLower(authHeader), "apikey ") {
+			raw = strings.TrimSpace(authHeader[7:])
+		}
+	}
+
+	sourceIP := requestSourceIP(r)
+	if raw == "" {
+		_ = integrationCreateAuditLogFn(nil, "unknown", APIKeyAuditEvent{
+			Operation: operationWithContext,
+			SourceIP:  sourceIP,
+			Success:   false,
+			Reason:    "missing api key header",
+		})
+		if strings.TrimSpace(r.Header.Get("Authorization")) != "" {
+			writeIntegrationError(w, http.StatusUnauthorized, "deprecated_jwt_auth", "jwt-based automation auth is deprecated for integration endpoints; use API key")
+			return nil, false
+		}
+		writeIntegrationError(w, http.StatusUnauthorized, "missing_api_key", "missing api key")
+		return nil, false
+	}
+
+	apiKey, err := AuthenticateAPIKey(raw, APIKeyAuditEvent{
+		Operation: operationWithContext,
+		SourceIP:  sourceIP,
+		Success:   false,
+		Reason:    "authentication failed",
+	})
+	if err != nil {
+		writeIntegrationError(w, http.StatusUnauthorized, "invalid_api_key", err.Error())
+		return nil, false
+	}
+
+	if !HasScope(apiKey, requiredScope) {
+		_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+			Operation: operationWithContext,
+			SourceIP:  sourceIP,
+			Success:   false,
+			Reason:    fmt.Sprintf("missing scope: %s", requiredScope),
+		})
+		writeIntegrationError(w, http.StatusForbidden, "api_key_scope_denied", (&helper.APIKeyScopeDeniedError{}).Error())
+		return nil, false
+	}
+
+	log.Printf("api-key request key_id=%d key_name=%s operation=%s scope=%s source_ip=%s", apiKey.ID, apiKey.Name, operationWithContext, requiredScope, sourceIP)
+	return apiKey, true
+}
+
+func parseIntegrationNearbySearchQuery(r *http.Request) (integrationNearbySearchQuery, error) {
+	query := integrationNearbySearchQuery{
+		Limit: integrationNearbyDefaultLimit,
+	}
+
+	latitudeRaw := strings.TrimSpace(r.URL.Query().Get("latitude"))
+	if latitudeRaw == "" {
+		return query, fmt.Errorf("latitude is required")
+	}
+	latitude, err := strconv.ParseFloat(latitudeRaw, 64)
+	if err != nil || latitude < -90 || latitude > 90 {
+		return query, fmt.Errorf("latitude must be within -90 to 90")
+	}
+	query.Latitude = latitude
+
+	longitudeRaw := strings.TrimSpace(r.URL.Query().Get("longitude"))
+	if longitudeRaw == "" {
+		return query, fmt.Errorf("longitude is required")
+	}
+	longitude, err := strconv.ParseFloat(longitudeRaw, 64)
+	if err != nil || longitude < -180 || longitude > 180 {
+		return query, fmt.Errorf("longitude must be within -180 to 180")
+	}
+	query.Longitude = longitude
+
+	radiusRaw := strings.TrimSpace(r.URL.Query().Get("radius"))
+	if radiusRaw == "" {
+		radiusRaw = strings.TrimSpace(r.URL.Query().Get("area"))
+	}
+	if radiusRaw == "" {
+		return query, fmt.Errorf("radius or area is required")
+	}
+	radius, err := strconv.ParseFloat(radiusRaw, 64)
+	if err != nil || radius <= 0 {
+		return query, fmt.Errorf("radius must be a positive number")
+	}
+	if radius > integrationNearbyMaxRadiusMeters {
+		return query, fmt.Errorf("radius exceeds maximum allowed (%.0f meters)", integrationNearbyMaxRadiusMeters)
+	}
+	query.RadiusMeters = radius
+
+	limitRaw := strings.TrimSpace(r.URL.Query().Get("limit"))
+	if limitRaw != "" {
+		limit, convErr := strconv.Atoi(limitRaw)
+		if convErr != nil || limit <= 0 {
+			return query, fmt.Errorf("limit must be a positive integer")
+		}
+		if limit > integrationNearbyMaxLimit {
+			limit = integrationNearbyMaxLimit
+		}
+		query.Limit = limit
+	}
+
+	return query, nil
+}
+
+func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+	current := time.Now().AddDate(0, 0, -1)
+	baseQuery := database.Connection.Model(&dbmodel.Marker{}).
+		Where("relation_id = ?", relation.ID).
+		Where("status != ?", constant.Arrived).
+		Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+
+	latDelta := params.RadiusMeters / 111320.0
+	south := math.Max(-90, params.Latitude-latDelta)
+	north := math.Min(90, params.Latitude+latDelta)
+	baseQuery = baseQuery.Where("latitude >= ? AND latitude <= ?", south, north)
+
+	lonDelta := 180.0
+	cosLat := math.Cos(params.Latitude * math.Pi / 180.0)
+	if math.Abs(cosLat) > 1e-12 {
+		lonDelta = params.RadiusMeters / (111320.0 * cosLat)
+		if lonDelta > 180 {
+			lonDelta = 180
+		}
+	}
+	west := normalizeLongitude(params.Longitude - lonDelta)
+	east := normalizeLongitude(params.Longitude + lonDelta)
+	if west <= east {
+		baseQuery = baseQuery.Where("longitude >= ? AND longitude <= ?", west, east)
+	} else {
+		baseQuery = baseQuery.Where("(longitude >= ? OR longitude <= ?)", west, east)
+	}
+
+	distanceExpr := fmt.Sprintf(
+		`(%f * acos(least(1.0, greatest(-1.0, cos(radians(?)) * cos(radians(latitude)) * cos(radians(longitude) - radians(?)) + sin(radians(?)) * sin(radians(latitude))))))`,
+		integrationNearbyEarthRadiusMeters,
+	)
+
+	rows := make([]integrationNearbyMarkerRow, 0)
+	err := baseQuery.
+		Select("markers.*, "+distanceExpr+" AS distance_meters", params.Latitude, params.Longitude, params.Latitude).
+		Where(distanceExpr+" <= ?", params.Latitude, params.Longitude, params.Latitude, params.RadiusMeters).
+		Order("distance_meters asc").
+		Order("id asc").
+		Limit(params.Limit).
+		Find(&rows).Error
+	return rows, err
+}
+
+func normalizeLongitude(value float64) float64 {
+	if value > 180 {
+		return value - 360
+	}
+	if value < -180 {
+		return value + 360
+	}
+	return value
 }
 
 func formatAPIKey(apiKey *dbmodel.APIKey) apiKeyResponse {

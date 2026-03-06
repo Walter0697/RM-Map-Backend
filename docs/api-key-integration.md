@@ -46,6 +46,7 @@ Create request example:
 Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 
 - `GET /integration/markers`
+- `GET /integration/markers/nearby`
 - `POST /integration/markers`
 - `POST /integration/markers/outcomes`
 - `PUT /integration/markers/{id}`
@@ -81,6 +82,11 @@ Endpoint-specific filters:
   - `type`, `status`, `country`, `country_code`, `label`, `search`
   - `west`, `south`, `east`, `north` (viewport bounding box, all required together)
   - `zoom` (optional zoom hint)
+- `GET /integration/markers/nearby`
+  - `latitude` (required, `-90..90`)
+  - `longitude` (required, `-180..180`)
+  - `radius` or `area` in meters (required, positive, max `50000`)
+  - `limit` (optional, default `20`, max `50`)
 - `GET /integration/schedules`
   - `time` (`YYYY-MM-DD`), `status`, `marker_id`, `label`, `search`, `from` (`RFC3339`), `to` (`RFC3339`)
 - `GET /integration/stations`
@@ -163,6 +169,14 @@ Common error codes for `POST /integration/static-map-preview`:
 - `invalid_preview_pin`
 - `tomtom_dependency_failure`
 - `image_composition_failure`
+
+Common error codes for `GET /integration/markers/nearby`:
+- `invalid_nearby_search_input`
+- `missing_api_key`
+- `deprecated_jwt_auth`
+- `invalid_api_key`
+- `api_key_scope_denied`
+- `nearby_search_failed`
 
 Address-mode flow (street -> geocode -> preview):
 
