@@ -150,6 +150,7 @@ func startServer() {
 	})
 	router.Route("/integration", func(r chi.Router) {
 		r.Get("/markers", service.IntegrationListMarkersHandler)
+		r.Get("/markers/nearby", service.IntegrationNearbySearchMarkersHandler)
 		r.Post("/markers", service.IntegrationCreateMarkerHandler)
 		r.Put("/markers/{id}", service.IntegrationUpdateMarkerHandler)
 		r.Delete("/markers/{id}", service.IntegrationDeleteMarkerHandler)

@@ -25,6 +25,7 @@ func setRouteParam(req *http.Request, key string, value string) *http.Request {
 
 func resetIntegrationMarkerHooks() {
 	integrationAuthenticateRequestFn = authenticateIntegrationRequest
+	integrationAuthenticateNearbyRequestFn = authenticateIntegrationRequestJSON
 	integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 		marker := &dbmodel.Marker{}
 		marker.ID = id
@@ -36,6 +37,7 @@ func resetIntegrationMarkerHooks() {
 	integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 		return marker.Update(database.Connection)
 	}
+	integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
 	integrationNowFn = time.Now
 }
 
@@ -137,5 +139,147 @@ func TestBuildIntegrationMarkerResponseAddsIndicator(t *testing.T) {
 	}
 	if !item.EditableWithSameAPIKey || !item.RemovableWithSameAPIKey {
 		t.Fatalf("expected editable/removable flags true")
+	}
+}
+
+func TestIntegrationNearbySearchMarkersHandlerValidationError(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/nearby?latitude=91&longitude=114.17&radius=200", nil)
+	IntegrationNearbySearchMarkersHandler(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
+	}
+
+	response := integrationErrorResponse{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected json error response: %v", err)
+	}
+	if response.Code != "invalid_nearby_search_input" {
+		t.Fatalf("expected invalid_nearby_search_input, got %s", response.Code)
+	}
+}
+
+func TestIntegrationNearbySearchMarkersHandlerScopeDenied(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateNearbyRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		writeIntegrationError(w, http.StatusForbidden, "api_key_scope_denied", "api key scope denied")
+		return nil, false
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/nearby?latitude=22.3&longitude=114.17&radius=200", nil)
+	IntegrationNearbySearchMarkersHandler(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d", recorder.Code)
+	}
+
+	response := integrationErrorResponse{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected json error response: %v", err)
+	}
+	if response.Code != "api_key_scope_denied" {
+		t.Fatalf("expected api_key_scope_denied, got %s", response.Code)
+	}
+}
+
+func TestIntegrationNearbySearchMarkersHandlerSuccessDistanceOrdering(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateNearbyRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
+		}, true
+	}
+	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+		return []integrationNearbyMarkerRow{
+			{
+				Marker: dbmodel.Marker{
+					ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 1, CreatedAt: time.Now().Add(-2 * time.Hour)}},
+					Label:      "Near Marker",
+					Latitude:   22.3001,
+					Longitude:  114.1701,
+				},
+				DistanceMeters: 12.4,
+			},
+			{
+				Marker: dbmodel.Marker{
+					ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 2, CreatedAt: time.Now().Add(-2 * time.Hour)}},
+					Label:      "Far Marker",
+					Latitude:   22.301,
+					Longitude:  114.171,
+				},
+				DistanceMeters: 88.1,
+			},
+		}, nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/nearby?latitude=22.3&longitude=114.17&radius=300&limit=10", nil)
+	IntegrationNearbySearchMarkersHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", recorder.Code)
+	}
+
+	var payload struct {
+		Items []struct {
+			ID             int     `json:"id"`
+			Label          string  `json:"label"`
+			DistanceMeters float64 `json:"distance_meters"`
+		} `json:"items"`
+		Limit int `json:"limit"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if payload.Limit != 10 {
+		t.Fatalf("expected limit=10, got %d", payload.Limit)
+	}
+	if len(payload.Items) != 2 {
+		t.Fatalf("expected 2 items, got %d", len(payload.Items))
+	}
+	if payload.Items[0].DistanceMeters >= payload.Items[1].DistanceMeters {
+		t.Fatalf("expected distance ordering asc, got %+v", payload.Items)
+	}
+}
+
+func TestIntegrationNearbySearchMarkersHandlerEmptyResult(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateNearbyRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
+		}, true
+	}
+	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+		return []integrationNearbyMarkerRow{}, nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/nearby?latitude=22.3&longitude=114.17&radius=50", nil)
+	IntegrationNearbySearchMarkersHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", recorder.Code)
+	}
+
+	var payload struct {
+		Items []integrationNearbyMarkerResponse `json:"items"`
+		Total int                               `json:"total"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if payload.Total != 0 || len(payload.Items) != 0 {
+		t.Fatalf("expected empty list response, got %+v", payload)
 	}
 }
