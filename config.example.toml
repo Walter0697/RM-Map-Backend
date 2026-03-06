@@ -55,6 +55,13 @@ defaultrole="user"
 moviedb=""
 tomtommap=""
 
+[scheduletravel]
+enable=false
+baseurl="https://api.tomtom.com/routing/1"
+timeoutms=3000
+easythresholdminutes=20
+difficultthresholdminutes=45
+
 [integrationauth]
 enablecleanup=true
 logretentiondays=30

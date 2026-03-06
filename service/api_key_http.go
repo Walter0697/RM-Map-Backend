@@ -848,7 +848,9 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 	if len(schedules) == queryOption.Limit {
 		nextCursor = strconv.FormatUint(uint64(schedules[len(schedules)-1].ID), 10)
 	}
-	respondJSON(w, http.StatusOK, integrationListResponse(response, total, queryOption, nextCursor))
+	payload := integrationListResponse(response, total, queryOption, nextCursor)
+	payload["transition_analysis"] = BuildScheduleTransitionAnalysis(BuildScheduleTravelPointsFromSchedules(schedules))
+	respondJSON(w, http.StatusOK, payload)
 }
 
 func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {

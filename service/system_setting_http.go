@@ -5,6 +5,15 @@ import (
 	"net/http"
 )
 
+var (
+	systemSettingCurrentUserFromRequestFn      = currentUserFromRequest
+	systemSettingRequireAdminFn                = requireAdmin
+	systemSettingGetIOSShortcutInstallURLFn    = GetIOSShortcutInstallURL
+	systemSettingSetIOSShortcutInstallURLFn    = SetIOSShortcutInstallURL
+	systemSettingGetScheduleTravelThresholdsFn = GetScheduleTravelThresholds
+	systemSettingSetScheduleTravelThresholdsFn = SetScheduleTravelThresholds
+)
+
 type updateIOSShortcutInstallURLRequest struct {
 	IOSShortcutInstallURL *string `json:"ios_shortcut_install_url"`
 }
@@ -13,14 +22,24 @@ type iosShortcutInstallURLResponse struct {
 	IOSShortcutInstallURL string `json:"ios_shortcut_install_url,omitempty"`
 }
 
+type updateScheduleTravelThresholdsRequest struct {
+	EasyThresholdMinutes      *int `json:"easy_threshold_minutes"`
+	DifficultThresholdMinutes *int `json:"difficult_threshold_minutes"`
+}
+
+type scheduleTravelThresholdsResponse struct {
+	EasyThresholdMinutes      int `json:"easy_threshold_minutes"`
+	DifficultThresholdMinutes int `json:"difficult_threshold_minutes"`
+}
+
 func SettingsGetIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Request) {
-	user := currentUserFromRequest(r)
+	user := systemSettingCurrentUserFromRequestFn(r)
 	if user == nil {
 		http.Error(w, "permission denied", http.StatusUnauthorized)
 		return
 	}
 
-	shortcutURL, present, err := GetIOSShortcutInstallURL()
+	shortcutURL, present, err := systemSettingGetIOSShortcutInstallURLFn()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -34,11 +53,11 @@ func SettingsGetIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Requ
 }
 
 func AdminGetIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Request) {
-	if requireAdmin(w, r) == nil {
+	if systemSettingRequireAdminFn(w, r) == nil {
 		return
 	}
 
-	shortcutURL, present, err := GetIOSShortcutInstallURL()
+	shortcutURL, present, err := systemSettingGetIOSShortcutInstallURLFn()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -52,7 +71,7 @@ func AdminGetIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Request
 }
 
 func AdminUpdateIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Request) {
-	if requireAdmin(w, r) == nil {
+	if systemSettingRequireAdminFn(w, r) == nil {
 		return
 	}
 
@@ -66,7 +85,7 @@ func AdminUpdateIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	shortcutURL, present, err := SetIOSShortcutInstallURL(*request.IOSShortcutInstallURL)
+	shortcutURL, present, err := systemSettingSetIOSShortcutInstallURLFn(*request.IOSShortcutInstallURL)
 	if err != nil {
 		if err == ErrInvalidIOSShortcutInstallURL {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -81,4 +100,52 @@ func AdminUpdateIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Requ
 		response.IOSShortcutInstallURL = shortcutURL
 	}
 	respondJSON(w, http.StatusOK, response)
+}
+
+func AdminGetScheduleTravelThresholdsHandler(w http.ResponseWriter, r *http.Request) {
+	if systemSettingRequireAdminFn(w, r) == nil {
+		return
+	}
+
+	thresholds, err := systemSettingGetScheduleTravelThresholdsFn()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, scheduleTravelThresholdsResponse{
+		EasyThresholdMinutes:      thresholds.EasyThresholdMinutes,
+		DifficultThresholdMinutes: thresholds.DifficultThresholdMinutes,
+	})
+}
+
+func AdminUpdateScheduleTravelThresholdsHandler(w http.ResponseWriter, r *http.Request) {
+	if systemSettingRequireAdminFn(w, r) == nil {
+		return
+	}
+
+	request := updateScheduleTravelThresholdsRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.EasyThresholdMinutes == nil || request.DifficultThresholdMinutes == nil {
+		http.Error(w, "easy_threshold_minutes and difficult_threshold_minutes are required", http.StatusBadRequest)
+		return
+	}
+
+	thresholds, err := systemSettingSetScheduleTravelThresholdsFn(*request.EasyThresholdMinutes, *request.DifficultThresholdMinutes)
+	if err != nil {
+		if err == ErrInvalidScheduleTravelThreshold {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, scheduleTravelThresholdsResponse{
+		EasyThresholdMinutes:      thresholds.EasyThresholdMinutes,
+		DifficultThresholdMinutes: thresholds.DifficultThresholdMinutes,
+	})
 }

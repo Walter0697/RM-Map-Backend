@@ -140,6 +140,9 @@ func startServer() {
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
 	})
+	router.Route("/schedules", func(r chi.Router) {
+		r.Post("/travel-analysis", service.ScheduleTravelAnalysisHandler)
+	})
 	router.Route("/auth/apikeys", func(r chi.Router) {
 		r.Get("/options", service.ListAPIKeyOptionsHandler)
 		r.Get("/", service.ListAPIKeysHandler)
@@ -170,6 +173,8 @@ func startServer() {
 	router.Route("/admin", func(r chi.Router) {
 		r.Get("/settings/ios-shortcut-install-url", service.AdminGetIOSShortcutInstallURLHandler)
 		r.Put("/settings/ios-shortcut-install-url", service.AdminUpdateIOSShortcutInstallURLHandler)
+		r.Get("/settings/schedule-travel-thresholds", service.AdminGetScheduleTravelThresholdsHandler)
+		r.Put("/settings/schedule-travel-thresholds", service.AdminUpdateScheduleTravelThresholdsHandler)
 		r.Get("/api-usage/providers", service.AdminExternalAPIUsageProvidersHandler)
 		r.Get("/api-usage/summary", service.AdminExternalAPIUsageSummaryHandler)
 		r.Get("/api-usage/trends", service.AdminExternalAPIUsageTrendsHandler)

@@ -59,6 +59,14 @@ type APIKeySetting struct {
 	TomTomMap string `mapstructure:"tomtommap"`
 }
 
+type ScheduleTravelSetting struct {
+	Enable                    bool   `mapstructure:"enable"`
+	BaseURL                   string `mapstructure:"baseurl"`
+	TimeoutMS                 int    `mapstructure:"timeoutms"`
+	EasyThresholdMinutes      int    `mapstructure:"easythresholdminutes"`
+	DifficultThresholdMinutes int    `mapstructure:"difficultthresholdminutes"`
+}
+
 type IntegrationAuthSetting struct {
 	EnableCleanup          bool `mapstructure:"enablecleanup"`
 	LogRetentionDays       int  `mapstructure:"logretentiondays"`
@@ -103,6 +111,7 @@ type Config struct {
 	LDAP            LDAPSetting            `mapstructure:"ldap"`
 	OIDC            OIDCSetting            `mapstructure:"oidc"`
 	APIKEY          APIKeySetting          `mapstructure:"apikey"`
+	ScheduleTravel  ScheduleTravelSetting  `mapstructure:"scheduletravel"`
 	IntegrationAuth IntegrationAuthSetting `mapstructure:"integrationauth"`
 	Seed            SeedSetting            `mapstructure:"seed"`
 }
@@ -151,6 +160,40 @@ func applyRedisEnvOverrides() error {
 			return fmt.Errorf("AUTH_STATE_SESSION_TTL_SECONDS must be an integer, got %q", ttlValue)
 		}
 		Data.AuthState.SessionTTLSeconds = parsedTTL
+	}
+	if easyThresholdValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_EASY_THRESHOLD_MINUTES"); exists {
+		parsedEasyThreshold, err := strconv.Atoi(strings.TrimSpace(easyThresholdValue))
+		if err != nil {
+			return fmt.Errorf("SCHEDULE_TRAVEL_EASY_THRESHOLD_MINUTES must be an integer, got %q", easyThresholdValue)
+		}
+		Data.ScheduleTravel.EasyThresholdMinutes = parsedEasyThreshold
+	}
+	if difficultThresholdValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_DIFFICULT_THRESHOLD_MINUTES"); exists {
+		parsedDifficultThreshold, err := strconv.Atoi(strings.TrimSpace(difficultThresholdValue))
+		if err != nil {
+			return fmt.Errorf("SCHEDULE_TRAVEL_DIFFICULT_THRESHOLD_MINUTES must be an integer, got %q", difficultThresholdValue)
+		}
+		Data.ScheduleTravel.DifficultThresholdMinutes = parsedDifficultThreshold
+	}
+	if enabledValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enabledValue)) {
+		case "1", "true", "yes", "on":
+			Data.ScheduleTravel.Enable = true
+		case "0", "false", "no", "off":
+			Data.ScheduleTravel.Enable = false
+		default:
+			return fmt.Errorf("SCHEDULE_TRAVEL_ENABLE must be a boolean, got %q", enabledValue)
+		}
+	}
+	if timeoutValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_TIMEOUT_MS"); exists {
+		parsedTimeout, err := strconv.Atoi(strings.TrimSpace(timeoutValue))
+		if err != nil {
+			return fmt.Errorf("SCHEDULE_TRAVEL_TIMEOUT_MS must be an integer, got %q", timeoutValue)
+		}
+		Data.ScheduleTravel.TimeoutMS = parsedTimeout
+	}
+	if baseURLValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_BASE_URL"); exists {
+		Data.ScheduleTravel.BaseURL = strings.TrimSpace(baseURLValue)
 	}
 	return nil
 }

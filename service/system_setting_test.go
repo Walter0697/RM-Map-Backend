@@ -31,3 +31,29 @@ func TestValidateIOSShortcutInstallURL(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateScheduleTravelThresholds(t *testing.T) {
+	t.Run("accepts valid threshold ordering", func(t *testing.T) {
+		if !ValidateScheduleTravelThresholds(20, 45) {
+			t.Fatalf("expected thresholds to be valid")
+		}
+	})
+
+	t.Run("rejects non-positive values", func(t *testing.T) {
+		if ValidateScheduleTravelThresholds(0, 45) {
+			t.Fatalf("expected zero easy threshold to be invalid")
+		}
+		if ValidateScheduleTravelThresholds(20, -1) {
+			t.Fatalf("expected negative difficult threshold to be invalid")
+		}
+	})
+
+	t.Run("rejects equal or reversed ordering", func(t *testing.T) {
+		if ValidateScheduleTravelThresholds(45, 45) {
+			t.Fatalf("expected equal thresholds to be invalid")
+		}
+		if ValidateScheduleTravelThresholds(60, 45) {
+			t.Fatalf("expected easy threshold above difficult threshold to be invalid")
+		}
+	})
+}
