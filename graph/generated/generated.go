@@ -123,6 +123,11 @@ type ComplexityRoot struct {
 		UpdatedBy    func(childComplexity int) int
 	}
 
+	MarkerPage struct {
+		Items      func(childComplexity int) int
+		NextCursor func(childComplexity int) int
+	}
+
 	MarkerType struct {
 		CreatedAt func(childComplexity int) int
 		CreatedBy func(childComplexity int) int
@@ -223,6 +228,7 @@ type ComplexityRoot struct {
 		Me                  func(childComplexity int) int
 		Moviefetch          func(childComplexity int, filter model.MovieFilter) int
 		Movies              func(childComplexity int) int
+		Pagedschedules      func(childComplexity int, params model.PagedScheduleQuery) int
 		Pins                func(childComplexity int) int
 		Preference          func(childComplexity int) int
 		Previousmarkers     func(childComplexity int) int
@@ -234,6 +240,7 @@ type ComplexityRoot struct {
 		Today               func(childComplexity int, params model.CurrentTime) int
 		Users               func(childComplexity int, filter *model.UserFilter) int
 		Usersearch          func(childComplexity int, filter model.UserSearch) int
+		Viewportmarkers     func(childComplexity int, params model.MarkerViewportQuery) int
 		Watchedmovies       func(childComplexity int) int
 	}
 
@@ -275,6 +282,11 @@ type ComplexityRoot struct {
 		Status       func(childComplexity int) int
 		UpdatedAt    func(childComplexity int) int
 		UpdatedBy    func(childComplexity int) int
+	}
+
+	SchedulePage struct {
+		Items      func(childComplexity int) int
+		NextCursor func(childComplexity int) int
 	}
 
 	Station struct {
@@ -374,6 +386,8 @@ type QueryResolver interface {
 	Countrypoints(ctx context.Context) ([]*model.CountryPoint, error)
 	Countrylocations(ctx context.Context) ([]*model.CountryLocation, error)
 	Me(ctx context.Context) (string, error)
+	Viewportmarkers(ctx context.Context, params model.MarkerViewportQuery) (*model.MarkerPage, error)
+	Pagedschedules(ctx context.Context, params model.PagedScheduleQuery) (*model.SchedulePage, error)
 }
 
 type executableSchema struct {
@@ -782,6 +796,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.UpdatedBy(childComplexity), true
+
+	case "MarkerPage.items":
+		if e.complexity.MarkerPage.Items == nil {
+			break
+		}
+
+		return e.complexity.MarkerPage.Items(childComplexity), true
+
+	case "MarkerPage.next_cursor":
+		if e.complexity.MarkerPage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.MarkerPage.NextCursor(childComplexity), true
 
 	case "MarkerType.created_at":
 		if e.complexity.MarkerType.CreatedAt == nil {
@@ -1505,6 +1533,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Movies(childComplexity), true
 
+	case "Query.pagedschedules":
+		if e.complexity.Query.Pagedschedules == nil {
+			break
+		}
+
+		args, err := ec.field_Query_pagedschedules_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Pagedschedules(childComplexity, args["params"].(model.PagedScheduleQuery)), true
+
 	case "Query.pins":
 		if e.complexity.Query.Pins == nil {
 			break
@@ -1611,6 +1651,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Usersearch(childComplexity, args["filter"].(model.UserSearch)), true
+
+	case "Query.viewportmarkers":
+		if e.complexity.Query.Viewportmarkers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_viewportmarkers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Viewportmarkers(childComplexity, args["params"].(model.MarkerViewportQuery)), true
 
 	case "Query.watchedmovies":
 		if e.complexity.Query.Watchedmovies == nil {
@@ -1835,6 +1887,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Schedule.UpdatedBy(childComplexity), true
+
+	case "SchedulePage.items":
+		if e.complexity.SchedulePage.Items == nil {
+			break
+		}
+
+		return e.complexity.SchedulePage.Items(childComplexity), true
+
+	case "SchedulePage.next_cursor":
+		if e.complexity.SchedulePage.NextCursor == nil {
+			break
+		}
+
+		return e.complexity.SchedulePage.NextCursor(childComplexity), true
 
 	case "Station.active":
 		if e.complexity.Station.Active == nil {
@@ -2074,6 +2140,38 @@ input UserSearch {
 
 input CurrentTime {
   time: String!
+}
+
+input MarkerViewportQuery {
+  west: Float!
+  south: Float!
+  east: Float!
+  north: Float!
+  zoom: Int
+  cursor: String
+  limit: Int
+}
+
+input PagedScheduleQuery {
+  time: String!
+  status: String
+  marker_id: Int
+  label: String
+  search: String
+  from: String
+  to: String
+  cursor: String
+  limit: Int
+}
+
+type MarkerPage {
+  items: [Marker]!
+  next_cursor: String
+}
+
+type SchedulePage {
+  items: [Schedule]!
+  next_cursor: String
 }
 
 input IdModel {
@@ -2327,6 +2425,8 @@ type Query {
   countrypoints: [CountryPoint]!
   countrylocations: [CountryLocation]!
   me: String!
+  viewportmarkers(params: MarkerViewportQuery!): MarkerPage!
+  pagedschedules(params: PagedScheduleQuery!): SchedulePage!
 }
 
 input NewUser {
@@ -3045,6 +3145,21 @@ func (ec *executionContext) field_Query_moviefetch_args(ctx context.Context, raw
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_pagedschedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.PagedScheduleQuery
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNPagedScheduleQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐPagedScheduleQuery(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_schedules_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -3132,6 +3247,21 @@ func (ec *executionContext) field_Query_usersearch_args(ctx context.Context, raw
 		}
 	}
 	args["filter"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_viewportmarkers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.MarkerViewportQuery
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNMarkerViewportQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerViewportQuery(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
 	return args, nil
 }
 
@@ -5071,6 +5201,73 @@ func (ec *executionContext) _Marker_updated_by(ctx context.Context, field graphq
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarkerPage_items(ctx context.Context, field graphql.CollectedField, obj *model.MarkerPage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarkerPage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Marker)
+	fc.Result = res
+	return ec.marshalNMarker2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarker(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MarkerPage_next_cursor(ctx context.Context, field graphql.CollectedField, obj *model.MarkerPage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MarkerPage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NextCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _MarkerType_id(ctx context.Context, field graphql.CollectedField, obj *model.MarkerType) (ret graphql.Marshaler) {
@@ -8572,6 +8769,90 @@ func (ec *executionContext) _Query_me(ctx context.Context, field graphql.Collect
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_viewportmarkers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_viewportmarkers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Viewportmarkers(rctx, args["params"].(model.MarkerViewportQuery))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.MarkerPage)
+	fc.Result = res
+	return ec.marshalNMarkerPage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerPage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pagedschedules(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_pagedschedules_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Pagedschedules(rctx, args["params"].(model.PagedScheduleQuery))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.SchedulePage)
+	fc.Result = res
+	return ec.marshalNSchedulePage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedulePage(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -9675,6 +9956,73 @@ func (ec *executionContext) _Schedule_updated_by(ctx context.Context, field grap
 	res := resTmp.(*model.User)
 	fc.Result = res
 	return ec.marshalNUser2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SchedulePage_items(ctx context.Context, field graphql.CollectedField, obj *model.SchedulePage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SchedulePage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Items, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Schedule)
+	fc.Result = res
+	return ec.marshalNSchedule2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedule(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _SchedulePage_next_cursor(ctx context.Context, field graphql.CollectedField, obj *model.SchedulePage) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "SchedulePage",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.NextCursor, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Station_identifier(ctx context.Context, field graphql.CollectedField, obj *model.Station) (ret graphql.Marshaler) {
@@ -11636,6 +11984,74 @@ func (ec *executionContext) unmarshalInputLogout(ctx context.Context, obj interf
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMarkerViewportQuery(ctx context.Context, obj interface{}) (model.MarkerViewportQuery, error) {
+	var it model.MarkerViewportQuery
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "west":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("west"))
+			it.West, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "south":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("south"))
+			it.South, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "east":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("east"))
+			it.East, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "north":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("north"))
+			it.North, err = ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "zoom":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("zoom"))
+			it.Zoom, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "cursor":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cursor"))
+			it.Cursor, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			it.Limit, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMovieFilter(ctx context.Context, obj interface{}) (model.MovieFilter, error) {
 	var it model.MovieFilter
 	var asMap = obj.(map[string]interface{})
@@ -12187,6 +12603,90 @@ func (ec *executionContext) unmarshalInputNewUser(ctx context.Context, obj inter
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
 			it.Role, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputPagedScheduleQuery(ctx context.Context, obj interface{}) (model.PagedScheduleQuery, error) {
+	var it model.PagedScheduleQuery
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "time":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("time"))
+			it.Time, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "status":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("status"))
+			it.Status, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "marker_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("marker_id"))
+			it.MarkerID, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "label":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("label"))
+			it.Label, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "search":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("search"))
+			it.Search, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "from":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+			it.From, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "to":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to"))
+			it.To, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "cursor":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cursor"))
+			it.Cursor, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "limit":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("limit"))
+			it.Limit, err = ec.unmarshalOInt2ᚖint(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -13340,6 +13840,35 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 	return out
 }
 
+var markerPageImplementors = []string{"MarkerPage"}
+
+func (ec *executionContext) _MarkerPage(ctx context.Context, sel ast.SelectionSet, obj *model.MarkerPage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, markerPageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MarkerPage")
+		case "items":
+			out.Values[i] = ec._MarkerPage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "next_cursor":
+			out.Values[i] = ec._MarkerPage_next_cursor(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var markerTypeImplementors = []string{"MarkerType"}
 
 func (ec *executionContext) _MarkerType(ctx context.Context, sel ast.SelectionSet, obj *model.MarkerType) graphql.Marshaler {
@@ -14175,6 +14704,34 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "viewportmarkers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_viewportmarkers(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pagedschedules":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pagedschedules(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
@@ -14349,6 +14906,35 @@ func (ec *executionContext) _Schedule(ctx context.Context, sel ast.SelectionSet,
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var schedulePageImplementors = []string{"SchedulePage"}
+
+func (ec *executionContext) _SchedulePage(ctx context.Context, sel ast.SelectionSet, obj *model.SchedulePage) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, schedulePageImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SchedulePage")
+		case "items":
+			out.Values[i] = ec._SchedulePage_items(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "next_cursor":
+			out.Values[i] = ec._SchedulePage_next_cursor(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -15189,6 +15775,20 @@ func (ec *executionContext) marshalNMarker2ᚖmapmarkerᚋbackendᚋgraphᚋmode
 	return ec._Marker(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNMarkerPage2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerPage(ctx context.Context, sel ast.SelectionSet, v model.MarkerPage) graphql.Marshaler {
+	return ec._MarkerPage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMarkerPage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerPage(ctx context.Context, sel ast.SelectionSet, v *model.MarkerPage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MarkerPage(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNMarkerType2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerType(ctx context.Context, sel ast.SelectionSet, v model.MarkerType) graphql.Marshaler {
 	return ec._MarkerType(ctx, sel, &v)
 }
@@ -15238,6 +15838,11 @@ func (ec *executionContext) marshalNMarkerType2ᚖmapmarkerᚋbackendᚋgraphᚋ
 		return graphql.Null
 	}
 	return ec._MarkerType(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMarkerViewportQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerViewportQuery(ctx context.Context, v interface{}) (model.MarkerViewportQuery, error) {
+	res, err := ec.unmarshalInputMarkerViewportQuery(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) marshalNMetaDataOutput2mapmarkerᚋbackendᚋgraphᚋmodelᚐMetaDataOutput(ctx context.Context, sel ast.SelectionSet, v model.MetaDataOutput) graphql.Marshaler {
@@ -15389,6 +15994,11 @@ func (ec *executionContext) unmarshalNNewSchedule2mapmarkerᚋbackendᚋgraphᚋ
 
 func (ec *executionContext) unmarshalNNewUser2mapmarkerᚋbackendᚋgraphᚋmodelᚐNewUser(ctx context.Context, v interface{}) (model.NewUser, error) {
 	res, err := ec.unmarshalInputNewUser(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNPagedScheduleQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐPagedScheduleQuery(ctx context.Context, v interface{}) (model.PagedScheduleQuery, error) {
+	res, err := ec.unmarshalInputPagedScheduleQuery(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -15558,6 +16168,20 @@ func (ec *executionContext) marshalNSchedule2ᚖmapmarkerᚋbackendᚋgraphᚋmo
 		return graphql.Null
 	}
 	return ec._Schedule(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNSchedulePage2mapmarkerᚋbackendᚋgraphᚋmodelᚐSchedulePage(ctx context.Context, sel ast.SelectionSet, v model.SchedulePage) graphql.Marshaler {
+	return ec._SchedulePage(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSchedulePage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedulePage(ctx context.Context, sel ast.SelectionSet, v *model.SchedulePage) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._SchedulePage(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNScheduleStatus2ᚕᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐScheduleStatus(ctx context.Context, v interface{}) ([]*model.ScheduleStatus, error) {

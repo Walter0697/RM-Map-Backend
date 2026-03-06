@@ -103,6 +103,11 @@ type Marker struct {
 	UpdatedBy    *User       `json:"updated_by"`
 }
 
+type MarkerPage struct {
+	Items      []*Marker `json:"items"`
+	NextCursor *string   `json:"next_cursor"`
+}
+
 type MarkerType struct {
 	ID        int    `json:"id"`
 	Label     string `json:"label"`
@@ -114,6 +119,16 @@ type MarkerType struct {
 	CreatedBy *User  `json:"created_by"`
 	UpdatedAt string `json:"updated_at"`
 	UpdatedBy *User  `json:"updated_by"`
+}
+
+type MarkerViewportQuery struct {
+	West   float64 `json:"west"`
+	South  float64 `json:"south"`
+	East   float64 `json:"east"`
+	North  float64 `json:"north"`
+	Zoom   *int    `json:"zoom"`
+	Cursor *string `json:"cursor"`
+	Limit  *int    `json:"limit"`
 }
 
 type MetaDataOutput struct {
@@ -226,6 +241,18 @@ type NewUser struct {
 	Role     string `json:"role"`
 }
 
+type PagedScheduleQuery struct {
+	Time     string  `json:"time"`
+	Status   *string `json:"status"`
+	MarkerID *int    `json:"marker_id"`
+	Label    *string `json:"label"`
+	Search   *string `json:"search"`
+	From     *string `json:"from"`
+	To       *string `json:"to"`
+	Cursor   *string `json:"cursor"`
+	Limit    *int    `json:"limit"`
+}
+
 type Pin struct {
 	ID           int    `json:"id"`
 	Label        string `json:"label"`
@@ -296,6 +323,11 @@ type Schedule struct {
 	CreatedBy    *User   `json:"created_by"`
 	UpdatedAt    string  `json:"updated_at"`
 	UpdatedBy    *User   `json:"updated_by"`
+}
+
+type SchedulePage struct {
+	Items      []*Schedule `json:"items"`
+	NextCursor *string     `json:"next_cursor"`
 }
 
 type ScheduleStatus struct {

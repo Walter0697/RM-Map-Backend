@@ -1381,6 +1381,94 @@ func (r *queryResolver) Schedules(ctx context.Context, params model.CurrentTime)
 	return result, nil
 }
 
+func (r *queryResolver) Viewportmarkers(ctx context.Context, params model.MarkerViewportQuery) (*model.MarkerPage, error) {
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil || utils.RecordNotFound(err) {
+			return &model.MarkerPage{Items: []*model.Marker{}, NextCursor: nil}, nil
+		}
+		return nil, err
+	}
+
+	requestedField := utils.GetTopPreloads(ctx)
+	page, err := service.GetViewportMarkersPage(service.MarkerViewportFilter{
+		West:   params.West,
+		South:  params.South,
+		East:   params.East,
+		North:  params.North,
+		Zoom:   params.Zoom,
+		Cursor: params.Cursor,
+		Limit:  params.Limit,
+	}, requestedField, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*model.Marker, 0, len(page.Items))
+	for _, marker := range page.Items {
+		item := helper.ConvertMarker(marker)
+		items = append(items, &item)
+	}
+
+	return &model.MarkerPage{
+		Items:      items,
+		NextCursor: page.NextCursor,
+	}, nil
+}
+
+func (r *queryResolver) Pagedschedules(ctx context.Context, params model.PagedScheduleQuery) (*model.SchedulePage, error) {
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil || utils.RecordNotFound(err) {
+			return &model.SchedulePage{Items: []*model.Schedule{}, NextCursor: nil}, nil
+		}
+		return nil, err
+	}
+
+	requestedField := utils.GetTopPreloads(ctx)
+	page, err := service.GetPagedSchedules(service.PagedScheduleFilter{
+		Time:     params.Time,
+		Status:   params.Status,
+		MarkerID: params.MarkerID,
+		Label:    params.Label,
+		Search:   params.Search,
+		From:     params.From,
+		To:       params.To,
+		Cursor:   params.Cursor,
+		Limit:    params.Limit,
+	}, requestedField, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	items := make([]*model.Schedule, 0, len(page.Items))
+	for _, schedule := range page.Items {
+		item := helper.ConvertSchedule(schedule)
+		items = append(items, &item)
+	}
+
+	return &model.SchedulePage{
+		Items:      items,
+		NextCursor: page.NextCursor,
+	}, nil
+}
+
 func (r *queryResolver) Movies(ctx context.Context) ([]*model.Movie, error) {
 	// USER
 	// get movies

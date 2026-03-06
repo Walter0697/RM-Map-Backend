@@ -90,6 +90,23 @@ func TestParseIntegrationListQuery(t *testing.T) {
 	values := url.Values{}
 	values.Set("limit", "25")
 	values.Set("offset", "10")
+	values.Set("cursor", "123")
+	values.Set("sort_by", "label")
+	values.Set("order", "desc")
+	values.Set("status", "active")
+
+	_, err := parseIntegrationListQuery(values, map[string]string{
+		"label": "label",
+	}, "label", []string{"status"})
+	if err == nil {
+		t.Fatalf("expected parseIntegrationListQuery to reject cursor with offset")
+	}
+}
+
+func TestParseIntegrationListQueryCursor(t *testing.T) {
+	values := url.Values{}
+	values.Set("limit", "25")
+	values.Set("cursor", "123")
 	values.Set("sort_by", "label")
 	values.Set("order", "desc")
 	values.Set("status", "active")
@@ -101,11 +118,21 @@ func TestParseIntegrationListQuery(t *testing.T) {
 		t.Fatalf("parseIntegrationListQuery returned error: %v", err)
 	}
 
-	if query.Limit != 25 || query.Offset != 10 || query.SortBy != "label" || query.Order != "desc" {
+	if query.Limit != 25 || query.Cursor != 123 || query.SortBy != "label" || query.Order != "desc" {
 		t.Fatalf("unexpected parsed query: %+v", query)
 	}
 	if query.Filters["status"] != "active" {
 		t.Fatalf("expected status filter to be active, got %q", query.Filters["status"])
+	}
+}
+
+func TestParseIntegrationListQueryInvalidCursor(t *testing.T) {
+	values := url.Values{}
+	values.Set("cursor", "abc")
+
+	_, err := parseIntegrationListQuery(values, map[string]string{"label": "label"}, "label", []string{"status"})
+	if err == nil {
+		t.Fatalf("expected error for invalid cursor")
 	}
 }
 

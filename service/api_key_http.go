@@ -98,6 +98,15 @@ type integrationUpdateMarkerRequest struct {
 	Price            *string `json:"price"`
 }
 
+type integrationCreateMarkerOutcomeRequest struct {
+	Link           string  `json:"link"`
+	Status         string  `json:"status"`
+	MarkerID       *uint   `json:"markerId"`
+	ExternalRunID  *string `json:"externalRunId"`
+	FailureReason  *string `json:"failureReason"`
+	FailureMessage *string `json:"failureMessage"`
+}
+
 type integrationCreateScheduleRequest struct {
 	Label        string `json:"label"`
 	Description  string `json:"description"`
@@ -173,6 +182,17 @@ type integrationMarkerResponse struct {
 	RemovableWithSameAPIKey bool   `json:"removable_with_same_api_key"`
 }
 
+type integrationMarkerOutcomeResponse struct {
+	ID             uint      `json:"id"`
+	Link           string    `json:"link"`
+	Status         string    `json:"status"`
+	MarkerID       *uint     `json:"markerId,omitempty"`
+	ExternalRunID  *string   `json:"externalRunId,omitempty"`
+	FailureReason  *string   `json:"failureReason,omitempty"`
+	FailureMessage *string   `json:"failureMessage,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type integrationErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -184,6 +204,7 @@ var integrationGenerateStaticMapFn = GenerateStaticMapPreviewByUsername
 var integrationGeocodeAddressFn = GeocodeStreetAddress
 var integrationAuthenticateRequestFn = authenticateIntegrationRequest
 var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
+var integrationCreateMarkerOutcomeLogFn = CreateMarkerCreationOutcomeLog
 var integrationNowFn = time.Now
 var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 	marker := &dbmodel.Marker{}
@@ -406,7 +427,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		"type":       "type",
 		"to_time":    "to_time",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "west", "south", "east", "north", "zoom"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -443,6 +464,50 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		query = query.Where("label ILIKE ? OR address ILIKE ? OR description ILIKE ?", keyword, keyword, keyword)
 	}
 
+	westRaw, hasWest := queryOption.Filters["west"]
+	southRaw, hasSouth := queryOption.Filters["south"]
+	eastRaw, hasEast := queryOption.Filters["east"]
+	northRaw, hasNorth := queryOption.Filters["north"]
+	if hasWest || hasSouth || hasEast || hasNorth {
+		if !hasWest || !hasSouth || !hasEast || !hasNorth {
+			http.Error(w, "bbox requires west,south,east,north", http.StatusBadRequest)
+			return
+		}
+
+		west, convErr := strconv.ParseFloat(westRaw, 64)
+		if convErr != nil || west < -180 || west > 180 {
+			http.Error(w, "invalid west", http.StatusBadRequest)
+			return
+		}
+		south, convErr := strconv.ParseFloat(southRaw, 64)
+		if convErr != nil || south < -90 || south > 90 {
+			http.Error(w, "invalid south", http.StatusBadRequest)
+			return
+		}
+		east, convErr := strconv.ParseFloat(eastRaw, 64)
+		if convErr != nil || east < -180 || east > 180 {
+			http.Error(w, "invalid east", http.StatusBadRequest)
+			return
+		}
+		north, convErr := strconv.ParseFloat(northRaw, 64)
+		if convErr != nil || north < -90 || north > 90 {
+			http.Error(w, "invalid north", http.StatusBadRequest)
+			return
+		}
+		if south > north {
+			http.Error(w, "south cannot be greater than north", http.StatusBadRequest)
+			return
+		}
+
+		query = query.Where("latitude >= ? AND latitude <= ?", south, north)
+		if west <= east {
+			query = query.Where("longitude >= ? AND longitude <= ?", west, east)
+		} else {
+			// Crossing the antimeridian; match either edge slice.
+			query = query.Where("(longitude >= ? OR longitude <= ?)", west, east)
+		}
+	}
+
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -450,8 +515,14 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	markers := make([]dbmodel.Marker, 0)
-	err = query.
-		Order(sortClause(queryOption, allowedSort)).
+	queryWithSort := query
+	if queryOption.Cursor > 0 {
+		queryWithSort = queryWithSort.Where("id > ?", queryOption.Cursor)
+		queryWithSort = queryWithSort.Order("id asc")
+	} else {
+		queryWithSort = queryWithSort.Order(sortClause(queryOption, allowedSort)).Order("id asc")
+	}
+	err = queryWithSort.
 		Limit(queryOption.Limit).
 		Offset(queryOption.Offset).
 		Find(&markers).Error
@@ -468,11 +539,15 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	for _, marker := range response {
 		decorated = append(decorated, buildIntegrationMarkerResponse(marker))
 	}
-	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption))
+	nextCursor := ""
+	if len(markers) == queryOption.Limit {
+		nextCursor = strconv.FormatUint(uint64(markers[len(markers)-1].ID), 10)
+	}
+	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption, nextCursor))
 }
 
 func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.markers.create", constant.APIKeyScopeMarkersWrite, "")
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.create", constant.APIKeyScopeMarkersWrite, "")
 	if !ok {
 		return
 	}
@@ -500,6 +575,10 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		RestaurantID: request.RestaurantID,
 		Price:        request.Price,
 	}
+	if err := validateCoordinates(input.Latitude, input.Longitude); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	var restaurant dbmodel.Restaurant
 	var restaurantPtr *dbmodel.Restaurant
@@ -519,6 +598,64 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
+}
+
+func IntegrationCreateMarkerOutcomeHandler(w http.ResponseWriter, r *http.Request) {
+	_, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.outcomes.create", constant.APIKeyScopeMarkersWrite, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationCreateMarkerOutcomeRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Link = strings.TrimSpace(request.Link)
+	request.Status = strings.ToLower(strings.TrimSpace(request.Status))
+	if request.Link == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_link", "link is required")
+		return
+	}
+	if !isValidMarkerOutcomeStatus(request.Status) {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_status", "status must be one of: success, failed")
+		return
+	}
+	if request.Status == dbmodel.MarkerCreationOutcomeStatusSuccess && request.MarkerID == nil && strings.TrimSpace(optionalStringValue(request.ExternalRunID)) == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_success_reference", "success status requires markerId or externalRunId")
+		return
+	}
+
+	item, err := integrationCreateMarkerOutcomeLogFn(MarkerCreationOutcomeLogCreateInput{
+		Link:           request.Link,
+		Status:         request.Status,
+		MarkerID:       request.MarkerID,
+		ExternalRunID:  request.ExternalRunID,
+		FailureReason:  request.FailureReason,
+		FailureMessage: request.FailureMessage,
+	})
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "outcome_log_persist_failed", "failed to persist marker creation outcome log")
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, integrationMarkerOutcomeResponse{
+		ID:             item.ID,
+		Link:           item.Link,
+		Status:         item.Status,
+		MarkerID:       item.MarkerID,
+		ExternalRunID:  item.ExternalRunID,
+		FailureReason:  item.FailureReason,
+		FailureMessage: item.FailureMessage,
+		CreatedAt:      item.CreatedAt,
+	})
 }
 
 func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -687,8 +824,14 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	schedules := make([]dbmodel.Schedule, 0)
-	err = query.
-		Order(sortClause(queryOption, allowedSort)).
+	queryWithSort := query
+	if queryOption.Cursor > 0 {
+		queryWithSort = queryWithSort.Where("id > ?", queryOption.Cursor)
+		queryWithSort = queryWithSort.Order("id asc")
+	} else {
+		queryWithSort = queryWithSort.Order(sortClause(queryOption, allowedSort)).Order("id asc")
+	}
+	err = queryWithSort.
 		Limit(queryOption.Limit).
 		Offset(queryOption.Offset).
 		Find(&schedules).Error
@@ -701,7 +844,11 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 	for _, item := range schedules {
 		response = append(response, helper.ConvertSchedule(item))
 	}
-	payload := integrationListResponse(response, total, queryOption)
+	nextCursor := ""
+	if len(schedules) == queryOption.Limit {
+		nextCursor = strconv.FormatUint(uint64(schedules[len(schedules)-1].ID), 10)
+	}
+	payload := integrationListResponse(response, total, queryOption, nextCursor)
 	payload["transition_analysis"] = BuildScheduleTransitionAnalysis(BuildScheduleTravelPointsFromSchedules(schedules))
 	respondJSON(w, http.StatusOK, payload)
 }
@@ -832,7 +979,7 @@ func IntegrationListStationsHandler(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(response, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(response, total, queryOption, ""))
 }
 
 func IntegrationUpdateStationHandler(w http.ResponseWriter, r *http.Request) {
@@ -977,7 +1124,7 @@ func IntegrationListSettingsPinsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
 }
 
 func IntegrationListSettingsMarkerTypesHandler(w http.ResponseWriter, r *http.Request) {
@@ -1026,7 +1173,7 @@ func IntegrationListSettingsMarkerTypesHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
 }
 
 func IntegrationListSettingsDefaultPinsHandler(w http.ResponseWriter, r *http.Request) {
@@ -1063,7 +1210,7 @@ func IntegrationListSettingsDefaultPinsHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
 }
 
 func IntegrationUpdateSettingsDefaultPinHandler(w http.ResponseWriter, r *http.Request) {
@@ -1443,6 +1590,22 @@ func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, m
 		Code:    strings.TrimSpace(code),
 		Message: strings.TrimSpace(message),
 	})
+}
+
+func isValidMarkerOutcomeStatus(status string) bool {
+	switch strings.TrimSpace(status) {
+	case dbmodel.MarkerCreationOutcomeStatusSuccess, dbmodel.MarkerCreationOutcomeStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+func optionalStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func recordStaticPreviewFailure(apiKey *dbmodel.APIKey, sourceIP string, reason string, username string) {

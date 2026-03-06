@@ -329,7 +329,7 @@ func AdminCleanupListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
 }
 
 func AdminCleanupListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
@@ -356,7 +356,7 @@ func AdminCleanupListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption))
+	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
 }
 
 func AdminCleanupDeleteMarkerHandler(w http.ResponseWriter, r *http.Request) {

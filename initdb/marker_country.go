@@ -26,13 +26,8 @@ func AppendMarkerCountryColumn() error {
 		tomtomResp, err := service.GetReverseGeocode(marker.Latitude, marker.Longitude)
 
 		if err == nil {
-			if len(tomtomResp.Addresses) != 0 {
-				marker.Country = tomtomResp.Addresses[0].Address.Country
-				marker.CountryCode = tomtomResp.Addresses[0].Address.CountryCode
-				marker.CountryPart = tomtomResp.Addresses[0].Address.LocalName
-
-				marker.Update(database.Connection)
-			}
+			marker.Country, marker.CountryCode, marker.CountryPart = service.ResolveCountryFields(tomtomResp)
+			marker.Update(database.Connection)
 		} else {
 			fmt.Println(err)
 		}
