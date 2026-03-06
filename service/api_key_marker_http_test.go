@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -281,5 +282,30 @@ func TestIntegrationNearbySearchMarkersHandlerEmptyResult(t *testing.T) {
 	}
 	if payload.Total != 0 || len(payload.Items) != 0 {
 		t.Fatalf("expected empty list response, got %+v", payload)
+	}
+}
+
+func TestIntegrationCreateMarkerHandlerRejectsZeroCoordinates(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation:  dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
+			ActorUser: dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 9}, Username: "api-bot"},
+		}, true
+	}
+
+	body := `{"label":"invalid-coords","address":"test","type":"workshop"}`
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/integration/markers", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	IntegrationCreateMarkerHandler(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if !strings.Contains(strings.ToLower(recorder.Body.String()), "invalid coordinates") {
+		t.Fatalf("expected invalid coordinates error, got %s", recorder.Body.String())
 	}
 }
