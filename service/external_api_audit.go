@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"io"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -83,7 +84,7 @@ var externalAPIHTTPClientFactory = func() *http.Client {
 var createExternalAPIAuditEventFn = CreateExternalAPIAuditEvent
 var listExternalAPIUsageSummaryFn = ListExternalAPIUsageSummary
 var listExternalAPIUsageTrendsFn = ListExternalAPIUsageTrends
-var listManagedExternalAPIProvidersFn = ListManagedExternalAPIProviders
+var listManagedExternalAPIProvidersFn = ListAvailableExternalAPIProviders
 
 func CreateExternalAPIAuditEvent(input ExternalAPIAuditWriteInput) error {
 	provider := strings.TrimSpace(input.Provider)
@@ -120,6 +121,12 @@ func CreateExternalAPIAuditEvent(input ExternalAPIAuditWriteInput) error {
 		CompletedAt: input.CompletedAt,
 	}
 	return event.Create(database.Connection)
+}
+
+func RecordExternalAPIAuditEvent(input ExternalAPIAuditWriteInput) {
+	if err := createExternalAPIAuditEventFn(input); err != nil {
+		log.Printf("[external-api-audit] write_failed provider=%s operation=%s error=%v", strings.TrimSpace(input.Provider), strings.TrimSpace(input.Operation), err)
+	}
 }
 
 func truncateAuditErrorDetail(value string) string {
@@ -493,9 +500,6 @@ func parseExternalAPIUsageFilter(query map[string]string, now time.Time) (Extern
 	}
 
 	provider := strings.TrimSpace(query["provider"])
-	if provider != "" && !IsManagedExternalAPIProvider(provider) {
-		return filter, fmt.Errorf("unsupported provider")
-	}
 
 	filter.From = from
 	filter.To = to

@@ -152,8 +152,21 @@ func classifyTravelDifficultyByDelta(deltaSeconds int, thresholds ScheduleTravel
 
 func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, destinationLat float64, destinationLon float64) (int, error) {
 	apiKey := strings.TrimSpace(config.Data.APIKEY.TomTomMap)
+	requestStarted := time.Now().UTC()
 	if apiKey == "" {
-		return 0, fmt.Errorf("tomtom api key is not configured")
+		now := time.Now().UTC()
+		err := fmt.Errorf("tomtom api key is not configured")
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
+			Provider:    ExternalAPIProviderTomTomMap,
+			Operation:   "calculate_route",
+			StatusClass: dbmodel.ExternalAPIAuditStatusError,
+			LatencyMS:   now.Sub(requestStarted).Milliseconds(),
+			RequestTime: requestStarted,
+			ErrorClass:  classifyExternalAPIErr(err),
+			ErrorDetail: err.Error(),
+			CompletedAt: &now,
+		})
+		return 0, err
 	}
 
 	baseURL := strings.TrimSpace(config.Data.ScheduleTravel.BaseURL)
@@ -178,12 +191,11 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 	query.Set("travelMode", "car")
 	u.RawQuery = query.Encode()
 
-	requestStarted := time.Now().UTC()
 	client := &http.Client{Timeout: time.Duration(timeoutMS) * time.Millisecond}
 	request, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		now := time.Now().UTC()
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -199,7 +211,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 	response, err := client.Do(request)
 	if err != nil {
 		now := time.Now().UTC()
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -217,7 +229,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 	now := time.Now().UTC()
 	statusCode := response.StatusCode
 	if err != nil {
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -233,7 +245,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
 		httpErr := fmt.Errorf("status code %d", response.StatusCode)
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -249,7 +261,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 
 	result := tomTomRouteResponse{}
 	if err := json.Unmarshal(body, &result); err != nil {
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -264,7 +276,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 	}
 	if len(result.Routes) == 0 || result.Routes[0].Summary.TravelTimeInSeconds <= 0 {
 		err := fmt.Errorf("no route result")
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    ExternalAPIProviderTomTomMap,
 			Operation:   "calculate_route",
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -278,7 +290,7 @@ func fetchTomTomTravelDurationSeconds(originLat float64, originLon float64, dest
 		return 0, err
 	}
 
-	_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+	RecordExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 		Provider:    ExternalAPIProviderTomTomMap,
 		Operation:   "calculate_route",
 		StatusClass: dbmodel.ExternalAPIAuditStatusSuccess,

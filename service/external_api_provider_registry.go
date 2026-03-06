@@ -1,6 +1,11 @@
 package service
 
-import "strings"
+import (
+	"strings"
+
+	"mapmarker/backend/database"
+	"mapmarker/backend/database/dbmodel"
+)
 
 const (
 	ExternalAPIProviderTomTomMap = "tomtom_map"
@@ -31,6 +36,41 @@ func ListManagedExternalAPIProviders() []ExternalAPIProviderMetadata {
 	return result
 }
 
+func ListAvailableExternalAPIProviders() []ExternalAPIProviderMetadata {
+	managed := ListManagedExternalAPIProviders()
+	result := make([]ExternalAPIProviderMetadata, 0, len(managed))
+	seen := make(map[string]bool, len(managed))
+	for _, item := range managed {
+		normalized := strings.TrimSpace(item.ID)
+		if normalized == "" {
+			continue
+		}
+		seen[normalized] = true
+		result = append(result, item)
+	}
+
+	discovered := make([]string, 0)
+	if err := database.Connection.Model(&dbmodel.ExternalAPIAuditEvent{}).
+		Distinct("provider").
+		Where("provider IS NOT NULL AND provider <> ''").
+		Order("provider asc").
+		Pluck("provider", &discovered).Error; err == nil {
+		for _, provider := range discovered {
+			normalized := strings.TrimSpace(provider)
+			if normalized == "" || seen[normalized] {
+				continue
+			}
+			seen[normalized] = true
+			result = append(result, ExternalAPIProviderMetadata{
+				ID:    normalized,
+				Label: ExternalAPIProviderLabel(normalized),
+			})
+		}
+	}
+
+	return result
+}
+
 func IsManagedExternalAPIProvider(provider string) bool {
 	target := strings.TrimSpace(provider)
 	if target == "" {
@@ -51,5 +91,16 @@ func ExternalAPIProviderLabel(provider string) string {
 			return item.Label
 		}
 	}
-	return target
+	if target == "" {
+		return target
+	}
+	words := strings.Split(strings.ReplaceAll(target, "-", "_"), "_")
+	for index, word := range words {
+		if word == "" {
+			continue
+		}
+		lower := strings.ToLower(word)
+		words[index] = strings.ToUpper(lower[:1]) + lower[1:]
+	}
+	return strings.Join(words, " ")
 }
