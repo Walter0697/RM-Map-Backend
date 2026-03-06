@@ -98,6 +98,15 @@ type integrationUpdateMarkerRequest struct {
 	Price            *string `json:"price"`
 }
 
+type integrationCreateMarkerOutcomeRequest struct {
+	Link           string  `json:"link"`
+	Status         string  `json:"status"`
+	MarkerID       *uint   `json:"markerId"`
+	ExternalRunID  *string `json:"externalRunId"`
+	FailureReason  *string `json:"failureReason"`
+	FailureMessage *string `json:"failureMessage"`
+}
+
 type integrationCreateScheduleRequest struct {
 	Label        string `json:"label"`
 	Description  string `json:"description"`
@@ -173,6 +182,17 @@ type integrationMarkerResponse struct {
 	RemovableWithSameAPIKey bool   `json:"removable_with_same_api_key"`
 }
 
+type integrationMarkerOutcomeResponse struct {
+	ID             uint      `json:"id"`
+	Link           string    `json:"link"`
+	Status         string    `json:"status"`
+	MarkerID       *uint     `json:"markerId,omitempty"`
+	ExternalRunID  *string   `json:"externalRunId,omitempty"`
+	FailureReason  *string   `json:"failureReason,omitempty"`
+	FailureMessage *string   `json:"failureMessage,omitempty"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
 type integrationErrorResponse struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -184,6 +204,7 @@ var integrationGenerateStaticMapFn = GenerateStaticMapPreviewByUsername
 var integrationGeocodeAddressFn = GeocodeStreetAddress
 var integrationAuthenticateRequestFn = authenticateIntegrationRequest
 var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
+var integrationCreateMarkerOutcomeLogFn = CreateMarkerCreationOutcomeLog
 var integrationNowFn = time.Now
 var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 	marker := &dbmodel.Marker{}
@@ -519,6 +540,64 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
+}
+
+func IntegrationCreateMarkerOutcomeHandler(w http.ResponseWriter, r *http.Request) {
+	_, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.outcomes.create", constant.APIKeyScopeMarkersWrite, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationCreateMarkerOutcomeRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Link = strings.TrimSpace(request.Link)
+	request.Status = strings.ToLower(strings.TrimSpace(request.Status))
+	if request.Link == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_link", "link is required")
+		return
+	}
+	if !isValidMarkerOutcomeStatus(request.Status) {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_status", "status must be one of: success, failed")
+		return
+	}
+	if request.Status == dbmodel.MarkerCreationOutcomeStatusSuccess && request.MarkerID == nil && strings.TrimSpace(optionalStringValue(request.ExternalRunID)) == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_success_reference", "success status requires markerId or externalRunId")
+		return
+	}
+
+	item, err := integrationCreateMarkerOutcomeLogFn(MarkerCreationOutcomeLogCreateInput{
+		Link:           request.Link,
+		Status:         request.Status,
+		MarkerID:       request.MarkerID,
+		ExternalRunID:  request.ExternalRunID,
+		FailureReason:  request.FailureReason,
+		FailureMessage: request.FailureMessage,
+	})
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "outcome_log_persist_failed", "failed to persist marker creation outcome log")
+		return
+	}
+
+	respondJSON(w, http.StatusCreated, integrationMarkerOutcomeResponse{
+		ID:             item.ID,
+		Link:           item.Link,
+		Status:         item.Status,
+		MarkerID:       item.MarkerID,
+		ExternalRunID:  item.ExternalRunID,
+		FailureReason:  item.FailureReason,
+		FailureMessage: item.FailureMessage,
+		CreatedAt:      item.CreatedAt,
+	})
 }
 
 func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -1441,6 +1520,22 @@ func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, m
 		Code:    strings.TrimSpace(code),
 		Message: strings.TrimSpace(message),
 	})
+}
+
+func isValidMarkerOutcomeStatus(status string) bool {
+	switch strings.TrimSpace(status) {
+	case dbmodel.MarkerCreationOutcomeStatusSuccess, dbmodel.MarkerCreationOutcomeStatusFailed:
+		return true
+	default:
+		return false
+	}
+}
+
+func optionalStringValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func recordStaticPreviewFailure(apiKey *dbmodel.APIKey, sourceIP string, reason string, username string) {
