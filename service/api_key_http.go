@@ -701,7 +701,9 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 	for _, item := range schedules {
 		response = append(response, helper.ConvertSchedule(item))
 	}
-	respondJSON(w, http.StatusOK, integrationListResponse(response, total, queryOption))
+	payload := integrationListResponse(response, total, queryOption)
+	payload["transition_analysis"] = BuildScheduleTransitionAnalysis(BuildScheduleTravelPointsFromSchedules(schedules))
+	respondJSON(w, http.StatusOK, payload)
 }
 
 func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
