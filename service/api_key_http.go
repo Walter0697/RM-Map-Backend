@@ -472,7 +472,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.markers.create", constant.APIKeyScopeMarkersWrite, "")
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.create", constant.APIKeyScopeMarkersWrite, "")
 	if !ok {
 		return
 	}
@@ -499,6 +499,10 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		EstimateTime: request.EstimateTime,
 		RestaurantID: request.RestaurantID,
 		Price:        request.Price,
+	}
+	if err := validateCoordinates(input.Latitude, input.Longitude); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	var restaurant dbmodel.Restaurant

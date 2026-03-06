@@ -63,6 +63,10 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 
 	var marker dbmodel.Marker
 
+	if err := validateCoordinates(input.Latitude, input.Longitude); err != nil {
+		return nil, err
+	}
+
 	log.Printf(
 		"marker geocode request lat=%.6f lon=%.6f relation_id=%d actor=%s",
 		input.Latitude,

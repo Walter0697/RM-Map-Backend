@@ -105,6 +105,9 @@ func StaticPreviewToBase64(input []byte) string {
 }
 
 func validateCoordinates(lat float64, lon float64) error {
+	if lat == 0 && lon == 0 {
+		return ErrInvalidCoordinates
+	}
 	if lat < -90 || lat > 90 || lon < -180 || lon > 180 {
 		return ErrInvalidCoordinates
 	}
