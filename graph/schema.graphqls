@@ -13,6 +13,38 @@ input CurrentTime {
   time: String!
 }
 
+input MarkerViewportQuery {
+  west: Float!
+  south: Float!
+  east: Float!
+  north: Float!
+  zoom: Int
+  cursor: String
+  limit: Int
+}
+
+input PagedScheduleQuery {
+  time: String!
+  status: String
+  marker_id: Int
+  label: String
+  search: String
+  from: String
+  to: String
+  cursor: String
+  limit: Int
+}
+
+type MarkerPage {
+  items: [Marker]!
+  next_cursor: String
+}
+
+type SchedulePage {
+  items: [Schedule]!
+  next_cursor: String
+}
+
 input IdModel {
   id: Int!
 }
@@ -264,6 +296,8 @@ type Query {
   countrypoints: [CountryPoint]!
   countrylocations: [CountryLocation]!
   me: String!
+  viewportmarkers(params: MarkerViewportQuery!): MarkerPage!
+  pagedschedules(params: PagedScheduleQuery!): SchedulePage!
 }
 
 input NewUser {

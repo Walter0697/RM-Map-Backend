@@ -70,6 +70,7 @@ List endpoints support:
 
 - `limit` (default `50`, max `200`)
 - `offset` (default `0`)
+- `cursor` (optional, use instead of `offset` for cursor pagination)
 - `sort_by`
 - `order` (`asc` / `desc`)
 
@@ -77,6 +78,8 @@ Endpoint-specific filters:
 
 - `GET /integration/markers`
   - `type`, `status`, `country`, `country_code`, `label`, `search`
+  - `west`, `south`, `east`, `north` (viewport bounding box, all required together)
+  - `zoom` (optional zoom hint)
 - `GET /integration/schedules`
   - `time` (`YYYY-MM-DD`), `status`, `marker_id`, `label`, `search`, `from` (`RFC3339`), `to` (`RFC3339`)
 - `GET /integration/stations`
@@ -220,6 +223,8 @@ List responses include metadata:
   "total": 0,
   "limit": 50,
   "offset": 0,
+  "cursor": 0,
+  "nextCursor": "",
   "sort_by": "label",
   "order": "asc"
 }

@@ -16,6 +16,7 @@ const (
 type integrationListQuery struct {
 	Limit   int
 	Offset  int
+	Cursor  uint
 	SortBy  string
 	Order   string
 	Filters map[string]string
@@ -56,6 +57,17 @@ func parseIntegrationListQuery(values url.Values, allowedSort map[string]string,
 		query.Offset = offset
 	}
 
+	if raw := strings.TrimSpace(values.Get("cursor")); raw != "" {
+		cursor, err := strconv.ParseUint(raw, 10, 64)
+		if err != nil || cursor == 0 {
+			return query, fmt.Errorf("invalid cursor")
+		}
+		query.Cursor = uint(cursor)
+	}
+	if query.Cursor > 0 && query.Offset > 0 {
+		return query, fmt.Errorf("cannot combine cursor and offset")
+	}
+
 	if raw := strings.ToLower(strings.TrimSpace(values.Get("order"))); raw != "" {
 		if raw != "asc" && raw != "desc" {
 			return query, fmt.Errorf("invalid order")
@@ -75,7 +87,7 @@ func parseIntegrationListQuery(values url.Values, allowedSort map[string]string,
 		allowedFilterSet[item] = struct{}{}
 	}
 	for key, rawValues := range values {
-		if key == "limit" || key == "offset" || key == "sort_by" || key == "order" {
+		if key == "limit" || key == "offset" || key == "cursor" || key == "sort_by" || key == "order" {
 			continue
 		}
 		if _, ok := allowedFilterSet[key]; !ok {
@@ -125,14 +137,16 @@ func queryContextString(query integrationListQuery) string {
 	)
 }
 
-func integrationListResponse(items interface{}, total int64, query integrationListQuery) map[string]interface{} {
+func integrationListResponse(items interface{}, total int64, query integrationListQuery, nextCursor string) map[string]interface{} {
 	return map[string]interface{}{
-		"items":   items,
-		"total":   total,
-		"limit":   query.Limit,
-		"offset":  query.Offset,
-		"sort_by": query.SortBy,
-		"order":   query.Order,
+		"items":      items,
+		"total":      total,
+		"limit":      query.Limit,
+		"offset":     query.Offset,
+		"cursor":     query.Cursor,
+		"nextCursor": nextCursor,
+		"sort_by":    query.SortBy,
+		"order":      query.Order,
 	}
 }
 
