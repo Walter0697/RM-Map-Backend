@@ -39,6 +39,7 @@ func resetIntegrationMarkerHooks() {
 		return marker.Update(database.Connection)
 	}
 	integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+	integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
 	integrationNowFn = time.Now
 }
 
@@ -140,6 +141,32 @@ func TestBuildIntegrationMarkerResponseAddsIndicator(t *testing.T) {
 	}
 	if !item.EditableWithSameAPIKey || !item.RemovableWithSameAPIKey {
 		t.Fatalf("expected editable/removable flags true")
+	}
+	if item.WebsiteIntegration == nil || item.WebsiteIntegration.FetchStatus != "no_integration" {
+		t.Fatalf("expected no_integration website payload, got %+v", item.WebsiteIntegration)
+	}
+}
+
+func TestBuildIntegrationMarkerResponseWebsitePayload(t *testing.T) {
+	item := buildIntegrationMarkerResponse(model.Marker{
+		ID:        10,
+		CreatedAt: "2026-03-03T12:30:00Z",
+		Restaurant: &model.Restaurant{
+			Source:   "openrice",
+			SourceID: "abc123",
+			Name:     "Demo Place",
+			Rating:   stringPtr(`{"like":"80","average":"10","dislike":"10"}`),
+			Website:  stringPtr("https://s.openrice.com/abc123"),
+		},
+	})
+	if item.WebsiteIntegration == nil {
+		t.Fatalf("expected website integration payload")
+	}
+	if item.WebsiteIntegration.Provider != "openrice" || item.WebsiteIntegration.ExternalID != "abc123" {
+		t.Fatalf("unexpected provider payload: %+v", item.WebsiteIntegration)
+	}
+	if item.WebsiteIntegration.Rating == nil || !strings.Contains(*item.WebsiteIntegration.Rating, "like 80") {
+		t.Fatalf("expected normalized rating, got %+v", item.WebsiteIntegration.Rating)
 	}
 }
 
@@ -308,4 +335,37 @@ func TestIntegrationCreateMarkerHandlerRejectsZeroCoordinates(t *testing.T) {
 	if !strings.Contains(strings.ToLower(recorder.Body.String()), "invalid coordinates") {
 		t.Fatalf("expected invalid coordinates error, got %s", recorder.Body.String())
 	}
+}
+
+func TestIntegrationCreateMarkerHandlerRejectsConflictingWebsiteFields(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation:  dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
+			ActorUser: dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 9}, Username: "api-bot"},
+		}, true
+	}
+
+	body := `{"label":"site","address":"test","type":"food","latitude":22.3,"longitude":114.17,"restaurant_id":12,"website_provider":"yelp","website_provider_id":"abc-id"}`
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/integration/markers", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	IntegrationCreateMarkerHandler(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	response := integrationErrorResponse{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if response.Code != "invalid_website_integration" {
+		t.Fatalf("unexpected code %s", response.Code)
+	}
+}
+
+func stringPtr(value string) *string {
+	return &value
 }

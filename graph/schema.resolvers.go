@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -14,7 +15,6 @@ import (
 	"mapmarker/backend/helper"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/service"
-	"mapmarker/backend/service/scrapper"
 	"mapmarker/backend/utils"
 	"strings"
 )
@@ -736,32 +736,18 @@ func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.Website
 	}
 
 	var output model.WebsiteScrapResult
-	if input.Source == constant.Openrice {
-		var restaurant dbmodel.Restaurant
-		restaurant.Source = constant.Openrice
-		restaurant.SourceId = input.SourceID
-		notfound := false
-		err := restaurant.GetBySourceIdAndSource(database.Connection)
+	providerID := service.NormalizeMarkerWebsiteProviderID(input.Source)
+	if _, ok := service.GetMarkerWebsiteProvider(providerID); ok {
+		restaurant, err := service.GetOrCreateRestaurantByProvider(providerID, input.SourceID)
 		if err != nil {
-			if utils.RecordNotFound(err) {
-				notfound = true
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
-
-		if notfound {
-			err := scrapper.GetDataFromOpenrice(&restaurant)
-			if err != nil {
-				return nil, err
-			}
-			if createerr := restaurant.Create(database.Connection); createerr != nil {
-				return nil, err
-			}
+		if restaurant != nil {
+			resModel := helper.ConvertRestaurant(*restaurant)
+			output.Restaurant = &resModel
 		}
-
-		resModel := helper.ConvertRestaurant(restaurant)
-		output.Restaurant = &resModel
+	} else {
+		return nil, fmt.Errorf("unsupported website provider: %s", providerID)
 	}
 
 	return &output, nil
