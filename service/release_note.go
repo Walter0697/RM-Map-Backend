@@ -7,6 +7,8 @@ import (
 	"mapmarker/backend/graph/model"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 func GetAllReleaseNote() ([]dbmodel.ReleaseNote, error) {
@@ -21,13 +23,37 @@ func GetAllReleaseNote() ([]dbmodel.ReleaseNote, error) {
 }
 
 func GetLatestReleaseNote() (*dbmodel.ReleaseNote, error) {
-	var note dbmodel.ReleaseNote
 	_ = normalizeLegacyReleaseNotePublishState()
-	if err := note.GetLatestRecord(database.Connection); err != nil {
+	notes, err := GetAllReleaseNote()
+	if err != nil {
 		return nil, err
 	}
 
-	return &note, nil
+	if len(notes) == 0 {
+		return nil, gorm.ErrRecordNotFound
+	}
+
+	latest := notes[0]
+	latestVersion := normalizeSemver(strings.TrimSpace(latest.Version))
+	for _, item := range notes[1:] {
+		currentVersion := normalizeSemver(strings.TrimSpace(item.Version))
+		switch {
+		case currentVersion != "" && latestVersion != "":
+			if compareSemver(currentVersion, latestVersion) > 0 {
+				latest = item
+				latestVersion = currentVersion
+			}
+		case currentVersion != "" && latestVersion == "":
+			latest = item
+			latestVersion = currentVersion
+		case currentVersion == "" && latestVersion == "":
+			if item.CreatedAt.After(latest.CreatedAt) {
+				latest = item
+			}
+		}
+	}
+
+	return &latest, nil
 }
 
 func GetReleaseNoteByVersion(input model.ReleaseNoteFilter) (*dbmodel.ReleaseNote, error) {
