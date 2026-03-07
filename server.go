@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -53,7 +54,7 @@ func main() {
 // if there is release note to add, add it
 // if there isn't, don't
 func prepareReleaseNote() {
-	current_version := "2.9.4"
+	current_version := constant.AppVersion
 	// notes := []string{
 	// 	"[b]Bug Fixed:",
 	// 	"Openrice scrapper removing and editing issue",
