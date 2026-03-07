@@ -1607,13 +1607,9 @@ func requestSourceIP(r *http.Request) string {
 }
 
 func currentUserFromRequest(r *http.Request) *dbmodel.User {
-	header := strings.TrimSpace(r.Header.Get("Authorization"))
+	header := normalizeAuthToken(r.Header.Get("Authorization"))
 	if header == "" {
 		return nil
-	}
-
-	if strings.HasPrefix(strings.ToLower(header), "bearer ") {
-		header = strings.TrimSpace(header[7:])
 	}
 
 	user, err := ValidateToken(header)
