@@ -359,7 +359,7 @@ func normalizeLegacyReleaseNotePublishState() error {
 		return err
 	}
 	items := []dbmodel.ReleaseNote{}
-	if err := database.Connection.Where("publish_state = ? AND published_at IS NULL", releaseNoteStateDraft).Find(&items).Error; err != nil {
+	if err := database.Connection.Where("(publish_state = '' OR publish_state IS NULL) AND published_at IS NULL").Find(&items).Error; err != nil {
 		return err
 	}
 	for _, item := range items {
