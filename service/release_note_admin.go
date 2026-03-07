@@ -586,57 +586,11 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 }
 
 func loadReleaseNoteBaselineVersion() (string, error) {
-	override := normalizeSemver(strings.TrimSpace(os.Getenv("RELEASE_NOTE_BASELINE_VERSION")))
-	if override != "" {
-		return override, nil
+	version := normalizeSemver(constant.AppVersion)
+	if version == "" {
+		return "0.0.0", nil
 	}
-
-	paths := []string{
-		"../RM-Map-Frontend/package.json",
-		"../../RM-Map-Frontend/package.json",
-		"./package.json",
-	}
-	for _, path := range paths {
-		raw, err := os.ReadFile(path)
-		if err != nil {
-			continue
-		}
-		payload := struct {
-			Version string `json:"version"`
-		}{}
-		if err := json.Unmarshal(raw, &payload); err != nil {
-			continue
-		}
-		version := normalizeSemver(payload.Version)
-		if version != "" {
-			return version, nil
-		}
-	}
-
-	if version := loadReleaseNoteBaselineFromDB(); version != "" {
-		return version, nil
-	}
-
-	return "0.0.0", nil
-}
-
-func loadReleaseNoteBaselineFromDB() string {
-	items := []dbmodel.ReleaseNote{}
-	if err := database.Connection.Select("version").Find(&items).Error; err != nil {
-		return ""
-	}
-
-	best := ""
-	for _, item := range items {
-		current := normalizeSemver(strings.TrimSpace(item.Version))
-		if current == "" {
-			continue
-		}
-		if best == "" || compareSemver(current, best) > 0 {
-			best = current
-		}
-	}
-	return best
+	return version, nil
 }
 
 func normalizeSemver(input string) string {
