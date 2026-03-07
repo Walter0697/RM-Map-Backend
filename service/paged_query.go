@@ -149,18 +149,14 @@ func GetPagedSchedules(params PagedScheduleFilter, requested []string, relation 
 		return nil, fmt.Errorf("invalid time format, expected YYYY-MM-DD")
 	}
 
-	query := database.Connection
+	query := database.Connection.
+		Preload("SelectedMarker.RestaurantInfo").
+		Preload("SelectedMovie")
 	if utils.StringInSlice("created_by", requested) {
 		query = query.Preload("CreatedBy")
 	}
 	if utils.StringInSlice("updated_by", requested) {
 		query = query.Preload("UpdatedBy")
-	}
-	if utils.StringInSlice("marker", requested) {
-		query = query.Preload("SelectedMarker.RestaurantInfo")
-	}
-	if utils.StringInSlice("movie", requested) {
-		query = query.Preload("SelectedMovie")
 	}
 
 	query = query.Model(&dbmodel.Schedule{}).
