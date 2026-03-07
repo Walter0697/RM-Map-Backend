@@ -612,7 +612,31 @@ func loadReleaseNoteBaselineVersion() (string, error) {
 			return version, nil
 		}
 	}
+
+	if version := loadReleaseNoteBaselineFromDB(); version != "" {
+		return version, nil
+	}
+
 	return "0.0.0", nil
+}
+
+func loadReleaseNoteBaselineFromDB() string {
+	items := []dbmodel.ReleaseNote{}
+	if err := database.Connection.Select("version").Find(&items).Error; err != nil {
+		return ""
+	}
+
+	best := ""
+	for _, item := range items {
+		current := normalizeSemver(strings.TrimSpace(item.Version))
+		if current == "" {
+			continue
+		}
+		if best == "" || compareSemver(current, best) > 0 {
+			best = current
+		}
+	}
+	return best
 }
 
 func normalizeSemver(input string) string {
