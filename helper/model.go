@@ -1,10 +1,12 @@
 package helper
 
 import (
+	"encoding/json"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/utils"
+	"strings"
 )
 
 func ConvertUser(user dbmodel.User) model.User {
@@ -318,8 +320,35 @@ func ConvertPinToMapPin(input dbmodel.Pin, pintype string) model.MapPin {
 func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
-	item.Notes = &input.Notes
-	item.Icon = input.Icon
+	notes := strings.TrimSpace(input.Notes)
+	notesFormat := strings.TrimSpace(strings.ToLower(input.NotesFormat))
+	if notes == "" {
+		if notesFormat == "json" {
+			content := strings.TrimSpace(input.Content)
+			if content != "" {
+				lines := strings.Split(content, "\n")
+				jsonNotes, err := json.Marshal(lines)
+				if err == nil {
+					notes = string(jsonNotes)
+				}
+			}
+		} else {
+			notes = strings.TrimSpace(input.Content)
+		}
+	}
+	item.Notes = &notes
+
+	icon := input.Icon
+	if (icon == nil || strings.TrimSpace(*icon) == "") && strings.TrimSpace(input.ImageRefs) != "" {
+		var refs []string
+		if err := json.Unmarshal([]byte(input.ImageRefs), &refs); err == nil && len(refs) > 0 {
+			first := strings.TrimSpace(refs[0])
+			if first != "" {
+				icon = &first
+			}
+		}
+	}
+	item.Icon = icon
 	createTime := utils.ConvertToOutputTime(input.CreatedAt)
 	item.Date = &createTime
 
@@ -329,7 +358,17 @@ func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 func ConvertToPreviewRelease(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
-	item.Icon = input.Icon
+	icon := input.Icon
+	if (icon == nil || strings.TrimSpace(*icon) == "") && strings.TrimSpace(input.ImageRefs) != "" {
+		var refs []string
+		if err := json.Unmarshal([]byte(input.ImageRefs), &refs); err == nil && len(refs) > 0 {
+			first := strings.TrimSpace(refs[0])
+			if first != "" {
+				icon = &first
+			}
+		}
+	}
+	item.Icon = icon
 
 	return item
 }

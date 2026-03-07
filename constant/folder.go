@@ -8,16 +8,17 @@ import (
 )
 
 const (
-	BasePath           string = "./uploads"
-	MarkerPreviewPath  string = "/markers/"
-	MovieImagePath     string = "/movies/"
-	CountryImagePath   string = "/countries/"
-	TypeIconPath       string = "/types/"
-	PinImagePath       string = "/pins/"
-	PreviewImagePath   string = "/previews/"
-	TypePinImagePath   string = "/typepins/"
-	StationMapPath     string = "/station_maps/"
-	StationMapIconPath string = "/station_map_icons/"
+	BasePath             string = "./uploads"
+	MarkerPreviewPath    string = "/markers/"
+	MovieImagePath       string = "/movies/"
+	CountryImagePath     string = "/countries/"
+	TypeIconPath         string = "/types/"
+	PinImagePath         string = "/pins/"
+	PreviewImagePath     string = "/previews/"
+	TypePinImagePath     string = "/typepins/"
+	StationMapPath       string = "/station_maps/"
+	StationMapIconPath   string = "/station_map_icons/"
+	ReleaseNoteImagePath string = "/release_notes/"
 )
 
 func GetImageLinkName(filetype string, url string) string {
