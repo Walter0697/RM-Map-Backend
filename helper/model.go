@@ -320,11 +320,23 @@ func ConvertPinToMapPin(input dbmodel.Pin, pintype string) model.MapPin {
 func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
-	content := strings.TrimSpace(input.Content)
-	if content == "" {
-		content = input.Notes
+	notes := strings.TrimSpace(input.Notes)
+	notesFormat := strings.TrimSpace(strings.ToLower(input.NotesFormat))
+	if notes == "" {
+		if notesFormat == "json" {
+			content := strings.TrimSpace(input.Content)
+			if content != "" {
+				lines := strings.Split(content, "\n")
+				jsonNotes, err := json.Marshal(lines)
+				if err == nil {
+					notes = string(jsonNotes)
+				}
+			}
+		} else {
+			notes = strings.TrimSpace(input.Content)
+		}
 	}
-	item.Notes = &content
+	item.Notes = &notes
 
 	icon := input.Icon
 	if strings.TrimSpace(input.ImageRefs) != "" {

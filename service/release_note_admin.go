@@ -25,11 +25,13 @@ import (
 )
 
 const (
-	releaseNoteStateDraft     = "draft"
-	releaseNoteStatePublished = "published"
-	releaseNoteFormatMarkdown = "markdown"
-	releaseNoteFormatHTML     = "html"
-	releaseNoteImageMaxSize   = int64(5 * 1000 * 1000)
+	releaseNoteStateDraft      = "draft"
+	releaseNoteStatePublished  = "published"
+	releaseNoteFormatMarkdown  = "markdown"
+	releaseNoteFormatHTML      = "html"
+	releaseNoteNotesFormatJSON = "json"
+	releaseNoteNotesFormatMD   = "md"
+	releaseNoteImageMaxSize    = int64(5 * 1000 * 1000)
 )
 
 var (
@@ -52,6 +54,7 @@ type adminReleaseNoteUpsertRequest struct {
 	Version       string   `json:"version"`
 	Content       string   `json:"content"`
 	ContentFormat string   `json:"content_format"`
+	NotesFormat   string   `json:"notes_format"`
 	PublishState  string   `json:"publish_state"`
 	ImageRefs     []string `json:"image_refs"`
 }
@@ -62,6 +65,7 @@ type releaseNoteResponse struct {
 	Version         string     `json:"version"`
 	Content         string     `json:"content"`
 	ContentFormat   string     `json:"content_format"`
+	NotesFormat     string     `json:"notes_format"`
 	RenderedContent string     `json:"rendered_content"`
 	PublishState    string     `json:"publish_state"`
 	PublishedAt     *time.Time `json:"published_at,omitempty"`
@@ -348,11 +352,9 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	title := strings.TrimSpace(request.Title)
 	version := normalizeSemver(strings.TrimSpace(request.Version))
 	format := strings.ToLower(strings.TrimSpace(request.ContentFormat))
+	notesFormat := strings.ToLower(strings.TrimSpace(request.NotesFormat))
 	state := strings.ToLower(strings.TrimSpace(request.PublishState))
 	content := strings.TrimSpace(request.Content)
-	if title == "" {
-		return nil, errors.New("title is required")
-	}
 	if version == "" {
 		return nil, errors.New("version is required")
 	}
@@ -368,20 +370,53 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	if state != releaseNoteStateDraft && state != releaseNoteStatePublished {
 		return nil, errors.New("publish_state must be draft or published")
 	}
+	if notesFormat == "" {
+		if existing != nil && strings.TrimSpace(existing.NotesFormat) != "" {
+			notesFormat = strings.ToLower(strings.TrimSpace(existing.NotesFormat))
+		} else {
+			notesFormat = releaseNoteNotesFormatMD
+		}
+	}
+	if notesFormat != releaseNoteNotesFormatJSON && notesFormat != releaseNoteNotesFormatMD {
+		return nil, errors.New("notes_format must be json or md")
+	}
 
 	baselineVersion, err := releaseNoteLoadBaselineVersionFn()
 	if err != nil {
 		return nil, err
 	}
-	if compareSemver(version, baselineVersion) <= 0 {
-		return nil, fmt.Errorf("version must be greater than current app version (%s)", baselineVersion)
+	existingVersion := ""
+	if existing != nil {
+		existingVersion = normalizeSemver(strings.TrimSpace(existing.Version))
+	}
+	if existing == nil || version != existingVersion {
+		if compareSemver(version, baselineVersion) <= 0 {
+			return nil, fmt.Errorf("version must be greater than current app version (%s)", baselineVersion)
+		}
+	}
+
+	contentForRender := content
+	notesRaw := content
+	if notesFormat == releaseNoteNotesFormatJSON {
+		if json.Valid([]byte(content)) {
+			contentForRender = jsonNotesToMarkdown(content)
+			notesRaw = content
+		} else {
+			lines := strings.Split(content, "\n")
+			encoded, err := json.Marshal(lines)
+			if err != nil {
+				return nil, errors.New("failed to encode notes json")
+			}
+			notesRaw = string(encoded)
+			contentForRender = content
+		}
 	}
 
 	sanitized := ""
 	if format == releaseNoteFormatHTML {
-		sanitized = sanitizeHTMLAllowlist(content)
+		sanitized = sanitizeHTMLAllowlist(contentForRender)
 	} else {
-		sanitized = renderMarkdownAsSafeHTML(content)
+		sanitized = renderMarkdownAsSafeHTML(contentForRender)
 	}
 	if strings.TrimSpace(sanitized) == "" {
 		return nil, errors.New("content is empty after sanitization")
@@ -401,19 +436,15 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	}
 	target.Title = title
 	target.Version = version
-	target.Content = content
+	target.Content = contentForRender
 	target.ContentFormat = format
+	target.NotesFormat = notesFormat
 	target.SanitizedContent = sanitized
 	target.PublishState = state
 	target.PublishedAt = publishedAt
 	target.ImageRefs = string(imageRefsRaw)
 
-	if format == releaseNoteFormatMarkdown {
-		notesJSON, _ := json.Marshal(strings.Split(content, "\n"))
-		target.Notes = string(notesJSON)
-	} else {
-		target.Notes = content
-	}
+	target.Notes = notesRaw
 	if len(imageRefs) > 0 {
 		target.Icon = &imageRefs[0]
 	} else {
@@ -462,8 +493,13 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 	}
 
 	content := input.Content
+	notesFormat := firstNonEmpty(strings.TrimSpace(input.NotesFormat), releaseNoteNotesFormatJSON)
 	if strings.TrimSpace(content) == "" {
-		content = input.Notes
+		if notesFormat == releaseNoteNotesFormatJSON {
+			content = jsonNotesToMarkdown(input.Notes)
+		} else {
+			content = input.Notes
+		}
 	}
 	rendered := input.SanitizedContent
 	if strings.TrimSpace(rendered) == "" {
@@ -485,6 +521,7 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 		Version:         input.Version,
 		Content:         content,
 		ContentFormat:   firstNonEmpty(strings.TrimSpace(input.ContentFormat), releaseNoteFormatMarkdown),
+		NotesFormat:     notesFormat,
 		RenderedContent: rendered,
 		PublishState:    state,
 		PublishedAt:     input.PublishedAt,
@@ -663,6 +700,14 @@ func notesListToMarkdown(notes []string) string {
 	return strings.Join(trimmed, "\n")
 }
 
+func jsonNotesToMarkdown(raw string) string {
+	parsed := []string{}
+	if err := json.Unmarshal([]byte(raw), &parsed); err == nil && len(parsed) > 0 {
+		return notesListToMarkdown(parsed)
+	}
+	return strings.TrimSpace(raw)
+}
+
 func sanitizeHTMLAllowlist(input string) string {
 	allowTags := map[string]bool{
 		"p": true, "br": true, "strong": true, "em": true, "u": true,
@@ -776,20 +821,27 @@ func BackfillLegacyReleaseNotes() (int, error) {
 
 	updated := 0
 	for _, item := range items {
-		if strings.TrimSpace(item.Content) != "" && strings.TrimSpace(item.ContentFormat) != "" {
+		if strings.TrimSpace(item.Content) != "" && strings.TrimSpace(item.ContentFormat) != "" && strings.TrimSpace(item.NotesFormat) != "" {
 			continue
 		}
 		item.Title = firstNonEmpty(strings.TrimSpace(item.Title), "Release "+strings.TrimSpace(item.Version))
+		legacyNotesFormat := releaseNoteNotesFormatMD
+		legacyList := []string{}
+		if strings.HasPrefix(strings.TrimSpace(item.Notes), "[") {
+			if err := json.Unmarshal([]byte(item.Notes), &legacyList); err == nil && len(legacyList) > 0 {
+				legacyNotesFormat = releaseNoteNotesFormatJSON
+			}
+		}
 		if strings.TrimSpace(item.Content) == "" {
-			if strings.HasPrefix(strings.TrimSpace(item.Notes), "[") {
-				list := []string{}
-				if err := json.Unmarshal([]byte(item.Notes), &list); err == nil && len(list) > 0 {
-					item.Content = notesListToMarkdown(list)
-				}
+			if legacyNotesFormat == releaseNoteNotesFormatJSON {
+				item.Content = notesListToMarkdown(legacyList)
+			} else {
+				item.Content = strings.TrimSpace(item.Notes)
 			}
 		}
 		item.Content = firstNonEmpty(strings.TrimSpace(item.Content), strings.TrimSpace(item.Notes))
 		item.ContentFormat = firstNonEmpty(strings.TrimSpace(item.ContentFormat), releaseNoteFormatMarkdown)
+		item.NotesFormat = firstNonEmpty(strings.TrimSpace(item.NotesFormat), legacyNotesFormat)
 		if item.ContentFormat == releaseNoteFormatHTML {
 			item.SanitizedContent = sanitizeHTMLAllowlist(item.Content)
 		} else {

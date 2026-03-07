@@ -51,6 +51,7 @@ func CreateReleaseNote(version string, note []string, icon *string) error {
 	release_note.Icon = icon
 	release_note.Title = "Release " + strings.TrimSpace(version)
 	release_note.ContentFormat = releaseNoteFormatMarkdown
+	release_note.NotesFormat = releaseNoteNotesFormatJSON
 	release_note.PublishState = releaseNoteStatePublished
 
 	combined_notes, err := json.Marshal(note)

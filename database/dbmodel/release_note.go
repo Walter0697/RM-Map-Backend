@@ -12,6 +12,7 @@ type ReleaseNote struct {
 	Title            string     `json:"title"`
 	Content          string     `json:"content" gorm:"type:text"`
 	ContentFormat    string     `json:"content_format" gorm:"index"`
+	NotesFormat      string     `json:"notes_format" gorm:"index;default:json"`
 	SanitizedContent string     `json:"sanitized_content" gorm:"type:text"`
 	PublishState     string     `json:"publish_state" gorm:"index;default:draft"`
 	PublishedAt      *time.Time `json:"published_at"`

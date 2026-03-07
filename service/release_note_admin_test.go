@@ -185,7 +185,7 @@ func TestAdminReleaseNoteCRUDHandlers(t *testing.T) {
 		return nil
 	}
 
-	updateBody := `{"title":"Release C2","version":"1.1.3","content":"updated","content_format":"html","publish_state":"published","image_refs":["/release_notes/a.png"]}`
+	updateBody := `{"title":"Release C2","version":"1.1.3","content":"updated","content_format":"html","notes_format":"md","publish_state":"published","image_refs":["/release_notes/a.png"]}`
 	updateReq := newReleaseNoteRouteRequest(http.MethodPut, "/admin/release-notes/1", "1", strings.NewReader(updateBody))
 	updateRec := httptest.NewRecorder()
 	AdminUpdateReleaseNoteHandler(updateRec, updateReq)
@@ -209,6 +209,34 @@ func TestAdminReleaseNoteCRUDHandlers(t *testing.T) {
 	}
 	if deletedID != 7 {
 		t.Fatalf("expected delete id=7, got %d", deletedID)
+	}
+}
+
+func TestBuildReleaseNoteModelAllowsEditingExistingOlderVersion(t *testing.T) {
+	releaseNoteLoadBaselineVersionFn = func() (string, error) {
+		return "2.9.5", nil
+	}
+	t.Cleanup(func() {
+		releaseNoteLoadBaselineVersionFn = loadReleaseNoteBaselineVersion
+	})
+
+	existing := &dbmodel.ReleaseNote{
+		Version:       "2.9.4",
+		ContentFormat: releaseNoteFormatMarkdown,
+		NotesFormat:   releaseNoteNotesFormatJSON,
+	}
+	updated, err := buildReleaseNoteModel(existing, adminReleaseNoteUpsertRequest{
+		Version:       "2.9.4",
+		Content:       `["[b]Bug Fixed:","Old version can be edited"]`,
+		ContentFormat: "markdown",
+		NotesFormat:   "json",
+		PublishState:  "draft",
+	})
+	if err != nil {
+		t.Fatalf("expected existing older version to be editable, got %v", err)
+	}
+	if updated.NotesFormat != releaseNoteNotesFormatJSON {
+		t.Fatalf("expected notes format json, got %s", updated.NotesFormat)
 	}
 }
 
