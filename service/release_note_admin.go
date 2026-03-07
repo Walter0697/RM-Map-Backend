@@ -456,14 +456,6 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	imageRefs := normalizeImageRefs(request.ImageRefs)
 	imageRefsRaw, _ := json.Marshal(imageRefs)
 	iconRef := strings.TrimSpace(request.IconRef)
-	if iconRef != "" {
-		if !containsString(imageRefs, iconRef) {
-			iconRef = ""
-		}
-	}
-	if iconRef == "" && len(imageRefs) > 0 {
-		iconRef = imageRefs[0]
-	}
 	publishedAt := (*time.Time)(nil)
 	if state == releaseNoteStatePublished {
 		now := releaseNoteNowFn().UTC()
@@ -536,14 +528,14 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 	if input.Icon != nil && strings.TrimSpace(*input.Icon) != "" {
 		iconRef = strings.TrimSpace(*input.Icon)
 	}
-	if iconRef == "" && len(imageRefs) > 0 {
-		iconRef = strings.TrimSpace(imageRefs[0])
-	}
 	if iconRef != "" {
-		if strings.HasPrefix(iconRef, "http://") || strings.HasPrefix(iconRef, "https://") {
+		if strings.HasPrefix(iconRef, "http://") || strings.HasPrefix(iconRef, "https://") || strings.HasPrefix(iconRef, "/") {
 			iconURL = iconRef
+			if strings.HasPrefix(iconRef, "/") {
+				iconURL = "/image" + iconRef
+			}
 		} else {
-			iconURL = "/image" + iconRef
+			iconURL = ""
 		}
 	}
 
@@ -587,15 +579,6 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 		CreatedAt:       input.CreatedAt,
 		UpdatedAt:       input.UpdatedAt,
 	}
-}
-
-func containsString(items []string, target string) bool {
-	for _, item := range items {
-		if strings.TrimSpace(item) == target {
-			return true
-		}
-	}
-	return false
 }
 
 func loadReleaseNoteBaselineVersion() (string, error) {
