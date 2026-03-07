@@ -43,7 +43,9 @@ func main() {
 		panic(err)
 	}
 
-	prepareReleaseNote()
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("RELEASE_NOTES_USE_SEED_FALLBACK")), "true") {
+		prepareReleaseNote()
+	}
 
 	startServer()
 }
@@ -122,6 +124,8 @@ func startServer() {
 	fileServer(router, "/image/station_map_icons", stationMapIconsDir)
 	countriesDir := http.Dir(filepath.Join(workDir, "uploads/countries"))
 	fileServer(router, "/image/countries", countriesDir)
+	releaseNotesDir := http.Dir(filepath.Join(workDir, "uploads/release_notes"))
+	fileServer(router, "/image/release_notes", releaseNotesDir)
 
 	// for non dynamic asset that is required when nothing is set
 	assetsDir := http.Dir(filepath.Join(workDir, "assets"))
@@ -138,6 +142,7 @@ func startServer() {
 	router.Route("/settings", func(r chi.Router) {
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
+		r.Get("/release-notes", service.SettingsListReleaseNotesHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
 	})
 	router.Route("/schedules", func(r chi.Router) {
@@ -198,6 +203,14 @@ func startServer() {
 		r.Post("/station-map-icons/{map_name}", service.AdminUploadStationMapIconHandler)
 		r.Get("/station-maps/{map_name}", service.AdminGetStationMapAssetHandler)
 		r.Post("/station-maps/{map_name}", service.AdminUploadStationMapAssetHandler)
+		r.Get("/release-notes", service.AdminListReleaseNotesHandler)
+		r.Post("/release-notes", service.AdminCreateReleaseNoteHandler)
+		r.Get("/release-notes/{id}", service.AdminGetReleaseNoteHandler)
+		r.Put("/release-notes/{id}", service.AdminUpdateReleaseNoteHandler)
+		r.Delete("/release-notes/{id}", service.AdminDeleteReleaseNoteHandler)
+		r.Post("/release-notes/{id}/publish", service.AdminPublishReleaseNoteHandler)
+		r.Post("/release-notes/{id}/unpublish", service.AdminUnpublishReleaseNoteHandler)
+		r.Post("/release-notes/images", service.AdminUploadReleaseNoteImageHandler)
 	})
 	router.Get("/station-maps/{map_name}", service.GetStationMapAssetHandler)
 	router.Handle("/query", server)
