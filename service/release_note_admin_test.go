@@ -27,18 +27,18 @@ func TestBuildReleaseNoteModelValidatesSemver(t *testing.T) {
 
 	_, err := buildReleaseNoteModel(nil, adminReleaseNoteUpsertRequest{
 		Title:         "Release",
-		Version:       "2.9.4",
+		Version:       "2.9.5",
 		Content:       "content",
 		ContentFormat: "markdown",
 		PublishState:  "draft",
 	})
-	if err == nil || !strings.Contains(err.Error(), "greater") {
-		t.Fatalf("expected semver validation error, got %v", err)
+	if err == nil || !strings.Contains(err.Error(), "match current app version") {
+		t.Fatalf("expected current-version validation error, got %v", err)
 	}
 
 	note, err := buildReleaseNoteModel(nil, adminReleaseNoteUpsertRequest{
 		Title:         "Release",
-		Version:       "2.9.5",
+		Version:       "2.9.4",
 		Content:       "# title\nline",
 		ContentFormat: "markdown",
 		PublishState:  "published",
@@ -64,7 +64,7 @@ func TestBuildReleaseNoteModelSanitizesHTML(t *testing.T) {
 
 	note, err := buildReleaseNoteModel(nil, adminReleaseNoteUpsertRequest{
 		Title:         "Release",
-		Version:       "1.0.1",
+		Version:       "1.0.0",
 		Content:       `<p>Hello</p><script>alert(1)</script><a href="javascript:bad">x</a>`,
 		ContentFormat: "html",
 		PublishState:  "draft",
@@ -109,7 +109,7 @@ func TestAdminReleaseNoteCRUDHandlers(t *testing.T) {
 	releaseNoteRequireAdminFn = func(w http.ResponseWriter, r *http.Request) *dbmodel.User {
 		return &dbmodel.User{Role: "admin"}
 	}
-	releaseNoteLoadBaselineVersionFn = func() (string, error) { return "1.0.0", nil }
+	releaseNoteLoadBaselineVersionFn = func() (string, error) { return "1.1.1", nil }
 	t.Cleanup(func() {
 		releaseNoteRequireAdminFn = requireAdmin
 		releaseNoteLoadBaselineVersionFn = loadReleaseNoteBaselineVersion

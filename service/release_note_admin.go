@@ -420,9 +420,13 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	if existing != nil {
 		existingVersion = normalizeSemver(strings.TrimSpace(existing.Version))
 	}
-	if existing == nil || version != existingVersion {
-		if compareSemver(version, baselineVersion) <= 0 {
-			return nil, fmt.Errorf("version must be greater than current app version (%s)", baselineVersion)
+	if existing == nil {
+		if compareSemver(version, baselineVersion) != 0 {
+			return nil, fmt.Errorf("new release note version must match current app version (%s)", baselineVersion)
+		}
+	} else if version != existingVersion {
+		if compareSemver(version, baselineVersion) < 0 {
+			return nil, fmt.Errorf("version must be equal to or greater than current app version (%s)", baselineVersion)
 		}
 	}
 
