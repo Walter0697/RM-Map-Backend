@@ -13,3 +13,9 @@ CREATE INDEX IF NOT EXISTS idx_release_notes_version ON release_notes (version);
 CREATE INDEX IF NOT EXISTS idx_release_notes_publish_state ON release_notes (publish_state);
 CREATE INDEX IF NOT EXISTS idx_release_notes_published_at ON release_notes (published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_release_notes_notes_format ON release_notes (notes_format);
+
+UPDATE release_notes
+SET publish_state = 'published',
+    published_at = COALESCE(published_at, created_at)
+WHERE publish_state = 'draft'
+  AND version ~ '^[0-9]+\\.[0-9]+\\.[0-9]+';

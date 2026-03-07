@@ -339,7 +339,7 @@ func ConvertToReleaseNote(input dbmodel.ReleaseNote) model.ReleaseNote {
 	item.Notes = &notes
 
 	icon := input.Icon
-	if strings.TrimSpace(input.ImageRefs) != "" {
+	if (icon == nil || strings.TrimSpace(*icon) == "") && strings.TrimSpace(input.ImageRefs) != "" {
 		var refs []string
 		if err := json.Unmarshal([]byte(input.ImageRefs), &refs); err == nil && len(refs) > 0 {
 			first := strings.TrimSpace(refs[0])
@@ -359,7 +359,7 @@ func ConvertToPreviewRelease(input dbmodel.ReleaseNote) model.ReleaseNote {
 	var item model.ReleaseNote
 	item.Version = input.Version
 	icon := input.Icon
-	if strings.TrimSpace(input.ImageRefs) != "" {
+	if (icon == nil || strings.TrimSpace(*icon) == "") && strings.TrimSpace(input.ImageRefs) != "" {
 		var refs []string
 		if err := json.Unmarshal([]byte(input.ImageRefs), &refs); err == nil && len(refs) > 0 {
 			first := strings.TrimSpace(refs[0])

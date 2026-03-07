@@ -11,6 +11,7 @@ import (
 
 func GetAllReleaseNote() ([]dbmodel.ReleaseNote, error) {
 	var notes []dbmodel.ReleaseNote
+	_ = normalizeLegacyReleaseNotePublishState()
 
 	if err := database.Connection.Where("publish_state = ? OR publish_state = ''", "published").Order("published_at desc, created_at desc").Find(&notes).Error; err != nil {
 		return notes, err
@@ -21,6 +22,7 @@ func GetAllReleaseNote() ([]dbmodel.ReleaseNote, error) {
 
 func GetLatestReleaseNote() (*dbmodel.ReleaseNote, error) {
 	var note dbmodel.ReleaseNote
+	_ = normalizeLegacyReleaseNotePublishState()
 	if err := note.GetLatestRecord(database.Connection); err != nil {
 		return nil, err
 	}

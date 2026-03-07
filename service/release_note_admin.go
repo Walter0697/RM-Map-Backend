@@ -55,6 +55,7 @@ type adminReleaseNoteUpsertRequest struct {
 	Content       string   `json:"content"`
 	ContentFormat string   `json:"content_format"`
 	NotesFormat   string   `json:"notes_format"`
+	IconRef       string   `json:"icon_ref"`
 	PublishState  string   `json:"publish_state"`
 	ImageRefs     []string `json:"image_refs"`
 }
@@ -71,6 +72,8 @@ type releaseNoteResponse struct {
 	PublishedAt     *time.Time `json:"published_at,omitempty"`
 	ImageRefs       []string   `json:"image_refs"`
 	ImageURLs       []string   `json:"image_urls"`
+	IconRef         string     `json:"icon_ref,omitempty"`
+	IconURL         string     `json:"icon_url,omitempty"`
 	CreatedAt       time.Time  `json:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at"`
 }
@@ -309,6 +312,7 @@ func getReleaseNoteByIDParam(r *http.Request) (*dbmodel.ReleaseNote, error) {
 }
 
 func listReleaseNotesForAdmin(publishedOnly bool) ([]dbmodel.ReleaseNote, error) {
+	_ = normalizeLegacyReleaseNotePublishState()
 	items := []dbmodel.ReleaseNote{}
 	query := database.Connection.Order("created_at desc")
 	if publishedOnly {
@@ -321,6 +325,7 @@ func listReleaseNotesForAdmin(publishedOnly bool) ([]dbmodel.ReleaseNote, error)
 }
 
 func listPublishedReleaseNotes() ([]dbmodel.ReleaseNote, error) {
+	_ = normalizeLegacyReleaseNotePublishState()
 	items := []dbmodel.ReleaseNote{}
 	if err := database.Connection.Where("publish_state = ?", releaseNoteStatePublished).Order("published_at desc, created_at desc").Find(&items).Error; err != nil {
 		return nil, err
@@ -346,6 +351,32 @@ func saveReleaseNoteRecord(note *dbmodel.ReleaseNote) error {
 
 func deleteReleaseNoteRecord(id uint) error {
 	return database.Connection.Delete(&dbmodel.ReleaseNote{}, id).Error
+}
+
+func normalizeLegacyReleaseNotePublishState() error {
+	baselineVersion, err := releaseNoteLoadBaselineVersionFn()
+	if err != nil {
+		return err
+	}
+	items := []dbmodel.ReleaseNote{}
+	if err := database.Connection.Where("publish_state = ? AND published_at IS NULL", releaseNoteStateDraft).Find(&items).Error; err != nil {
+		return err
+	}
+	for _, item := range items {
+		version := normalizeSemver(strings.TrimSpace(item.Version))
+		if version == "" {
+			continue
+		}
+		if compareSemver(version, baselineVersion) <= 0 {
+			item.PublishState = releaseNoteStatePublished
+			timestamp := item.CreatedAt
+			item.PublishedAt = &timestamp
+			if saveErr := database.Connection.Save(&item).Error; saveErr != nil {
+				return saveErr
+			}
+		}
+	}
+	return nil
 }
 
 func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNoteUpsertRequest) (*dbmodel.ReleaseNote, error) {
@@ -424,6 +455,15 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 
 	imageRefs := normalizeImageRefs(request.ImageRefs)
 	imageRefsRaw, _ := json.Marshal(imageRefs)
+	iconRef := strings.TrimSpace(request.IconRef)
+	if iconRef != "" {
+		if !containsString(imageRefs, iconRef) {
+			iconRef = ""
+		}
+	}
+	if iconRef == "" && len(imageRefs) > 0 {
+		iconRef = imageRefs[0]
+	}
 	publishedAt := (*time.Time)(nil)
 	if state == releaseNoteStatePublished {
 		now := releaseNoteNowFn().UTC()
@@ -443,13 +483,13 @@ func buildReleaseNoteModel(existing *dbmodel.ReleaseNote, request adminReleaseNo
 	target.PublishState = state
 	target.PublishedAt = publishedAt
 	target.ImageRefs = string(imageRefsRaw)
-
-	target.Notes = notesRaw
-	if len(imageRefs) > 0 {
-		target.Icon = &imageRefs[0]
+	if iconRef != "" {
+		target.Icon = &iconRef
 	} else {
 		target.Icon = nil
 	}
+
+	target.Notes = notesRaw
 	return target, nil
 }
 
@@ -491,6 +531,21 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 			imageURLs = append(imageURLs, "/image"+value)
 		}
 	}
+	iconRef := ""
+	iconURL := ""
+	if input.Icon != nil && strings.TrimSpace(*input.Icon) != "" {
+		iconRef = strings.TrimSpace(*input.Icon)
+	}
+	if iconRef == "" && len(imageRefs) > 0 {
+		iconRef = strings.TrimSpace(imageRefs[0])
+	}
+	if iconRef != "" {
+		if strings.HasPrefix(iconRef, "http://") || strings.HasPrefix(iconRef, "https://") {
+			iconURL = iconRef
+		} else {
+			iconURL = "/image" + iconRef
+		}
+	}
 
 	content := input.Content
 	notesFormat := firstNonEmpty(strings.TrimSpace(input.NotesFormat), releaseNoteNotesFormatJSON)
@@ -527,9 +582,20 @@ func convertReleaseNoteResponse(input dbmodel.ReleaseNote) releaseNoteResponse {
 		PublishedAt:     input.PublishedAt,
 		ImageRefs:       imageRefs,
 		ImageURLs:       imageURLs,
+		IconRef:         iconRef,
+		IconURL:         iconURL,
 		CreatedAt:       input.CreatedAt,
 		UpdatedAt:       input.UpdatedAt,
 	}
+}
+
+func containsString(items []string, target string) bool {
+	for _, item := range items {
+		if strings.TrimSpace(item) == target {
+			return true
+		}
+	}
+	return false
 }
 
 func loadReleaseNoteBaselineVersion() (string, error) {
