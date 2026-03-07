@@ -8,6 +8,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
+	"net/url"
 	"strconv"
 )
 
@@ -33,6 +34,8 @@ const (
 	GetByIdURL    string = "/3/movie/"
 )
 
+var movieDBGetRequestWithAuditFn = GetRequestWithExternalAPIAudit
+
 func getRequestLink(suffix string) string {
 	return constant.MovieDBAPI + suffix + "?api_key=" + config.Data.APIKEY.MovieDB
 }
@@ -49,7 +52,7 @@ func GetUpcoming(country *string) (*MovieResponse, error) {
 	}
 
 	var movieResp MovieResponse
-	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_upcoming", url, func(body []byte) error {
+	_, err := movieDBGetRequestWithAuditFn(ExternalAPIProviderMovieDB, "get_upcoming", url, func(body []byte) error {
 		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
 			return fmt.Errorf("decode response: %w", unmarshalErr)
 		}
@@ -69,7 +72,7 @@ func GetNowPlaying(country *string) (*MovieResponse, error) {
 	}
 
 	var movieResp MovieResponse
-	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_now_playing", url, func(body []byte) error {
+	_, err := movieDBGetRequestWithAuditFn(ExternalAPIProviderMovieDB, "get_now_playing", url, func(body []byte) error {
 		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
 			return fmt.Errorf("decode response: %w", unmarshalErr)
 		}
@@ -83,10 +86,10 @@ func GetNowPlaying(country *string) (*MovieResponse, error) {
 }
 
 func SearchByName(query string) (*MovieResponse, error) {
-	url := getRequestLink(SearchURL) + "&query=" + query
+	url := getRequestLink(SearchURL) + "&query=" + url.QueryEscape(query)
 
 	var movieResp MovieResponse
-	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "search_movie", url, func(body []byte) error {
+	_, err := movieDBGetRequestWithAuditFn(ExternalAPIProviderMovieDB, "search_movie", url, func(body []byte) error {
 		if unmarshalErr := json.Unmarshal(body, &movieResp); unmarshalErr != nil {
 			return fmt.Errorf("decode response: %w", unmarshalErr)
 		}
@@ -147,7 +150,7 @@ func FetchMovieByRid(movie_rid int64) (*dbmodel.Movie, error) {
 	url := getByIdRequest(movie_rid)
 
 	var movieDetail MovieDetail
-	_, err := GetRequestWithExternalAPIAudit(ExternalAPIProviderMovieDB, "get_movie_by_id", url, func(body []byte) error {
+	_, err := movieDBGetRequestWithAuditFn(ExternalAPIProviderMovieDB, "get_movie_by_id", url, func(body []byte) error {
 		if unmarshalErr := json.Unmarshal(body, &movieDetail); unmarshalErr != nil {
 			return fmt.Errorf("decode response: %w", unmarshalErr)
 		}

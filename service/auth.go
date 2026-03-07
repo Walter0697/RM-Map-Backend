@@ -7,6 +7,7 @@ import (
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/utils"
+	"strings"
 
 	_ "github.com/shaj13/libcache/fifo"
 )
@@ -86,6 +87,11 @@ func normalLogin(username string, password string) (string, error) {
 }
 
 func ValidateToken(token string) (*dbmodel.User, error) {
+	token = normalizeAuthToken(token)
+	if token == "" {
+		return nil, nil
+	}
+
 	jwtInfo, err := utils.ParseToken(token)
 	if err != nil {
 		return nil, nil
@@ -111,6 +117,14 @@ func ValidateToken(token string) (*dbmodel.User, error) {
 	}
 
 	return &user, nil
+}
+
+func normalizeAuthToken(token string) string {
+	normalized := strings.TrimSpace(token)
+	if strings.HasPrefix(strings.ToLower(normalized), "bearer ") {
+		normalized = strings.TrimSpace(normalized[7:])
+	}
+	return normalized
 }
 
 func upsertUserAndGenerateToken(username string, defaultRole string) (string, error) {

@@ -154,12 +154,37 @@ func classifyExternalAPIErr(err error) string {
 	}
 }
 
+func writeExternalAPIAuditEvent(input ExternalAPIAuditWriteInput) {
+	if err := createExternalAPIAuditEventFn(input); err != nil {
+		time.Sleep(50 * time.Millisecond)
+		retryErr := createExternalAPIAuditEventFn(input)
+		if retryErr == nil {
+			log.Printf(
+				"external api audit write recovered after retry provider=%s operation=%s status=%s",
+				input.Provider,
+				input.Operation,
+				input.StatusClass,
+			)
+			return
+		}
+		log.Printf(
+			"external api audit write failed provider=%s operation=%s status=%s http_status=%v error=%v retry_error=%v",
+			input.Provider,
+			input.Operation,
+			input.StatusClass,
+			input.HTTPStatus,
+			err,
+			retryErr,
+		)
+	}
+}
+
 func GetRequestWithExternalAPIAudit(provider string, operation string, url string, validateBody func([]byte) error) ([]byte, error) {
 	startedAt := time.Now().UTC()
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		now := time.Now().UTC()
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		writeExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    provider,
 			Operation:   operation,
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -176,7 +201,7 @@ func GetRequestWithExternalAPIAudit(provider string, operation string, url strin
 	resp, err := client.Do(request)
 	if err != nil {
 		now := time.Now().UTC()
-		_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+		writeExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 			Provider:    provider,
 			Operation:   operation,
 			StatusClass: dbmodel.ExternalAPIAuditStatusError,
@@ -218,7 +243,7 @@ func GetRequestWithExternalAPIAudit(provider string, operation string, url strin
 		}
 	}
 
-	_ = createExternalAPIAuditEventFn(ExternalAPIAuditWriteInput{
+	writeExternalAPIAuditEvent(ExternalAPIAuditWriteInput{
 		Provider:    provider,
 		Operation:   operation,
 		StatusClass: statusClass,
