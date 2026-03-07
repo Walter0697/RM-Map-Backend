@@ -10,6 +10,7 @@ import (
 const (
 	ExternalAPIProviderTomTomMap = "tomtom_map"
 	ExternalAPIProviderMovieDB   = "movie_db"
+	ExternalAPIProviderOpenMeteo = "open_meteo"
 )
 
 type ExternalAPIProviderMetadata struct {
@@ -25,6 +26,10 @@ var managedExternalAPIProviders = []ExternalAPIProviderMetadata{
 	{
 		ID:    ExternalAPIProviderMovieDB,
 		Label: "Movie DB",
+	},
+	{
+		ID:    ExternalAPIProviderOpenMeteo,
+		Label: "Open Meteo",
 	},
 }
 
