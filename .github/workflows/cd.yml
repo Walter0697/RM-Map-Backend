@@ -27,15 +27,15 @@ jobs:
 
       - name: Validate backend version source
         run: |
-          grep -q 'current_version := ' server.go || {
-            echo "Could not find current_version in server.go" >&2
+          grep -q 'AppVersion string = ' constant/default.go || {
+            echo "Could not find AppVersion constant in constant/default.go" >&2
             exit 1
           }
 
       - name: Extract image metadata
         id: meta
         run: |
-          VERSION=$(grep -Eo 'current_version := "[^"]+"' server.go | head -n1 | sed -E 's/.*"([^"]+)"/\1/')
+          VERSION=$(grep -Eo 'AppVersion string = "[^"]+"' constant/default.go | head -n1 | sed -E 's/.*"([^"]+)"/\1/')
           if [ -z "$VERSION" ]; then
             echo "Backend version extraction failed" >&2
             exit 1
