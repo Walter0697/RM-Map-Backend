@@ -163,7 +163,7 @@ func canTransitionCalendarSyncStatus(from string, to string) bool {
 	case dbmodel.CalendarSyncStatusFailed:
 		return to == dbmodel.CalendarSyncStatusPending || to == dbmodel.CalendarSyncStatusDisconnected
 	case dbmodel.CalendarSyncStatusDisconnected:
-		return to == dbmodel.CalendarSyncStatusPending
+		return to == dbmodel.CalendarSyncStatusPending || to == dbmodel.CalendarSyncStatusFailed
 	default:
 		return false
 	}
