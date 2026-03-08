@@ -26,12 +26,9 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	if err != nil {
 		return nil, fmt.Errorf("provider %s is unavailable", providerKey)
 	}
-	connection, err := runtime.connectionSvc.GetByUserAndProvider(userID, providerKey)
+	connection, connectionOwnerUserID, err := resolvePreferredCalendarSyncConnection(userID, scheduleID, providerKey)
 	if err != nil {
-		return nil, fmt.Errorf("provider connection not found")
-	}
-	if strings.TrimSpace(connection.Status) != dbmodel.CalendarConnectionStatusActive {
-		return nil, fmt.Errorf("provider connection is not active")
+		return nil, err
 	}
 	link, err := runtime.linkRepo.UpsertLink(CalendarSyncLinkUpsertInput{
 		ScheduleID:   scheduleID,
@@ -85,9 +82,10 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 		timezoneLog = strings.TrimSpace(request.Timezone)
 	}
 	log.Printf(
-		"[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s link_id=%d external_event_id=%q start_at=%s timezone=%s title=%q",
+		"[calendar-sync-manual] schedule_id=%d user_id=%d connection_user_id=%d provider=%s action=%s link_id=%d external_event_id=%q start_at=%s timezone=%s title=%q",
 		scheduleID,
 		userID,
+		connectionOwnerUserID,
 		providerKey,
 		action,
 		link.ID,
@@ -149,6 +147,7 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 			"status":      result.SyncStatus,
 			"event_id":    result.ExternalEventID,
 			"user_id":     fmt.Sprintf("%d", userID),
+			"connection_user_id": fmt.Sprintf("%d", connectionOwnerUserID),
 		})
 		return result, nil
 	}
@@ -184,6 +183,59 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 		"schedule_id": fmt.Sprintf("%d", scheduleID),
 		"error_code":  providerCode,
 		"user_id":     fmt.Sprintf("%d", userID),
+		"connection_user_id": fmt.Sprintf("%d", connectionOwnerUserID),
 	})
 	return result, nil
+}
+
+func resolvePreferredCalendarSyncConnection(requestUserID uint, scheduleID uint, providerKey string) (*dbmodel.CalendarProviderConnection, uint, error) {
+	runtime := getCalendarSyncRuntime()
+	candidateUserIDs := []uint{requestUserID}
+	if targetUserID, ok := resolveRelationTargetUserID(requestUserID, scheduleID); ok {
+		candidateUserIDs = append([]uint{targetUserID}, candidateUserIDs...)
+	}
+
+	var fallbackConnection *dbmodel.CalendarProviderConnection
+	var fallbackOwner uint
+	for _, candidateUserID := range candidateUserIDs {
+		connection, err := runtime.connectionSvc.GetByUserAndProvider(candidateUserID, providerKey)
+		if err != nil {
+			continue
+		}
+		if strings.TrimSpace(connection.Status) == dbmodel.CalendarConnectionStatusActive {
+			return connection, candidateUserID, nil
+		}
+		if fallbackConnection == nil && candidateUserID == requestUserID {
+			fallbackConnection = connection
+			fallbackOwner = candidateUserID
+		}
+	}
+	if fallbackConnection != nil {
+		return fallbackConnection, fallbackOwner, fmt.Errorf("provider connection is not active")
+	}
+	return nil, 0, fmt.Errorf("provider connection not found")
+}
+
+func resolveRelationTargetUserID(requestUserID uint, scheduleID uint) (uint, bool) {
+	schedule := dbmodel.Schedule{}
+	schedule.ID = scheduleID
+	if err := schedule.GetById(database.Connection); err != nil {
+		return 0, false
+	}
+	relation := dbmodel.UserRelation{}
+	relation.ID = schedule.RelationId
+	if err := relation.GetRelationById(database.Connection); err != nil {
+		return 0, false
+	}
+	switch requestUserID {
+	case relation.UserOneUID:
+		if relation.UserTwoUID != 0 {
+			return relation.UserTwoUID, true
+		}
+	case relation.UserTwoUID:
+		if relation.UserOneUID != 0 {
+			return relation.UserOneUID, true
+		}
+	}
+	return 0, false
 }

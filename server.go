@@ -144,6 +144,7 @@ func startServer() {
 	router.Get("/calendar/google/connect", service.CalendarGoogleConnectHandler)
 	router.Get("/calendar/google/callback", service.CalendarGoogleCallbackHandler)
 	router.Get("/calendar/providers/status", service.CalendarProviderStatusHandler)
+	router.Post("/calendar/providers/{provider}/disconnect", service.CalendarDisconnectProviderHandler)
 	router.Get("/calendar/schedules/status", service.CalendarScheduleSyncStatusHandler)
 	router.Post("/calendar/schedules/{id}/sync-now", service.CalendarSyncNowHandler)
 	router.Post("/calendar/schedules/{id}/retry-sync", service.CalendarRetrySyncHandler)

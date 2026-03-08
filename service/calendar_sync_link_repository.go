@@ -69,10 +69,22 @@ func (repository *CalendarSyncLinkRepository) UpsertLink(input CalendarSyncLinkU
 		}
 		return link, nil
 	}
+	connectionChanged := link.ConnectionID != input.ConnectionID
 	link.ConnectionID = input.ConnectionID
+	if connectionChanged {
+		link.ExternalEventID = ""
+		link.ExternalCalendarID = ""
+		link.LastSyncedAt = nil
+		link.LastOperationKey = ""
+		link.DisconnectedAt = nil
+	}
 	if err := repository.transitionStatus(link, dbmodel.CalendarSyncStatusPending); err != nil {
 		return nil, err
 	}
+	link.LastErrorCode = ""
+	link.LastErrorMessage = ""
+	link.RetryCount = 0
+	link.NextRetryAt = nil
 	return link, nil
 }
 

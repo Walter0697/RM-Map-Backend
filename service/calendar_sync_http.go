@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -44,6 +45,56 @@ func CalendarProviderStatusHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"items":   items,
 		"metrics": calendarSyncMetricsSnapshot(),
+	})
+}
+
+func CalendarDisconnectProviderHandler(w http.ResponseWriter, r *http.Request) {
+	user := currentUserFromRequest(r)
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	providerKey := normalizeCalendarProviderKey(chi.URLParam(r, "provider"))
+	if providerKey == "" {
+		http.Error(w, "invalid provider", http.StatusBadRequest)
+		return
+	}
+
+	runtime := getCalendarSyncRuntime()
+	connection, err := runtime.connectionSvc.GetByUserAndProvider(user.ID, providerKey)
+	if err != nil {
+		http.Error(w, "provider connection not found", http.StatusNotFound)
+		return
+	}
+	if err := runtime.connectionSvc.MarkDisconnected(connection.ID); err != nil {
+		http.Error(w, "failed to disconnect provider connection", http.StatusInternalServerError)
+		return
+	}
+
+	links := make([]dbmodel.ScheduleCalendarSyncLink, 0)
+	if err := database.Connection.Where("connection_id = ?", connection.ID).Find(&links).Error; err != nil {
+		http.Error(w, "failed to load schedule links", http.StatusInternalServerError)
+		return
+	}
+	updatedCount := 0
+	for _, link := range links {
+		if err := runtime.linkRepo.MarkDisconnected(link.ID); err != nil {
+			log.Printf("[calendar-sync] disconnect_link_failed provider=%s connection_id=%d link_id=%d error=%v", providerKey, connection.ID, link.ID, err)
+			continue
+		}
+		updatedCount++
+	}
+
+	calendarAudit("provider_disconnected", map[string]string{
+		"provider": providerKey,
+		"user_id":  fmt.Sprintf("%d", user.ID),
+		"links":    fmt.Sprintf("%d", updatedCount),
+	})
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"provider":      providerKey,
+		"status":        dbmodel.CalendarConnectionStatusDisconnected,
+		"links_updated": updatedCount,
 	})
 }
 
