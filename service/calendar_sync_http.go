@@ -236,20 +236,17 @@ func CalendarSyncNowHandler(w http.ResponseWriter, r *http.Request) {
 	if providerKey == "" {
 		providerKey = CalendarProviderGoogle
 	}
-	if err := enqueueCalendarSyncNow(user.ID, scheduleID, providerKey); err != nil {
+	result, err := executeManualCalendarSync(r.Context(), user.ID, scheduleID, providerKey, "")
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	go RunCalendarSyncWorkerBatch(context.Background(), 1)
-	respondJSON(w, http.StatusAccepted, map[string]interface{}{
-		"status":   "queued",
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":   result.SyncStatus,
+		"action":   result.Action,
 		"schedule": scheduleID,
 		"provider": providerKey,
-	})
-	calendarAudit("sync_now_queued", map[string]string{
-		"provider":    providerKey,
-		"schedule_id": fmt.Sprintf("%d", scheduleID),
-		"user_id":     fmt.Sprintf("%d", user.ID),
+		"result":   result,
 	})
 }
 
@@ -267,39 +264,17 @@ func CalendarRetrySyncHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	runtime := getCalendarSyncRuntime()
-	link, err := runtime.linkRepo.GetByScheduleAndProvider(scheduleID, CalendarProviderGoogle)
+	result, err := executeManualCalendarSync(r.Context(), user.ID, scheduleID, CalendarProviderGoogle, "")
 	if err != nil {
-		http.Error(w, "sync link not found", http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	_ = runtime.linkRepo.MarkPending(link.ID)
-	action := dbmodel.CalendarSyncJobActionCreate
-	if strings.TrimSpace(link.ExternalEventID) != "" {
-		action = dbmodel.CalendarSyncJobActionUpdate
-	}
-	job, err := runtime.jobQueue.Enqueue(CalendarSyncJobEnqueueInput{
-		ScheduleID:     scheduleID,
-		LinkID:         &link.ID,
-		ProviderKey:    link.ProviderKey,
-		Action:         action,
-		IdempotencyKey: buildManualCalendarJobKey(action, scheduleID, link.ID),
-		PayloadJSON:    "{}",
-		MaxAttempts:    5,
-	})
-	if err != nil {
-		http.Error(w, "failed to enqueue retry", http.StatusInternalServerError)
-		return
-	}
-	go RunCalendarSyncWorkerBatch(context.Background(), 1)
-	respondJSON(w, http.StatusAccepted, map[string]interface{}{
-		"status": "queued",
-		"job_id": job.ID,
-	})
-	calendarAudit("sync_retry_queued", map[string]string{
-		"provider":    link.ProviderKey,
-		"schedule_id": fmt.Sprintf("%d", scheduleID),
-		"user_id":     fmt.Sprintf("%d", user.ID),
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"status":   result.SyncStatus,
+		"action":   result.Action,
+		"schedule": scheduleID,
+		"provider": CalendarProviderGoogle,
+		"result":   result,
 	})
 }
 
@@ -317,89 +292,18 @@ func CalendarDisconnectSyncHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
-	runtime := getCalendarSyncRuntime()
-	link, err := runtime.linkRepo.GetByScheduleAndProvider(scheduleID, CalendarProviderGoogle)
+	result, err := executeManualCalendarSync(r.Context(), user.ID, scheduleID, CalendarProviderGoogle, dbmodel.CalendarSyncJobActionDelete)
 	if err != nil {
-		http.Error(w, "sync link not found", http.StatusNotFound)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if strings.TrimSpace(link.ExternalEventID) != "" {
-		job, enqueueErr := runtime.jobQueue.Enqueue(CalendarSyncJobEnqueueInput{
-			ScheduleID:     scheduleID,
-			LinkID:         &link.ID,
-			ProviderKey:    link.ProviderKey,
-			Action:         dbmodel.CalendarSyncJobActionDelete,
-			IdempotencyKey: buildManualCalendarJobKey("disconnect", scheduleID, link.ID),
-			PayloadJSON:    "{}",
-			MaxAttempts:    5,
-		})
-		if enqueueErr != nil {
-			http.Error(w, "failed to enqueue disconnect", http.StatusInternalServerError)
-			return
-		}
-		go RunCalendarSyncWorkerBatch(context.Background(), 1)
-		respondJSON(w, http.StatusAccepted, map[string]interface{}{
-			"status": "queued",
-			"job_id": job.ID,
-		})
-		calendarAudit("sync_disconnect_queued", map[string]string{
-			"provider":    link.ProviderKey,
-			"schedule_id": fmt.Sprintf("%d", scheduleID),
-			"user_id":     fmt.Sprintf("%d", user.ID),
-		})
-		return
-	}
-	_ = runtime.linkRepo.MarkDisconnected(link.ID)
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"status": "disconnected",
+		"status":   result.SyncStatus,
+		"action":   result.Action,
+		"schedule": scheduleID,
+		"provider": CalendarProviderGoogle,
+		"result":   result,
 	})
-	calendarAudit("sync_disconnected", map[string]string{
-		"provider":    link.ProviderKey,
-		"schedule_id": fmt.Sprintf("%d", scheduleID),
-		"user_id":     fmt.Sprintf("%d", user.ID),
-	})
-}
-
-func enqueueCalendarSyncNow(userID uint, scheduleID uint, providerKey string) error {
-	runtime := getCalendarSyncRuntime()
-	_, err := runtime.orchestrator.ResolveAdapter(providerKey)
-	if err != nil {
-		return fmt.Errorf("provider %s is unavailable", providerKey)
-	}
-	connection, err := runtime.connectionSvc.GetByUserAndProvider(userID, providerKey)
-	if err != nil {
-		return fmt.Errorf("provider connection not found")
-	}
-	if strings.TrimSpace(connection.Status) != dbmodel.CalendarConnectionStatusActive {
-		return fmt.Errorf("provider connection is not active")
-	}
-	link, err := runtime.linkRepo.UpsertLink(CalendarSyncLinkUpsertInput{
-		ScheduleID:   scheduleID,
-		ProviderKey:  providerKey,
-		ConnectionID: connection.ID,
-	})
-	if err != nil {
-		return err
-	}
-	action := dbmodel.CalendarSyncJobActionCreate
-	if strings.TrimSpace(link.ExternalEventID) != "" {
-		action = dbmodel.CalendarSyncJobActionUpdate
-	}
-	_, err = runtime.jobQueue.Enqueue(CalendarSyncJobEnqueueInput{
-		ScheduleID:     scheduleID,
-		LinkID:         &link.ID,
-		ProviderKey:    providerKey,
-		Action:         action,
-		IdempotencyKey: buildManualCalendarJobKey(action, scheduleID, link.ID),
-		PayloadJSON:    "{}",
-		MaxAttempts:    5,
-	})
-	return err
-}
-
-func buildManualCalendarJobKey(action string, scheduleID uint, linkID uint) string {
-	// Manual sync/retry/disconnect actions should always enqueue a fresh job.
-	return buildCalendarJobKey(action, scheduleID, linkID, fmt.Sprintf("manual-%d", time.Now().UnixNano()))
 }
 
 func exchangeGoogleCalendarCode(ctx context.Context, code string) (*googleTokenResponse, error) {
