@@ -331,15 +331,35 @@ func scheduleGapSeconds(originSelectedAt *string, destinationSelectedAt *string)
 	if originSelectedAt == nil || destinationSelectedAt == nil {
 		return 0, false
 	}
-	originTime, originErr := time.Parse(time.RFC3339, strings.TrimSpace(*originSelectedAt))
+	originTime, originErr := parseScheduleSelectedAt(strings.TrimSpace(*originSelectedAt))
 	if originErr != nil {
 		return 0, false
 	}
-	destinationTime, destinationErr := time.Parse(time.RFC3339, strings.TrimSpace(*destinationSelectedAt))
+	destinationTime, destinationErr := parseScheduleSelectedAt(strings.TrimSpace(*destinationSelectedAt))
 	if destinationErr != nil {
 		return 0, false
 	}
 	return int(destinationTime.Sub(originTime).Seconds()), true
+}
+
+func parseScheduleSelectedAt(raw string) (time.Time, error) {
+	layouts := []string{
+		time.RFC3339,
+		"2006-01-02 15:04:05-07",
+		"2006-01-02 15:04:05-0700",
+		"2006-01-02 15:04:05+00",
+		"2006-01-02 15:04:05",
+	}
+	trimmed := strings.TrimSpace(raw)
+	var lastErr error
+	for _, layout := range layouts {
+		parsed, err := time.Parse(layout, trimmed)
+		if err == nil {
+			return parsed, nil
+		}
+		lastErr = err
+	}
+	return time.Time{}, lastErr
 }
 
 func parseScheduleTravelTimeoutMS(raw string) (int, error) {
