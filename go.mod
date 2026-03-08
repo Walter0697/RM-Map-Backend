@@ -13,6 +13,7 @@ require (
 	github.com/shaj13/libcache v1.0.0
 	github.com/spf13/viper v1.9.0
 	github.com/vektah/gqlparser/v2 v2.1.0
+	github.com/zsefvlol/timezonemapper v1.0.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
 	gorm.io/driver/postgres v1.1.2

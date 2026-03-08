@@ -51,6 +51,7 @@ func ResolveAuthMode() (string, error) {
 
 func ValidateAuthConfig() error {
 	applyIntegrationDefaults()
+	applyCalendarDefaults()
 	if err := ValidateAuthStateConfig(); err != nil {
 		return err
 	}
@@ -102,5 +103,22 @@ func applyIntegrationDefaults() {
 	}
 	if Data.IntegrationAuth.CleanupIntervalHours <= 0 {
 		Data.IntegrationAuth.CleanupIntervalHours = 24
+	}
+}
+
+func applyCalendarDefaults() {
+	if strings.TrimSpace(Data.CalendarGoogle.AuthEndpoint) == "" {
+		Data.CalendarGoogle.AuthEndpoint = "https://accounts.google.com/o/oauth2/v2/auth"
+	}
+	if strings.TrimSpace(Data.CalendarGoogle.TokenEndpoint) == "" {
+		Data.CalendarGoogle.TokenEndpoint = "https://oauth2.googleapis.com/token"
+	}
+	if strings.TrimSpace(Data.CalendarGoogle.APIBaseURL) == "" {
+		Data.CalendarGoogle.APIBaseURL = "https://www.googleapis.com/calendar/v3"
+	}
+	if len(Data.CalendarGoogle.Scopes) == 0 {
+		Data.CalendarGoogle.Scopes = []string{
+			"https://www.googleapis.com/auth/calendar.events",
+		}
 	}
 }

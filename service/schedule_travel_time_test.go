@@ -126,6 +126,26 @@ func TestBuildScheduleTransitionAnalysisUnavailableOnLookupFailure(t *testing.T)
 	if analysis[0].Difficulty != scheduleTravelDifficultyUnavailable {
 		t.Fatalf("expected unavailable difficulty, got %s", analysis[0].Difficulty)
 	}
+	if analysis[0].ScheduledGap == nil {
+		t.Fatalf("expected scheduled_gap_seconds to be set even when travel lookup fails")
+	}
+	if *analysis[0].ScheduledGap != 40*60 {
+		t.Fatalf("expected scheduled gap 2400, got %d", *analysis[0].ScheduledGap)
+	}
+}
+
+func TestScheduleGapSecondsSupportsLegacyTimestampFormat(t *testing.T) {
+	origin := "2026-03-13 17:08:00+00"
+	destination := "2026-03-13 23:00:00+00"
+	gap, ok := scheduleGapSeconds(&origin, &destination)
+	if !ok {
+		t.Fatalf("expected legacy format timestamps to be parsed")
+	}
+	expected := 5 * 60 * 60
+	expected += 52 * 60
+	if gap != expected {
+		t.Fatalf("expected gap %d, got %d", expected, gap)
+	}
 }
 
 func floatPtr(value float64) *float64 {

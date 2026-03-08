@@ -18,13 +18,22 @@ const (
 	SystemSettingKeyIOSShortcutInstallURL                   = "ios_shortcut_install_url"
 	SystemSettingKeyScheduleTravelEasyThresholdMinutes      = "schedule_travel_easy_threshold_minutes"
 	SystemSettingKeyScheduleTravelDifficultThresholdMinutes = "schedule_travel_difficult_threshold_minutes"
+	SystemSettingKeyCalendarSyncShortMinutes                = "calendar_sync_short_minutes"
+	SystemSettingKeyCalendarSyncMediumMinutes               = "calendar_sync_medium_minutes"
+	SystemSettingKeyCalendarSyncLongMinutes                 = "calendar_sync_long_minutes"
+	SystemSettingKeyCalendarSyncAutoMinutes                 = "calendar_sync_auto_minutes"
 
 	defaultScheduleTravelEasyThresholdMinutes      = 20
 	defaultScheduleTravelDifficultThresholdMinutes = 45
+	defaultCalendarSyncShortMinutes                = 30
+	defaultCalendarSyncMediumMinutes               = 60
+	defaultCalendarSyncLongMinutes                 = 120
+	defaultCalendarSyncAutoMinutes                 = 30
 )
 
 var ErrInvalidIOSShortcutInstallURL = errors.New("ios_shortcut_install_url must be a valid absolute http or https URL")
 var ErrInvalidScheduleTravelThreshold = errors.New("schedule travel thresholds must be positive integers and easy threshold must be less than difficult threshold")
+var ErrInvalidCalendarSyncDurations = errors.New("calendar sync durations must be positive integers")
 
 func ValidateIOSShortcutInstallURL(raw string) (string, bool) {
 	trimmed := strings.TrimSpace(raw)
@@ -188,5 +197,100 @@ func defaultScheduleTravelThresholds() ScheduleTravelThresholds {
 	return ScheduleTravelThresholds{
 		EasyThresholdMinutes:      easyThresholdMinutes,
 		DifficultThresholdMinutes: difficultThresholdMinutes,
+	}
+}
+
+type CalendarSyncDurations struct {
+	ShortMinutes  int `json:"short_minutes"`
+	MediumMinutes int `json:"medium_minutes"`
+	LongMinutes   int `json:"long_minutes"`
+	AutoMinutes   int `json:"auto_minutes"`
+}
+
+func ValidateCalendarSyncDurations(shortMinutes int, mediumMinutes int, longMinutes int, autoMinutes int) bool {
+	return shortMinutes > 0 && mediumMinutes > 0 && longMinutes > 0 && autoMinutes > 0
+}
+
+func GetCalendarSyncDurations() (CalendarSyncDurations, error) {
+	durations := defaultCalendarSyncDurations()
+	if database.Connection == nil {
+		return durations, nil
+	}
+
+	shortMinutes, foundShort, err := getSystemSettingInt(SystemSettingKeyCalendarSyncShortMinutes)
+	if err != nil {
+		return durations, err
+	}
+	if foundShort {
+		durations.ShortMinutes = shortMinutes
+	}
+
+	mediumMinutes, foundMedium, err := getSystemSettingInt(SystemSettingKeyCalendarSyncMediumMinutes)
+	if err != nil {
+		return durations, err
+	}
+	if foundMedium {
+		durations.MediumMinutes = mediumMinutes
+	}
+
+	longMinutes, foundLong, err := getSystemSettingInt(SystemSettingKeyCalendarSyncLongMinutes)
+	if err != nil {
+		return durations, err
+	}
+	if foundLong {
+		durations.LongMinutes = longMinutes
+	}
+
+	autoMinutes, foundAuto, err := getSystemSettingInt(SystemSettingKeyCalendarSyncAutoMinutes)
+	if err != nil {
+		return durations, err
+	}
+	if foundAuto {
+		durations.AutoMinutes = autoMinutes
+	}
+
+	if !ValidateCalendarSyncDurations(durations.ShortMinutes, durations.MediumMinutes, durations.LongMinutes, durations.AutoMinutes) {
+		return durations, ErrInvalidCalendarSyncDurations
+	}
+	return durations, nil
+}
+
+func SetCalendarSyncDurations(shortMinutes int, mediumMinutes int, longMinutes int, autoMinutes int) (CalendarSyncDurations, error) {
+	if !ValidateCalendarSyncDurations(shortMinutes, mediumMinutes, longMinutes, autoMinutes) {
+		return CalendarSyncDurations{}, ErrInvalidCalendarSyncDurations
+	}
+
+	err := database.Connection.Transaction(func(tx *gorm.DB) error {
+		items := []dbmodel.SystemSetting{
+			{Key: SystemSettingKeyCalendarSyncShortMinutes, Value: strconv.Itoa(shortMinutes)},
+			{Key: SystemSettingKeyCalendarSyncMediumMinutes, Value: strconv.Itoa(mediumMinutes)},
+			{Key: SystemSettingKeyCalendarSyncLongMinutes, Value: strconv.Itoa(longMinutes)},
+			{Key: SystemSettingKeyCalendarSyncAutoMinutes, Value: strconv.Itoa(autoMinutes)},
+		}
+		for _, item := range items {
+			if err := item.UpsertByKey(tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return CalendarSyncDurations{}, err
+	}
+
+	return CalendarSyncDurations{
+		ShortMinutes:  shortMinutes,
+		MediumMinutes: mediumMinutes,
+		LongMinutes:   longMinutes,
+		AutoMinutes:   autoMinutes,
+	}, nil
+}
+
+func defaultCalendarSyncDurations() CalendarSyncDurations {
+	return CalendarSyncDurations{
+		ShortMinutes:  defaultCalendarSyncShortMinutes,
+		MediumMinutes: defaultCalendarSyncMediumMinutes,
+		LongMinutes:   defaultCalendarSyncLongMinutes,
+		AutoMinutes:   defaultCalendarSyncAutoMinutes,
 	}
 }

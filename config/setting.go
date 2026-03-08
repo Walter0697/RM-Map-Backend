@@ -54,6 +54,18 @@ type OIDCSetting struct {
 	DefaultRole         string   `mapstructure:"defaultrole"`
 }
 
+type CalendarGoogleSetting struct {
+	Enable              bool     `mapstructure:"enable"`
+	ClientID            string   `mapstructure:"clientid"`
+	ClientSecret        string   `mapstructure:"clientsecret"`
+	RedirectURL         string   `mapstructure:"redirecturl"`
+	FrontendRedirectURL string   `mapstructure:"frontendredirecturl"`
+	AuthEndpoint        string   `mapstructure:"authendpoint"`
+	TokenEndpoint       string   `mapstructure:"tokenendpoint"`
+	APIBaseURL          string   `mapstructure:"apibaseurl"`
+	Scopes              []string `mapstructure:"scopes"`
+}
+
 type APIKeySetting struct {
 	MovieDB   string `mapstructure:"moviedb"`
 	TomTomMap string `mapstructure:"tomtommap"`
@@ -124,6 +136,7 @@ type Config struct {
 	App             AppEnv                 `mapstructure:"app"`
 	LDAP            LDAPSetting            `mapstructure:"ldap"`
 	OIDC            OIDCSetting            `mapstructure:"oidc"`
+	CalendarGoogle  CalendarGoogleSetting  `mapstructure:"calendargoogle"`
 	APIKEY          APIKeySetting          `mapstructure:"apikey"`
 	ScheduleTravel  ScheduleTravelSetting  `mapstructure:"scheduletravel"`
 	Weather         WeatherSetting         `mapstructure:"weather"`

@@ -57,3 +57,26 @@ func TestValidateScheduleTravelThresholds(t *testing.T) {
 		}
 	})
 }
+
+func TestValidateCalendarSyncDurations(t *testing.T) {
+	t.Run("accepts positive durations", func(t *testing.T) {
+		if !ValidateCalendarSyncDurations(30, 60, 120, 30) {
+			t.Fatalf("expected durations to be valid")
+		}
+	})
+
+	t.Run("rejects non-positive durations", func(t *testing.T) {
+		if ValidateCalendarSyncDurations(0, 60, 120, 30) {
+			t.Fatalf("expected zero short duration to be invalid")
+		}
+		if ValidateCalendarSyncDurations(30, -1, 120, 30) {
+			t.Fatalf("expected negative medium duration to be invalid")
+		}
+		if ValidateCalendarSyncDurations(30, 60, 0, 30) {
+			t.Fatalf("expected zero long duration to be invalid")
+		}
+		if ValidateCalendarSyncDurations(30, 60, 120, 0) {
+			t.Fatalf("expected zero auto duration to be invalid")
+		}
+	})
+}

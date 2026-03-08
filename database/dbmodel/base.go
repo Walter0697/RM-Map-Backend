@@ -42,6 +42,9 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&DefaultValue{})
 	database.Connection.AutoMigrate(&SystemSetting{})
 	database.Connection.AutoMigrate(&Schedule{})
+	database.Connection.AutoMigrate(&CalendarProviderConnection{})
+	database.Connection.AutoMigrate(&ScheduleCalendarSyncLink{})
+	database.Connection.AutoMigrate(&CalendarSyncJob{})
 	database.Connection.AutoMigrate(&Movie{})
 	database.Connection.AutoMigrate(&Restaurant{})
 	database.Connection.AutoMigrate(&TrainStation{})
@@ -60,6 +63,10 @@ func AutoMigration() {
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_marker_creation_outcome_logs_link_created_at ON marker_creation_outcome_logs (link, created_at)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_marker_creation_outcome_logs_marker_id_created_at ON marker_creation_outcome_logs (marker_id, created_at)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_marker_creation_outcome_logs_external_run_id_created_at ON marker_creation_outcome_logs (external_run_id, created_at)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_schedule_calendar_sync_links_external_event_id ON schedule_calendar_sync_links (external_event_id)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_schedule_calendar_sync_links_status_next_retry ON schedule_calendar_sync_links (sync_status, next_retry_at)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_due ON calendar_sync_jobs (status, next_attempt_at)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_schedule_provider ON calendar_sync_jobs (schedule_id, provider_key)")
 
 	log.Println("auto migration completed")
 }
