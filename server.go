@@ -2,8 +2,8 @@ package main
 
 import (
 	"log"
-	"mapmarker/backend/constant"
 	"mapmarker/backend/config"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph"
@@ -31,6 +31,7 @@ func main() {
 	dbmodel.AutoMigration()
 	service.StartAPIKeyCleanupWorker()
 	service.StartExternalAPIAuditCleanupWorker()
+	service.StartCalendarSyncWorker()
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -140,6 +141,13 @@ func startServer() {
 	router.Get("/auth/health", service.AuthHealthHandler)
 	router.Get("/auth/oidc/start", service.OIDCStartHandler)
 	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
+	router.Get("/calendar/google/connect", service.CalendarGoogleConnectHandler)
+	router.Get("/calendar/google/callback", service.CalendarGoogleCallbackHandler)
+	router.Get("/calendar/providers/status", service.CalendarProviderStatusHandler)
+	router.Get("/calendar/schedules/status", service.CalendarScheduleSyncStatusHandler)
+	router.Post("/calendar/schedules/{id}/sync-now", service.CalendarSyncNowHandler)
+	router.Post("/calendar/schedules/{id}/retry-sync", service.CalendarRetrySyncHandler)
+	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)

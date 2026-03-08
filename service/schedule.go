@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -116,6 +117,9 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 	if err := schedule.Update(database.Connection); err != nil {
 		return nil, err
 	}
+	if enqueueErr := enqueueCalendarSyncMutation(database.Connection, schedule.ID, dbmodel.CalendarSyncJobActionUpdate); enqueueErr != nil {
+		log.Printf("[calendar-sync] enqueue update failed schedule_id=%d error=%v", schedule.ID, enqueueErr)
+	}
 
 	return &schedule, nil
 }
@@ -124,9 +128,15 @@ func RemoveSchedule(tx *gorm.DB, input model.RemoveModel) error {
 	var schedule dbmodel.Schedule
 
 	schedule.ID = uint(input.ID)
+	if err := schedule.GetById(tx); err != nil {
+		return err
+	}
 
 	if err := schedule.RemoveById(tx); err != nil {
 		return err
+	}
+	if enqueueErr := enqueueCalendarSyncMutation(tx, schedule.ID, dbmodel.CalendarSyncJobActionDelete); enqueueErr != nil {
+		log.Printf("[calendar-sync] enqueue delete failed schedule_id=%d error=%v", schedule.ID, enqueueErr)
 	}
 
 	return nil

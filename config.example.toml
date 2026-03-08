@@ -51,6 +51,17 @@ scopes=["openid","profile","email"]
 usernameclaim="preferred_username"
 defaultrole="user"
 
+[calendargoogle]
+enable=false
+clientid=""
+clientsecret=""
+redirecturl="http://localhost:1998/calendar/google/callback"
+frontendredirecturl="http://localhost:3000/schedules"
+authendpoint="https://accounts.google.com/o/oauth2/v2/auth"
+tokenendpoint="https://oauth2.googleapis.com/token"
+apibaseurl="https://www.googleapis.com/calendar/v3"
+scopes=["https://www.googleapis.com/auth/calendar.events"]
+
 [apikey]
 moviedb=""
 tomtommap=""
