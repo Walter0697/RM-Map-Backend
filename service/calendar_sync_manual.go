@@ -61,6 +61,11 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 			Provider:   providerKey,
 		}, nil
 	}
+	if action != dbmodel.CalendarSyncJobActionDelete {
+		if err := runtime.linkRepo.MarkPending(link.ID); err != nil {
+			return nil, fmt.Errorf("mark pending failed: %w", err)
+		}
+	}
 
 	var request CalendarEventUpsertRequest
 	if action != dbmodel.CalendarSyncJobActionDelete {
