@@ -9,21 +9,29 @@ import (
 
 func buildCalendarEventRequestFromSchedule(schedule dbmodel.Schedule) CalendarEventUpsertRequest {
 	durationMinutes, durationBucket := resolveCalendarSyncDurationMinutes(schedule)
+	timezone := resolveScheduleTimezone(schedule)
+	location, timezoneErr := time.LoadLocation(timezone)
+	if timezoneErr != nil {
+		timezone = calendarDefaultTimezone
+		location = time.UTC
+	}
+	localStart := schedule.SelectedDate.In(location)
 	request := CalendarEventUpsertRequest{
 		Title:       schedule.Label,
 		Description: schedule.Description,
-		StartAt:     schedule.SelectedDate,
-		Timezone:    "UTC",
+		StartAt:     localStart,
+		Timezone:    timezone,
 	}
-	endAt := schedule.SelectedDate.UTC().Add(time.Duration(durationMinutes) * time.Minute)
+	endAt := localStart.Add(time.Duration(durationMinutes) * time.Minute)
 	request.EndAt = &endAt
 	if schedule.SelectedMarker != nil {
 		request.Location = strings.TrimSpace(schedule.SelectedMarker.Label)
 	}
 	log.Printf(
-		"[calendar-sync-duration] schedule_id=%d estimate_time=%q bucket=%s duration_minutes=%d",
+		"[calendar-sync-duration] schedule_id=%d estimate_time=%q timezone=%s bucket=%s duration_minutes=%d",
 		schedule.ID,
 		strings.TrimSpace(strings.ToLower(scheduleMarkerEstimateTime(schedule))),
+		timezone,
 		durationBucket,
 		durationMinutes,
 	)

@@ -75,12 +75,12 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	titleLog := ""
 	timezoneLog := ""
 	if action != dbmodel.CalendarSyncJobActionDelete {
-		startAtLog = request.StartAt.UTC().Format(time.RFC3339)
+		startAtLog = request.StartAt.Format(time.RFC3339)
 		titleLog = truncateCalendarLogValue(strings.TrimSpace(request.Title), 120)
 		timezoneLog = strings.TrimSpace(request.Timezone)
 	}
 	log.Printf(
-		"[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s link_id=%d external_event_id=%q start_at_utc=%s timezone=%s title=%q",
+		"[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s link_id=%d external_event_id=%q start_at=%s timezone=%s title=%q",
 		scheduleID,
 		userID,
 		providerKey,
