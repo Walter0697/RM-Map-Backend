@@ -104,6 +104,10 @@ func BuildScheduleTransitionAnalysis(points []ScheduleTravelPoint) []ScheduleTra
 			Difficulty: scheduleTravelDifficultyUnavailable,
 			Status:     scheduleTravelStatusUnavailable,
 		}
+		gapSeconds, hasGap := scheduleGapSeconds(origin.SelectedAt, destination.SelectedAt)
+		if hasGap {
+			result.ScheduledGap = &gapSeconds
+		}
 
 		if origin.Latitude == nil || origin.Longitude == nil || destination.Latitude == nil || destination.Longitude == nil {
 			output = append(output, result)
@@ -121,9 +125,7 @@ func BuildScheduleTransitionAnalysis(points []ScheduleTravelPoint) []ScheduleTra
 		}
 
 		result.DurationSecond = &durationSeconds
-		gapSeconds, hasGap := scheduleGapSeconds(origin.SelectedAt, destination.SelectedAt)
 		if hasGap {
-			result.ScheduledGap = &gapSeconds
 			deltaSeconds := gapSeconds - durationSeconds
 			result.DeltaSecond = &deltaSeconds
 			result.Difficulty = classifyTravelDifficultyByDelta(deltaSeconds, thresholds)

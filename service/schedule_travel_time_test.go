@@ -126,6 +126,12 @@ func TestBuildScheduleTransitionAnalysisUnavailableOnLookupFailure(t *testing.T)
 	if analysis[0].Difficulty != scheduleTravelDifficultyUnavailable {
 		t.Fatalf("expected unavailable difficulty, got %s", analysis[0].Difficulty)
 	}
+	if analysis[0].ScheduledGap == nil {
+		t.Fatalf("expected scheduled_gap_seconds to be set even when travel lookup fails")
+	}
+	if *analysis[0].ScheduledGap != 40*60 {
+		t.Fatalf("expected scheduled gap 2400, got %d", *analysis[0].ScheduledGap)
+	}
 }
 
 func TestScheduleGapSecondsSupportsLegacyTimestampFormat(t *testing.T) {
