@@ -13,6 +13,7 @@ require (
 	github.com/shaj13/libcache v1.0.0
 	github.com/spf13/viper v1.9.0
 	github.com/vektah/gqlparser/v2 v2.1.0
+	github.com/zsefvlol/timezonemapper v1.0.0
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
 	golang.org/x/net v0.0.0-20210916014120-12bc252f5db8
 	gorm.io/driver/postgres v1.1.2
@@ -49,7 +50,6 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/subosito/gotenv v1.2.0 // indirect
-	github.com/zsefvlol/timezonemapper v1.0.0 // indirect
 	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
 	golang.org/x/sys v0.0.0-20210823070655-63515b42dcdf // indirect
 	golang.org/x/text v0.3.7 // indirect
