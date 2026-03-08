@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"log"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"strings"
@@ -53,6 +54,7 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	}
 	if action == dbmodel.CalendarSyncJobActionDelete && strings.TrimSpace(link.ExternalEventID) == "" {
 		_ = runtime.linkRepo.MarkDisconnected(link.ID)
+		log.Printf("[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s status=disconnected reason=no_external_event_id", scheduleID, userID, providerKey, action)
 		return &calendarManualSyncResult{
 			SyncStatus: dbmodel.CalendarSyncStatusDisconnected,
 			Action:     action,
@@ -77,6 +79,26 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 			request.Location = strings.TrimSpace(schedule.SelectedMarker.Label)
 		}
 	}
+	startAtLog := ""
+	titleLog := ""
+	timezoneLog := ""
+	if action != dbmodel.CalendarSyncJobActionDelete {
+		startAtLog = request.StartAt.UTC().Format(time.RFC3339)
+		titleLog = truncateCalendarLogValue(strings.TrimSpace(request.Title), 120)
+		timezoneLog = strings.TrimSpace(request.Timezone)
+	}
+	log.Printf(
+		"[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s link_id=%d external_event_id=%q start_at_utc=%s timezone=%s title=%q",
+		scheduleID,
+		userID,
+		providerKey,
+		action,
+		link.ID,
+		strings.TrimSpace(link.ExternalEventID),
+		startAtLog,
+		timezoneLog,
+		titleLog,
+	)
 
 	var opErr error
 	result := &calendarManualSyncResult{
@@ -113,6 +135,7 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	}
 
 	if opErr == nil {
+		log.Printf("[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s status=%s external_event_id=%q", scheduleID, userID, providerKey, action, result.SyncStatus, result.ExternalEventID)
 		calendarAudit("sync_manual_completed", map[string]string{
 			"action":      action,
 			"provider":    providerKey,
@@ -138,6 +161,15 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	result.SyncStatus = dbmodel.CalendarSyncStatusFailed
 	result.LastErrorCode = providerCode
 	result.LastErrorMessage = providerMessage
+	log.Printf(
+		"[calendar-sync-manual] schedule_id=%d user_id=%d provider=%s action=%s status=failed error_code=%s error_message=%q",
+		scheduleID,
+		userID,
+		providerKey,
+		action,
+		providerCode,
+		truncateCalendarLogValue(providerMessage, 300),
+	)
 	calendarAudit("sync_manual_failed", map[string]string{
 		"action":      action,
 		"provider":    providerKey,

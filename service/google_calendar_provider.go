@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -228,12 +229,14 @@ func (adapter *GoogleCalendarAdapter) ensureAccessToken(ctx context.Context, con
 
 func (adapter *GoogleCalendarAdapter) doJSONRequest(ctx context.Context, method string, rawURL string, accessToken string, bodyPayload interface{}) ([]byte, error) {
 	var bodyReader io.Reader
+	requestBodyForLog := ""
 	if bodyPayload != nil {
 		rawBody, err := json.Marshal(bodyPayload)
 		if err != nil {
 			return nil, err
 		}
 		bodyReader = bytes.NewReader(rawBody)
+		requestBodyForLog = truncateCalendarLogValue(string(rawBody), 600)
 	}
 
 	request, err := http.NewRequestWithContext(ctx, method, rawURL, bodyReader)
@@ -245,8 +248,10 @@ func (adapter *GoogleCalendarAdapter) doJSONRequest(ctx context.Context, method 
 		request.Header.Set("Content-Type", "application/json")
 	}
 
+	start := time.Now()
 	response, err := adapter.httpClient.Do(request)
 	if err != nil {
+		log.Printf("[calendar-sync-google] method=%s url=%s status=network_error latency_ms=%d request_body=%q error=%q", method, rawURL, time.Since(start).Milliseconds(), requestBodyForLog, err.Error())
 		return nil, &CalendarProviderOperationError{
 			Code:      "provider_network_error",
 			Message:   err.Error(),
@@ -255,6 +260,8 @@ func (adapter *GoogleCalendarAdapter) doJSONRequest(ctx context.Context, method 
 	}
 	defer response.Body.Close()
 	body, _ := io.ReadAll(response.Body)
+	responseBodyForLog := truncateCalendarLogValue(strings.TrimSpace(string(body)), 600)
+	log.Printf("[calendar-sync-google] method=%s url=%s status=%d latency_ms=%d request_body=%q response_body=%q", method, rawURL, response.StatusCode, time.Since(start).Milliseconds(), requestBodyForLog, responseBodyForLog)
 	if response.StatusCode >= 200 && response.StatusCode < 300 {
 		return body, nil
 	}
@@ -278,4 +285,12 @@ func (adapter *GoogleCalendarAdapter) doJSONRequest(ctx context.Context, method 
 		Message:   fmt.Sprintf("google api request failed status=%d body=%s", response.StatusCode, strings.TrimSpace(string(body))),
 		Retryable: response.StatusCode >= 500,
 	}
+}
+
+func truncateCalendarLogValue(input string, limit int) string {
+	trimmed := strings.TrimSpace(input)
+	if len(trimmed) <= limit {
+		return trimmed
+	}
+	return trimmed[:limit] + "...(truncated)"
 }
