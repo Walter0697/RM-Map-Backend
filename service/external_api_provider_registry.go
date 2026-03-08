@@ -12,6 +12,8 @@ const (
 	ExternalAPIProviderMovieDB   = "movie_db"
 	ExternalAPIProviderOpenMeteo = "open_meteo"
 	ExternalAPIProviderWeatherUI = "weather_overlay_client"
+	ExternalAPIProviderYelp      = "yelp"
+	ExternalAPIProviderTabelog   = "tabelog"
 )
 
 type ExternalAPIProviderMetadata struct {
@@ -35,6 +37,14 @@ var managedExternalAPIProviders = []ExternalAPIProviderMetadata{
 	{
 		ID:    ExternalAPIProviderWeatherUI,
 		Label: "Weather Overlay Client",
+	},
+	{
+		ID:    ExternalAPIProviderYelp,
+		Label: "Yelp",
+	},
+	{
+		ID:    ExternalAPIProviderTabelog,
+		Label: "Tabelog",
 	},
 }
 

@@ -5,6 +5,8 @@ package graph
 
 import (
 	"context"
+	"fmt"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -14,7 +16,6 @@ import (
 	"mapmarker/backend/helper"
 	"mapmarker/backend/middleware"
 	"mapmarker/backend/service"
-	"mapmarker/backend/service/scrapper"
 	"mapmarker/backend/utils"
 	"strings"
 )
@@ -138,20 +139,66 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 
 	var restaurant dbmodel.Restaurant
 	var restaurantPtr *dbmodel.Restaurant = nil
+	requestedRestaurantID := 0
+	requestedLink := ""
+	if input.Link != nil {
+		requestedLink = strings.TrimSpace(*input.Link)
+	}
 	if input.RestaurantID != nil {
+		requestedRestaurantID = *input.RestaurantID
 		restaurant.ID = uint(*input.RestaurantID)
 		if err := restaurant.GetById(database.Connection); err != nil {
+			log.Printf(
+				"create_marker restaurant_lookup_failed requested_restaurant_id=%d actor=%s err=%v",
+				requestedRestaurantID,
+				strings.TrimSpace(user.Username),
+				err,
+			)
 			return nil, err
 		}
 		restaurantPtr = &restaurant
+		log.Printf(
+			"create_marker restaurant_lookup_success requested_restaurant_id=%d resolved_restaurant_id=%d source=%s source_id=%s actor=%s",
+			requestedRestaurantID,
+			restaurant.ID,
+			strings.TrimSpace(restaurant.Source),
+			strings.TrimSpace(restaurant.SourceId),
+			strings.TrimSpace(user.Username),
+		)
+	} else {
+		log.Printf(
+			"create_marker restaurant_lookup_skipped requested_restaurant_id=nil actor=%s link=%s",
+			strings.TrimSpace(user.Username),
+			requestedLink,
+		)
 	}
 
 	marker, err := service.CreateMarker(input, restaurantPtr, *user, *relation)
 	if err != nil {
+		log.Printf(
+			"create_marker failed requested_restaurant_id=%d actor=%s err=%v",
+			requestedRestaurantID,
+			strings.TrimSpace(user.Username),
+			err,
+		)
 		return nil, err
 	}
+	log.Printf(
+		"create_marker success marker_id=%d requested_restaurant_id=%d saved_restaurant_id=%v has_restaurant_info=%t actor=%s",
+		marker.ID,
+		requestedRestaurantID,
+		marker.RestaurantId,
+		marker.RestaurantInfo != nil,
+		strings.TrimSpace(user.Username),
+	)
 
 	output := helper.ConvertMarker(*marker)
+	log.Printf(
+		"create_marker response marker_id=%d response_has_restaurant=%t actor=%s",
+		marker.ID,
+		output.Restaurant != nil,
+		strings.TrimSpace(user.Username),
+	)
 	return &output, nil
 }
 
@@ -736,32 +783,24 @@ func (r *mutationResolver) WebsiteScrap(ctx context.Context, input model.Website
 	}
 
 	var output model.WebsiteScrapResult
-	if input.Source == constant.Openrice {
-		var restaurant dbmodel.Restaurant
-		restaurant.Source = constant.Openrice
-		restaurant.SourceId = input.SourceID
-		notfound := false
-		err := restaurant.GetBySourceIdAndSource(database.Connection)
+	providerID := service.NormalizeMarkerWebsiteProviderID(input.Source)
+	log.Printf(
+		"website_scrap request provider=%s source_id=%s actor=%s",
+		providerID,
+		strings.TrimSpace(input.SourceID),
+		strings.TrimSpace(user.Username),
+	)
+	if _, ok := service.GetMarkerWebsiteProvider(providerID); ok {
+		restaurant, err := service.GetOrCreateRestaurantByProvider(providerID, input.SourceID)
 		if err != nil {
-			if utils.RecordNotFound(err) {
-				notfound = true
-			} else {
-				return nil, err
-			}
+			return nil, err
 		}
-
-		if notfound {
-			err := scrapper.GetDataFromOpenrice(&restaurant)
-			if err != nil {
-				return nil, err
-			}
-			if createerr := restaurant.Create(database.Connection); createerr != nil {
-				return nil, err
-			}
+		if restaurant != nil {
+			resModel := helper.ConvertRestaurant(*restaurant)
+			output.Restaurant = &resModel
 		}
-
-		resModel := helper.ConvertRestaurant(restaurant)
-		output.Restaurant = &resModel
+	} else {
+		return nil, fmt.Errorf("unsupported website provider: %s", providerID)
 	}
 
 	return &output, nil
@@ -1398,7 +1437,7 @@ func (r *queryResolver) Viewportmarkers(ctx context.Context, params model.Marker
 		return nil, err
 	}
 
-	requestedField := utils.GetTopPreloads(ctx)
+	requestedField := utils.GetPreloads(ctx)
 	page, err := service.GetViewportMarkersPage(service.MarkerViewportFilter{
 		West:   params.West,
 		South:  params.South,

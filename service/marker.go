@@ -155,6 +155,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 		marker.ToTime = &toTime
 	}
 	if restaurant != nil {
+		marker.RestaurantId = &restaurant.ID
 		marker.RestaurantInfo = restaurant
 	}
 
@@ -203,11 +204,13 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 	}
 
 	if restaurant != nil {
+		marker.RestaurantId = &restaurant.ID
 		marker.RestaurantInfo = restaurant
 	}
 
 	if input.RemoveRestaurant != nil && *input.RemoveRestaurant == true {
 		marker.RestaurantId = nil
+		marker.RestaurantInfo = nil
 	}
 
 	if input.ImageLink != nil {

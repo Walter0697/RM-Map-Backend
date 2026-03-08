@@ -64,39 +64,43 @@ type apiKeyRelationOptionResponse struct {
 }
 
 type integrationCreateMarkerRequest struct {
-	Label        string  `json:"label"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	Address      string  `json:"address"`
-	Type         string  `json:"type"`
-	ImageLink    *string `json:"image_link"`
-	Link         *string `json:"link"`
-	Description  *string `json:"description"`
-	Permanent    *bool   `json:"permanent"`
-	NeedBooking  *bool   `json:"need_booking"`
-	ToTime       *string `json:"to_time"`
-	FromTime     *string `json:"from_time"`
-	EstimateTime *string `json:"estimate_time"`
-	RestaurantID *int    `json:"restaurant_id"`
-	Price        *string `json:"price"`
+	Label             string  `json:"label"`
+	Latitude          float64 `json:"latitude"`
+	Longitude         float64 `json:"longitude"`
+	Address           string  `json:"address"`
+	Type              string  `json:"type"`
+	ImageLink         *string `json:"image_link"`
+	Link              *string `json:"link"`
+	Description       *string `json:"description"`
+	Permanent         *bool   `json:"permanent"`
+	NeedBooking       *bool   `json:"need_booking"`
+	ToTime            *string `json:"to_time"`
+	FromTime          *string `json:"from_time"`
+	EstimateTime      *string `json:"estimate_time"`
+	RestaurantID      *int    `json:"restaurant_id"`
+	WebsiteProvider   *string `json:"website_provider"`
+	WebsiteProviderID *string `json:"website_provider_id"`
+	Price             *string `json:"price"`
 }
 
 type integrationUpdateMarkerRequest struct {
-	Label            *string `json:"label"`
-	Address          *string `json:"address"`
-	ImageLink        *string `json:"image_link"`
-	NoImage          bool    `json:"no_image"`
-	Link             *string `json:"link"`
-	Type             *string `json:"type"`
-	Description      *string `json:"description"`
-	Permanent        *bool   `json:"permanent"`
-	NeedBooking      *bool   `json:"need_booking"`
-	ToTime           *string `json:"to_time"`
-	FromTime         *string `json:"from_time"`
-	EstimateTime     *string `json:"estimate_time"`
-	RestaurantID     *int    `json:"restaurant_id"`
-	RemoveRestaurant *bool   `json:"remove_restaurant"`
-	Price            *string `json:"price"`
+	Label             *string `json:"label"`
+	Address           *string `json:"address"`
+	ImageLink         *string `json:"image_link"`
+	NoImage           bool    `json:"no_image"`
+	Link              *string `json:"link"`
+	Type              *string `json:"type"`
+	Description       *string `json:"description"`
+	Permanent         *bool   `json:"permanent"`
+	NeedBooking       *bool   `json:"need_booking"`
+	ToTime            *string `json:"to_time"`
+	FromTime          *string `json:"from_time"`
+	EstimateTime      *string `json:"estimate_time"`
+	RestaurantID      *int    `json:"restaurant_id"`
+	WebsiteProvider   *string `json:"website_provider"`
+	WebsiteProviderID *string `json:"website_provider_id"`
+	RemoveRestaurant  *bool   `json:"remove_restaurant"`
+	Price             *string `json:"price"`
 }
 
 type integrationCreateMarkerOutcomeRequest struct {
@@ -177,10 +181,20 @@ type integrationStaticPreviewGeocodeResponse struct {
 
 type integrationMarkerResponse struct {
 	model.Marker
-	IntegrationSource       string `json:"integration_source"`
-	CreatedAgo              string `json:"created_ago"`
-	EditableWithSameAPIKey  bool   `json:"editable_with_same_api_key"`
-	RemovableWithSameAPIKey bool   `json:"removable_with_same_api_key"`
+	IntegrationSource       string                                 `json:"integration_source"`
+	CreatedAgo              string                                 `json:"created_ago"`
+	EditableWithSameAPIKey  bool                                   `json:"editable_with_same_api_key"`
+	RemovableWithSameAPIKey bool                                   `json:"removable_with_same_api_key"`
+	WebsiteIntegration      *integrationWebsiteIntegrationResponse `json:"website_integration,omitempty"`
+}
+
+type integrationWebsiteIntegrationResponse struct {
+	Provider    string  `json:"provider"`
+	ExternalID  string  `json:"external_id"`
+	FetchStatus string  `json:"fetch_status"`
+	Name        *string `json:"name,omitempty"`
+	Rating      *string `json:"rating,omitempty"`
+	URL         *string `json:"url,omitempty"`
 }
 
 type integrationMarkerOutcomeResponse struct {
@@ -244,6 +258,7 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+var integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	operator := currentUserFromRequest(r)
@@ -466,7 +481,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	current := time.Now().AddDate(0, 0, -1)
-	query := database.Connection.Model(&dbmodel.Marker{})
+	query := database.Connection.Model(&dbmodel.Marker{}).Preload("RestaurantInfo")
 	query = query.Where("relation_id = ?", apiKey.Relation.ID)
 	query = query.Where("status != ?", constant.Arrived)
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
@@ -648,7 +663,20 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 
 	var restaurant dbmodel.Restaurant
 	var restaurantPtr *dbmodel.Restaurant
-	if request.RestaurantID != nil {
+	provider := strings.TrimSpace(optionalStringValue(request.WebsiteProvider))
+	providerID := strings.TrimSpace(optionalStringValue(request.WebsiteProviderID))
+	if request.RestaurantID != nil && (provider != "" || providerID != "") {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_website_integration", "use either restaurant_id or website_provider fields")
+		return
+	}
+	if provider != "" || providerID != "" {
+		resolvedRestaurant, resolveErr := integrationResolveRestaurantByProviderFn(provider, providerID)
+		if resolveErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_website_integration", resolveErr.Error())
+			return
+		}
+		restaurantPtr = resolvedRestaurant
+	} else if request.RestaurantID != nil {
 		restaurant.ID = uint(*request.RestaurantID)
 		if err := restaurant.GetById(database.Connection); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -763,7 +791,24 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 
 	var restaurant dbmodel.Restaurant
 	var restaurantPtr *dbmodel.Restaurant
-	if request.RestaurantID != nil {
+	provider := strings.TrimSpace(optionalStringValue(request.WebsiteProvider))
+	providerID := strings.TrimSpace(optionalStringValue(request.WebsiteProviderID))
+	if request.RestaurantID != nil && (provider != "" || providerID != "") {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_website_integration", "use either restaurant_id or website_provider fields")
+		return
+	}
+	if request.RemoveRestaurant != nil && *request.RemoveRestaurant && (provider != "" || providerID != "") {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_website_integration", "remove_restaurant cannot be combined with website_provider fields")
+		return
+	}
+	if provider != "" || providerID != "" {
+		resolvedRestaurant, resolveErr := integrationResolveRestaurantByProviderFn(provider, providerID)
+		if resolveErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_website_integration", resolveErr.Error())
+			return
+		}
+		restaurantPtr = resolvedRestaurant
+	} else if request.RestaurantID != nil {
 		restaurant.ID = uint(*request.RestaurantID)
 		if err := restaurant.GetById(database.Connection); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1618,7 +1663,68 @@ func buildIntegrationMarkerResponse(marker model.Marker) integrationMarkerRespon
 		CreatedAgo:              humanizeRFC3339Duration(marker.CreatedAt, integrationNowFn()),
 		EditableWithSameAPIKey:  true,
 		RemovableWithSameAPIKey: true,
+		WebsiteIntegration:      buildIntegrationWebsitePayload(marker),
 	}
+}
+
+func buildIntegrationWebsitePayload(marker model.Marker) *integrationWebsiteIntegrationResponse {
+	if marker.Restaurant == nil {
+		return &integrationWebsiteIntegrationResponse{FetchStatus: "no_integration"}
+	}
+
+	provider := NormalizeMarkerWebsiteProviderID(marker.Restaurant.Source)
+	externalID := strings.TrimSpace(marker.Restaurant.SourceID)
+	if provider == "" && externalID != "" {
+		// Backward-compat mapping for legacy OpenRice records with missing source.
+		provider = constant.Openrice
+	}
+
+	item := &integrationWebsiteIntegrationResponse{
+		Provider:    provider,
+		ExternalID:  externalID,
+		FetchStatus: "cached",
+	}
+
+	name := strings.TrimSpace(marker.Restaurant.Name)
+	if name != "" {
+		item.Name = &name
+	}
+	rating := normalizeIntegrationRestaurantRating(marker.Restaurant.Rating)
+	if rating != "" {
+		item.Rating = &rating
+	}
+	websiteURL := strings.TrimSpace(optionalStringValue(marker.Restaurant.Website))
+	if websiteURL != "" {
+		item.URL = &websiteURL
+	}
+
+	return item
+}
+
+func normalizeIntegrationRestaurantRating(raw *string) string {
+	value := strings.TrimSpace(optionalStringValue(raw))
+	if value == "" {
+		return ""
+	}
+	var openriceRating struct {
+		Like    string `json:"like"`
+		Average string `json:"average"`
+		Dislike string `json:"dislike"`
+	}
+	if err := json.Unmarshal([]byte(value), &openriceRating); err == nil {
+		parts := make([]string, 0, 3)
+		if strings.TrimSpace(openriceRating.Like) != "" {
+			parts = append(parts, "like "+strings.TrimSpace(openriceRating.Like))
+		}
+		if strings.TrimSpace(openriceRating.Average) != "" {
+			parts = append(parts, "average "+strings.TrimSpace(openriceRating.Average))
+		}
+		if strings.TrimSpace(openriceRating.Dislike) != "" {
+			parts = append(parts, "dislike "+strings.TrimSpace(openriceRating.Dislike))
+		}
+		return strings.Join(parts, " | ")
+	}
+	return value
 }
 
 func humanizeRFC3339Duration(timestamp string, now time.Time) string {
@@ -1891,6 +1997,7 @@ func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrati
 	err := baseQuery.
 		Select("markers.*, "+distanceExpr+" AS distance_meters", params.Latitude, params.Longitude, params.Latitude).
 		Where(distanceExpr+" <= ?", params.Latitude, params.Longitude, params.Latitude, params.RadiusMeters).
+		Preload("RestaurantInfo").
 		Order("distance_meters asc").
 		Order("id asc").
 		Limit(params.Limit).

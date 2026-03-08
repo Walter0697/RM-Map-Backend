@@ -180,6 +180,10 @@ func writeExternalAPIAuditEvent(input ExternalAPIAuditWriteInput) {
 }
 
 func GetRequestWithExternalAPIAudit(provider string, operation string, url string, validateBody func([]byte) error) ([]byte, error) {
+	return GetRequestWithExternalAPIAuditAndHeaders(provider, operation, url, nil, validateBody)
+}
+
+func GetRequestWithExternalAPIAuditAndHeaders(provider string, operation string, url string, headers map[string]string, validateBody func([]byte) error) ([]byte, error) {
 	startedAt := time.Now().UTC()
 	request, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -195,6 +199,13 @@ func GetRequestWithExternalAPIAudit(provider string, operation string, url strin
 			CompletedAt: &now,
 		})
 		return nil, err
+	}
+	for key, value := range headers {
+		trimmedKey := strings.TrimSpace(key)
+		if trimmedKey == "" {
+			continue
+		}
+		request.Header.Set(trimmedKey, strings.TrimSpace(value))
 	}
 
 	client := externalAPIHTTPClientFactory()

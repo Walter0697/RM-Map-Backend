@@ -95,13 +95,13 @@ func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, rel
 
 	current := time.Now().AddDate(0, 0, -1)
 	query := database.Connection
-	if utils.StringInSlice("created_by", requested) {
+	if utils.StringInSlice("created_by", requested) || utils.StringInSlice("items.created_by", requested) {
 		query = query.Preload("CreatedBy")
 	}
-	if utils.StringInSlice("updated_by", requested) {
+	if utils.StringInSlice("updated_by", requested) || utils.StringInSlice("items.updated_by", requested) {
 		query = query.Preload("UpdatedBy")
 	}
-	if utils.StringInSlice("restaurant", requested) {
+	if utils.StringInSlice("restaurant", requested) || utils.StringInSlice("items.restaurant", requested) {
 		query = query.Preload("RestaurantInfo")
 	}
 

@@ -54,6 +54,7 @@ defaultrole="user"
 [apikey]
 moviedb=""
 tomtommap=""
+yelp=""
 
 [scheduletravel]
 enable=false
