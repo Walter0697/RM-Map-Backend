@@ -57,6 +57,7 @@ type OIDCSetting struct {
 type APIKeySetting struct {
 	MovieDB   string `mapstructure:"moviedb"`
 	TomTomMap string `mapstructure:"tomtommap"`
+	Yelp      string `mapstructure:"yelp"`
 }
 
 type ScheduleTravelSetting struct {
