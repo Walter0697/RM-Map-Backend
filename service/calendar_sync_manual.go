@@ -102,7 +102,10 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 		createResult, createErr := adapter.CreateEvent(ctx, *connection, request)
 		opErr = createErr
 		if opErr == nil {
-			_ = runtime.linkRepo.MarkSynced(link.ID, createResult.ExternalEventID, createResult.ExternalCalendarID)
+			if persistErr := runtime.linkRepo.MarkSynced(link.ID, createResult.ExternalEventID, createResult.ExternalCalendarID); persistErr != nil {
+				opErr = fmt.Errorf("persist synced state failed: %w", persistErr)
+				break
+			}
 			result.SyncStatus = dbmodel.CalendarSyncStatusSynced
 			result.ExternalEventID = strings.TrimSpace(createResult.ExternalEventID)
 			result.ExternalCalendar = strings.TrimSpace(createResult.ExternalCalendarID)
@@ -110,7 +113,10 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	case dbmodel.CalendarSyncJobActionUpdate:
 		opErr = adapter.UpdateEvent(ctx, *connection, strings.TrimSpace(link.ExternalEventID), request)
 		if opErr == nil {
-			_ = runtime.linkRepo.MarkSynced(link.ID, strings.TrimSpace(link.ExternalEventID), strings.TrimSpace(link.ExternalCalendarID))
+			if persistErr := runtime.linkRepo.MarkSynced(link.ID, strings.TrimSpace(link.ExternalEventID), strings.TrimSpace(link.ExternalCalendarID)); persistErr != nil {
+				opErr = fmt.Errorf("persist synced state failed: %w", persistErr)
+				break
+			}
 			result.SyncStatus = dbmodel.CalendarSyncStatusSynced
 			result.ExternalEventID = strings.TrimSpace(link.ExternalEventID)
 			result.ExternalCalendar = strings.TrimSpace(link.ExternalCalendarID)
@@ -118,7 +124,10 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 	case dbmodel.CalendarSyncJobActionDelete:
 		opErr = adapter.DeleteEvent(ctx, *connection, strings.TrimSpace(link.ExternalEventID))
 		if opErr == nil {
-			_ = runtime.linkRepo.MarkDisconnected(link.ID)
+			if persistErr := runtime.linkRepo.MarkDisconnected(link.ID); persistErr != nil {
+				opErr = fmt.Errorf("persist disconnected state failed: %w", persistErr)
+				break
+			}
 			result.SyncStatus = dbmodel.CalendarSyncStatusDisconnected
 			result.ExternalEventID = strings.TrimSpace(link.ExternalEventID)
 		}
@@ -149,7 +158,9 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 			_ = runtime.connectionSvc.MarkReauthorizationRequired(connection.ID, providerCode, providerMessage)
 		}
 	}
-	_ = runtime.linkRepo.MarkFailed(link.ID, providerCode, providerMessage, &nextRetry)
+	if persistErr := runtime.linkRepo.MarkFailed(link.ID, providerCode, providerMessage, &nextRetry); persistErr != nil {
+		return nil, fmt.Errorf("persist failed state failed: %w", persistErr)
+	}
 	result.SyncStatus = dbmodel.CalendarSyncStatusFailed
 	result.LastErrorCode = providerCode
 	result.LastErrorMessage = providerMessage
