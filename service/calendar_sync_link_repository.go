@@ -120,6 +120,10 @@ func (repository *CalendarSyncLinkRepository) MarkDisconnected(linkID uint) erro
 	}
 	now := repository.now().UTC()
 	link.DisconnectedAt = &now
+	link.ExternalEventID = ""
+	link.ExternalCalendarID = ""
+	link.LastOperationKey = ""
+	link.NextRetryAt = nil
 	return link.Update(repository.db)
 }
 

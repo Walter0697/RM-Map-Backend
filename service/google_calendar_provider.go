@@ -85,6 +85,13 @@ func (adapter *GoogleCalendarAdapter) CreateEvent(ctx context.Context, connectio
 	if unmarshalErr := json.Unmarshal(responseBody, &response); unmarshalErr != nil {
 		return CalendarCreateEventResult{}, unmarshalErr
 	}
+	if strings.TrimSpace(response.ID) == "" {
+		return CalendarCreateEventResult{}, &CalendarProviderOperationError{
+			Code:      "provider_invalid_response",
+			Message:   "google create event response missing id",
+			Retryable: false,
+		}
+	}
 	return CalendarCreateEventResult{
 		ExternalEventID:    strings.TrimSpace(response.ID),
 		ExternalCalendarID: "primary",

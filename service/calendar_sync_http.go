@@ -283,7 +283,7 @@ func CalendarRetrySyncHandler(w http.ResponseWriter, r *http.Request) {
 		LinkID:         &link.ID,
 		ProviderKey:    link.ProviderKey,
 		Action:         action,
-		IdempotencyKey: buildCalendarJobKey(action, scheduleID, link.ID, calendarScheduleVersion(scheduleID)),
+		IdempotencyKey: buildManualCalendarJobKey(action, scheduleID, link.ID),
 		PayloadJSON:    "{}",
 		MaxAttempts:    5,
 	})
@@ -329,7 +329,7 @@ func CalendarDisconnectSyncHandler(w http.ResponseWriter, r *http.Request) {
 			LinkID:         &link.ID,
 			ProviderKey:    link.ProviderKey,
 			Action:         dbmodel.CalendarSyncJobActionDelete,
-			IdempotencyKey: buildCalendarJobKey("disconnect", scheduleID, link.ID, strings.TrimSpace(link.ExternalEventID)),
+			IdempotencyKey: buildManualCalendarJobKey("disconnect", scheduleID, link.ID),
 			PayloadJSON:    "{}",
 			MaxAttempts:    5,
 		})
@@ -390,11 +390,16 @@ func enqueueCalendarSyncNow(userID uint, scheduleID uint, providerKey string) er
 		LinkID:         &link.ID,
 		ProviderKey:    providerKey,
 		Action:         action,
-		IdempotencyKey: buildCalendarJobKey(action, scheduleID, link.ID, calendarScheduleVersion(scheduleID)),
+		IdempotencyKey: buildManualCalendarJobKey(action, scheduleID, link.ID),
 		PayloadJSON:    "{}",
 		MaxAttempts:    5,
 	})
 	return err
+}
+
+func buildManualCalendarJobKey(action string, scheduleID uint, linkID uint) string {
+	// Manual sync/retry/disconnect actions should always enqueue a fresh job.
+	return buildCalendarJobKey(action, scheduleID, linkID, fmt.Sprintf("manual-%d", time.Now().UnixNano()))
 }
 
 func exchangeGoogleCalendarCode(ctx context.Context, code string) (*googleTokenResponse, error) {
@@ -470,17 +475,4 @@ func calendarCanAccessSchedule(userID uint, scheduleID uint) bool {
 		return false
 	}
 	return relation.UserOneUID == userID || relation.UserTwoUID == userID
-}
-
-func calendarScheduleVersion(scheduleID uint) string {
-	schedule := dbmodel.Schedule{}
-	schedule.ID = scheduleID
-	if err := schedule.GetById(database.Connection); err != nil {
-		return ""
-	}
-	version := schedule.UpdatedAt.UTC().Format(time.RFC3339Nano)
-	if strings.TrimSpace(version) != "" {
-		return version
-	}
-	return schedule.SelectedDate.UTC().Format(time.RFC3339Nano)
 }

@@ -79,6 +79,7 @@ func processCalendarSyncJob(ctx context.Context, runtime *calendarSyncRuntimeSta
 	}
 
 	var opErr error
+	successExternalEventID := ""
 	switch strings.TrimSpace(job.Action) {
 	case dbmodel.CalendarSyncJobActionCreate:
 		result, createErr := adapter.CreateEvent(ctx, connection, request)
@@ -86,16 +87,19 @@ func processCalendarSyncJob(ctx context.Context, runtime *calendarSyncRuntimeSta
 		if createErr == nil && link.ID != 0 {
 			_ = runtime.linkRepo.MarkSynced(link.ID, result.ExternalEventID, result.ExternalCalendarID)
 		}
+		successExternalEventID = strings.TrimSpace(result.ExternalEventID)
 	case dbmodel.CalendarSyncJobActionUpdate:
 		opErr = adapter.UpdateEvent(ctx, connection, link.ExternalEventID, request)
 		if opErr == nil && link.ID != 0 {
 			_ = runtime.linkRepo.MarkSynced(link.ID, link.ExternalEventID, link.ExternalCalendarID)
 		}
+		successExternalEventID = strings.TrimSpace(link.ExternalEventID)
 	case dbmodel.CalendarSyncJobActionDelete:
 		opErr = adapter.DeleteEvent(ctx, connection, link.ExternalEventID)
 		if opErr == nil && link.ID != 0 {
 			_ = runtime.linkRepo.MarkDisconnected(link.ID)
 		}
+		successExternalEventID = strings.TrimSpace(link.ExternalEventID)
 	default:
 		opErr = fmt.Errorf("unsupported sync job action %s", job.Action)
 	}
@@ -104,6 +108,7 @@ func processCalendarSyncJob(ctx context.Context, runtime *calendarSyncRuntimeSta
 		calendarMetricJobSucceeded()
 		calendarAudit("sync_job_succeeded", map[string]string{
 			"action":      job.Action,
+			"event_id":    successExternalEventID,
 			"job_id":      fmt.Sprintf("%d", job.ID),
 			"provider":    job.ProviderKey,
 			"schedule_id": fmt.Sprintf("%d", job.ScheduleID),
