@@ -68,14 +68,7 @@ func processCalendarSyncJob(ctx context.Context, runtime *calendarSyncRuntimeSta
 			_ = runtime.jobQueue.MarkFailed(job.ID, "schedule_not_found", err.Error())
 			return err
 		}
-		request = CalendarEventUpsertRequest{
-			Title:       schedule.Label,
-			Description: schedule.Description,
-			StartAt:     schedule.SelectedDate,
-		}
-		if schedule.SelectedMarker != nil {
-			request.Location = strings.TrimSpace(schedule.SelectedMarker.Label)
-		}
+		request = buildCalendarEventRequestFromSchedule(schedule)
 	}
 
 	var opErr error

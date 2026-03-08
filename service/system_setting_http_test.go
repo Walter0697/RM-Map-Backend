@@ -121,3 +121,121 @@ func TestAdminUpdateScheduleTravelThresholdsHandler(t *testing.T) {
 		}
 	})
 }
+
+func TestAdminCalendarSyncDurationHandlersRequireAdmin(t *testing.T) {
+	originalRequireAdmin := systemSettingRequireAdminFn
+	originalGetDurations := systemSettingGetCalendarSyncDurationsFn
+	originalSetDurations := systemSettingSetCalendarSyncDurationsFn
+	defer func() {
+		systemSettingRequireAdminFn = originalRequireAdmin
+		systemSettingGetCalendarSyncDurationsFn = originalGetDurations
+		systemSettingSetCalendarSyncDurationsFn = originalSetDurations
+	}()
+
+	systemSettingRequireAdminFn = func(http.ResponseWriter, *http.Request) *dbmodel.User {
+		return nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/settings/calendar-sync-durations", nil)
+	AdminGetCalendarSyncDurationsHandler(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected unchanged status when admin check short-circuits, got %d", recorder.Code)
+	}
+
+	recorder = httptest.NewRecorder()
+	request = httptest.NewRequest(http.MethodPut, "/admin/settings/calendar-sync-durations", bytes.NewBufferString(`{"short_minutes":30,"medium_minutes":60,"long_minutes":120,"auto_minutes":30}`))
+	AdminUpdateCalendarSyncDurationsHandler(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected unchanged status when admin check short-circuits, got %d", recorder.Code)
+	}
+}
+
+func TestAdminGetCalendarSyncDurationsHandlerSuccess(t *testing.T) {
+	originalRequireAdmin := systemSettingRequireAdminFn
+	originalGetDurations := systemSettingGetCalendarSyncDurationsFn
+	defer func() {
+		systemSettingRequireAdminFn = originalRequireAdmin
+		systemSettingGetCalendarSyncDurationsFn = originalGetDurations
+	}()
+
+	systemSettingRequireAdminFn = func(http.ResponseWriter, *http.Request) *dbmodel.User {
+		return &dbmodel.User{Role: "admin"}
+	}
+	systemSettingGetCalendarSyncDurationsFn = func() (CalendarSyncDurations, error) {
+		return CalendarSyncDurations{
+			ShortMinutes:  35,
+			MediumMinutes: 75,
+			LongMinutes:   140,
+			AutoMinutes:   30,
+		}, nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/admin/settings/calendar-sync-durations", nil)
+	AdminGetCalendarSyncDurationsHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+	body := recorder.Body.String()
+	if body == "" || !bytes.Contains([]byte(body), []byte(`"short_minutes":35`)) || !bytes.Contains([]byte(body), []byte(`"medium_minutes":75`)) || !bytes.Contains([]byte(body), []byte(`"long_minutes":140`)) || !bytes.Contains([]byte(body), []byte(`"auto_minutes":30`)) {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}
+
+func TestAdminUpdateCalendarSyncDurationsHandler(t *testing.T) {
+	originalRequireAdmin := systemSettingRequireAdminFn
+	originalSetDurations := systemSettingSetCalendarSyncDurationsFn
+	defer func() {
+		systemSettingRequireAdminFn = originalRequireAdmin
+		systemSettingSetCalendarSyncDurationsFn = originalSetDurations
+	}()
+
+	systemSettingRequireAdminFn = func(http.ResponseWriter, *http.Request) *dbmodel.User {
+		return &dbmodel.User{Role: "admin"}
+	}
+
+	t.Run("returns bad request when payload is missing values", func(t *testing.T) {
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodPut, "/admin/settings/calendar-sync-durations", bytes.NewBufferString(`{"short_minutes":30}`))
+		AdminUpdateCalendarSyncDurationsHandler(recorder, request)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", recorder.Code)
+		}
+	})
+
+	t.Run("returns bad request when service validation fails", func(t *testing.T) {
+		systemSettingSetCalendarSyncDurationsFn = func(int, int, int, int) (CalendarSyncDurations, error) {
+			return CalendarSyncDurations{}, ErrInvalidCalendarSyncDurations
+		}
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodPut, "/admin/settings/calendar-sync-durations", bytes.NewBufferString(`{"short_minutes":0,"medium_minutes":60,"long_minutes":120,"auto_minutes":30}`))
+		AdminUpdateCalendarSyncDurationsHandler(recorder, request)
+		if recorder.Code != http.StatusBadRequest {
+			t.Fatalf("expected status 400, got %d", recorder.Code)
+		}
+	})
+
+	t.Run("returns saved durations", func(t *testing.T) {
+		systemSettingSetCalendarSyncDurationsFn = func(short int, medium int, long int, auto int) (CalendarSyncDurations, error) {
+			return CalendarSyncDurations{
+				ShortMinutes:  short,
+				MediumMinutes: medium,
+				LongMinutes:   long,
+				AutoMinutes:   auto,
+			}, nil
+		}
+
+		recorder := httptest.NewRecorder()
+		request := httptest.NewRequest(http.MethodPut, "/admin/settings/calendar-sync-durations", bytes.NewBufferString(`{"short_minutes":30,"medium_minutes":60,"long_minutes":120,"auto_minutes":30}`))
+		AdminUpdateCalendarSyncDurationsHandler(recorder, request)
+		if recorder.Code != http.StatusOK {
+			t.Fatalf("expected status 200, got %d", recorder.Code)
+		}
+		body := recorder.Body.String()
+		if body == "" || !bytes.Contains([]byte(body), []byte(`"short_minutes":30`)) || !bytes.Contains([]byte(body), []byte(`"medium_minutes":60`)) || !bytes.Contains([]byte(body), []byte(`"long_minutes":120`)) || !bytes.Contains([]byte(body), []byte(`"auto_minutes":30`)) {
+			t.Fatalf("unexpected body: %s", body)
+		}
+	})
+}

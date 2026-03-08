@@ -69,15 +69,7 @@ func executeManualCalendarSync(ctx context.Context, userID uint, scheduleID uint
 		if err := schedule.GetById(database.Connection); err != nil {
 			return nil, err
 		}
-		request = CalendarEventUpsertRequest{
-			Title:       schedule.Label,
-			Description: schedule.Description,
-			StartAt:     schedule.SelectedDate,
-			Timezone:    "UTC",
-		}
-		if schedule.SelectedMarker != nil {
-			request.Location = strings.TrimSpace(schedule.SelectedMarker.Label)
-		}
+		request = buildCalendarEventRequestFromSchedule(schedule)
 	}
 	startAtLog := ""
 	titleLog := ""
