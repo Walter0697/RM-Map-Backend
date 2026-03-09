@@ -60,12 +60,26 @@ func AuthHealthHandler(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	alignment := config.AuthLifetimeAlignmentStatus()
+
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"status":               "ok",
 		"mode":                 mode,
 		"environment":          config.Data.App.Environment,
 		"localPasswordAllowed": mode == config.AuthModeLocalPassword,
 		"oidcEnabled":          config.Data.OIDC.Enable,
+		"sessionLifetime": map[string]interface{}{
+			"configured": alignment.ConfiguredSessionTTLSeconds,
+			"oidc": map[string]interface{}{
+				"sessionTTL":      alignment.OIDCSessionTTLSeconds,
+				"accessTokenTTL":  alignment.OIDCAccessTokenTTLSeconds,
+				"refreshTokenTTL": alignment.OIDCRefreshTokenTTLSeconds,
+			},
+			"alignment": map[string]interface{}{
+				"authStateAligned": alignment.AuthStateAligned,
+				"oidcAligned":      alignment.OIDCAligned,
+			},
+		},
 		"authState": map[string]interface{}{
 			"migrationMode": config.Data.AuthState.MigrationMode,
 			"redisEnabled":  config.Data.Redis.Enable,

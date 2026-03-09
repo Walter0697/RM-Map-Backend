@@ -89,6 +89,12 @@ func TestValidateAuthConfigDefaults(t *testing.T) {
 	if Data.AuthState.SessionTTLSeconds <= 0 {
 		t.Fatalf("expected positive auth state session ttl")
 	}
+	if Data.App.AuthSessionLifetimeSeconds != DefaultAuthSessionLifetimeSeconds {
+		t.Fatalf("expected auth session lifetime default %d, got %d", DefaultAuthSessionLifetimeSeconds, Data.App.AuthSessionLifetimeSeconds)
+	}
+	if Data.AuthState.SessionTTLSeconds != Data.App.AuthSessionLifetimeSeconds {
+		t.Fatalf("expected auth state session ttl to align with auth session lifetime")
+	}
 	if Data.AuthState.KeyPrefix == "" {
 		t.Fatalf("expected auth state key prefix default")
 	}
@@ -124,5 +130,38 @@ func TestValidateAuthStateConfigModeValidation(t *testing.T) {
 	Data.Redis.Enable = false
 	if err := ValidateAuthStateConfig(); err == nil {
 		t.Fatalf("expected redis enabled validation error")
+	}
+}
+
+func TestAuthLifetimeAlignmentStatus(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+
+	Data = Config{
+		App: AppEnv{
+			AuthSessionLifetimeSeconds: 31536000,
+		},
+		AuthState: AuthStateSetting{
+			SessionTTLSeconds: 31536000,
+		},
+		OIDC: OIDCSetting{
+			SessionLifetimeSeconds:      31536000,
+			AccessTokenLifetimeSeconds:  31536000,
+			RefreshTokenLifetimeSeconds: 31536000,
+		},
+	}
+
+	alignment := AuthLifetimeAlignmentStatus()
+	if !alignment.AuthStateAligned {
+		t.Fatalf("expected auth state alignment")
+	}
+	if !alignment.OIDCAligned {
+		t.Fatalf("expected oidc alignment")
+	}
+
+	Data.AuthState.SessionTTLSeconds = 3600
+	alignment = AuthLifetimeAlignmentStatus()
+	if alignment.AuthStateAligned {
+		t.Fatalf("expected auth state mismatch")
 	}
 }
