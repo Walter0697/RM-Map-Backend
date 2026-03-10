@@ -113,10 +113,48 @@ type integrationCreateMarkerOutcomeRequest struct {
 }
 
 type integrationCreateScheduleRequest struct {
-	Label        string `json:"label"`
-	Description  string `json:"description"`
-	SelectedTime string `json:"selected_time"`
-	MarkerID     int    `json:"marker_id"`
+	Label        string                                  `json:"label"`
+	Description  string                                  `json:"description"`
+	SelectedTime string                                  `json:"selected_time"`
+	MarkerID     int                                     `json:"marker_id"`
+	RoutePreview *integrationScheduleRoutePreviewRequest `json:"route_preview,omitempty"`
+}
+
+type integrationUpdateScheduleRequest struct {
+	Label        *string                                 `json:"label,omitempty"`
+	Description  *string                                 `json:"description,omitempty"`
+	SelectedTime *string                                 `json:"selected_time,omitempty"`
+	RoutePreview *integrationScheduleRoutePreviewRequest `json:"route_preview,omitempty"`
+}
+
+type integrationScheduleRoutePreviewRequest struct {
+	ImageRef       *string                             `json:"image_ref,omitempty"`
+	DistanceMeters *int                                `json:"distance_meters,omitempty"`
+	ETA            *integrationScheduleRouteETARequest `json:"eta,omitempty"`
+}
+
+type integrationScheduleRouteETARequest struct {
+	WalkingSeconds       *int `json:"walking_seconds,omitempty"`
+	BusSeconds           *int `json:"bus_seconds,omitempty"`
+	PublicTransitSeconds *int `json:"public_transit_seconds,omitempty"`
+}
+
+type integrationScheduleRouteETAResponse struct {
+	WalkingSeconds       *int `json:"walking_seconds,omitempty"`
+	BusSeconds           *int `json:"bus_seconds,omitempty"`
+	PublicTransitSeconds *int `json:"public_transit_seconds,omitempty"`
+}
+
+type integrationScheduleRoutePreviewResponse struct {
+	ImageRef       *string                             `json:"image_ref,omitempty"`
+	DistanceMeters *int                                `json:"distance_meters,omitempty"`
+	ETA            integrationScheduleRouteETAResponse `json:"eta"`
+}
+
+type integrationScheduleResponse struct {
+	model.Schedule
+	RoutePreview *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
+	Warnings     []string                                 `json:"warnings,omitempty"`
 }
 
 type integrationUpdateStationRequest struct {
@@ -951,9 +989,9 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]model.Schedule, 0, len(schedules))
+	response := make([]integrationScheduleResponse, 0, len(schedules))
 	for _, item := range schedules {
-		response = append(response, helper.ConvertSchedule(item))
+		response = append(response, buildIntegrationScheduleResponse(item, nil))
 	}
 	nextCursor := ""
 	if len(schedules) == queryOption.Limit {
@@ -1001,12 +1039,98 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
+	warnings := []string{}
+	if request.RoutePreview != nil {
+		applyWarnings, applyErr := applyRoutePreviewToSchedule(schedule, request.RoutePreview)
+		if applyErr != nil {
+			warnings = append(warnings, applyErr.Error())
+			schedule.RoutePreviewWarning = trimmedStringPtr(strings.TrimSpace(applyErr.Error()))
+		}
+		warnings = append(warnings, applyWarnings...)
+	}
+
+	if err := schedule.Update(tx); err != nil {
+		tx.Rollback()
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	if err := tx.Commit().Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, helper.ConvertSchedule(*schedule))
+	respondJSON(w, http.StatusCreated, buildIntegrationScheduleResponse(*schedule, warnings))
+}
+
+func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.schedules.update", constant.APIKeyScopeSchedulesWrite, "")
+	if !ok {
+		return
+	}
+
+	scheduleID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || scheduleID <= 0 {
+		http.Error(w, "invalid schedule id", http.StatusBadRequest)
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationUpdateScheduleRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	schedule := dbmodel.Schedule{}
+	schedule.ID = uint(scheduleID)
+	if err := schedule.GetById(database.Connection); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if schedule.RelationId != apiKey.Relation.ID {
+		http.Error(w, "api key cannot access schedule outside assigned relation", http.StatusForbidden)
+		return
+	}
+
+	if request.Label != nil {
+		schedule.Label = strings.TrimSpace(*request.Label)
+	}
+	if request.Description != nil {
+		schedule.Description = strings.TrimSpace(*request.Description)
+	}
+	if request.SelectedTime != nil {
+		parsedTime, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(*request.SelectedTime))
+		if parseErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_selected_time", "selected_time must be RFC3339")
+			return
+		}
+		schedule.SelectedDate = parsedTime
+	}
+
+	warnings := []string{}
+	if request.RoutePreview != nil {
+		applyWarnings, applyErr := applyRoutePreviewToSchedule(&schedule, request.RoutePreview)
+		if applyErr != nil {
+			warnings = append(warnings, applyErr.Error())
+			schedule.RoutePreviewWarning = trimmedStringPtr(strings.TrimSpace(applyErr.Error()))
+		}
+		warnings = append(warnings, applyWarnings...)
+	}
+
+	schedule.UpdatedBy = &apiKey.ActorUser
+	if err := schedule.Update(database.Connection); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, buildIntegrationScheduleResponse(schedule, warnings))
 }
 
 func IntegrationListStationsHandler(w http.ResponseWriter, r *http.Request) {
@@ -1755,6 +1879,91 @@ func humanizeRFC3339Duration(timestamp string, now time.Time) string {
 		return "1 day ago"
 	}
 	return fmt.Sprintf("%d days ago", days)
+}
+
+func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []string) integrationScheduleResponse {
+	modelSchedule := helper.ConvertSchedule(schedule)
+	response := integrationScheduleResponse{
+		Schedule: modelSchedule,
+	}
+	if len(warnings) > 0 {
+		response.Warnings = warnings
+	}
+
+	if schedule.RouteImageRef != nil || schedule.RouteDistanceMeters != nil || schedule.RouteETAWalkingSeconds != nil || schedule.RouteETABusSeconds != nil || schedule.RouteETAPublicTransitSeconds != nil {
+		response.RoutePreview = &integrationScheduleRoutePreviewResponse{
+			ImageRef:       schedule.RouteImageRef,
+			DistanceMeters: schedule.RouteDistanceMeters,
+			ETA: integrationScheduleRouteETAResponse{
+				WalkingSeconds:       schedule.RouteETAWalkingSeconds,
+				BusSeconds:           schedule.RouteETABusSeconds,
+				PublicTransitSeconds: schedule.RouteETAPublicTransitSeconds,
+			},
+		}
+	}
+
+	if schedule.RoutePreviewWarning != nil {
+		if strings.TrimSpace(*schedule.RoutePreviewWarning) != "" {
+			response.Warnings = append(response.Warnings, strings.TrimSpace(*schedule.RoutePreviewWarning))
+		}
+	}
+
+	return response
+}
+
+func applyRoutePreviewToSchedule(schedule *dbmodel.Schedule, preview *integrationScheduleRoutePreviewRequest) ([]string, error) {
+	if schedule == nil || preview == nil {
+		return nil, nil
+	}
+
+	warnings := []string{}
+
+	if preview.ImageRef != nil {
+		ref := strings.TrimSpace(*preview.ImageRef)
+		if ref == "" {
+			warnings = append(warnings, "route preview image_ref was empty and ignored")
+		} else {
+			schedule.RouteImageRef = &ref
+		}
+	}
+
+	if preview.DistanceMeters != nil {
+		if *preview.DistanceMeters < 0 {
+			return warnings, fmt.Errorf("route preview distance_meters must be >= 0")
+		}
+		schedule.RouteDistanceMeters = preview.DistanceMeters
+	}
+
+	if preview.ETA != nil {
+		if preview.ETA.WalkingSeconds != nil {
+			if *preview.ETA.WalkingSeconds < 0 {
+				return warnings, fmt.Errorf("route preview eta.walking_seconds must be >= 0")
+			}
+			schedule.RouteETAWalkingSeconds = preview.ETA.WalkingSeconds
+		}
+		if preview.ETA.BusSeconds != nil {
+			if *preview.ETA.BusSeconds < 0 {
+				return warnings, fmt.Errorf("route preview eta.bus_seconds must be >= 0")
+			}
+			schedule.RouteETABusSeconds = preview.ETA.BusSeconds
+		}
+		if preview.ETA.PublicTransitSeconds != nil {
+			if *preview.ETA.PublicTransitSeconds < 0 {
+				return warnings, fmt.Errorf("route preview eta.public_transit_seconds must be >= 0")
+			}
+			schedule.RouteETAPublicTransitSeconds = preview.ETA.PublicTransitSeconds
+		}
+	}
+
+	return warnings, nil
+}
+
+func trimmedStringPtr(value string) *string {
+	item := strings.TrimSpace(value)
+	if item == "" {
+		return nil
+	}
+	return &item
 }
 
 func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {

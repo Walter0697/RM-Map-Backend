@@ -67,9 +67,11 @@ type CalendarGoogleSetting struct {
 }
 
 type APIKeySetting struct {
-	MovieDB   string `mapstructure:"moviedb"`
-	TomTomMap string `mapstructure:"tomtommap"`
-	Yelp      string `mapstructure:"yelp"`
+	MovieDB           string `mapstructure:"moviedb"`
+	TomTomMap         string `mapstructure:"tomtommap"`
+	TomTomRouting     string `mapstructure:"tomtomrouting"`
+	TomTomStaticImage string `mapstructure:"tomtomstaticimage"`
+	Yelp              string `mapstructure:"yelp"`
 }
 
 type ScheduleTravelSetting struct {
@@ -78,6 +80,17 @@ type ScheduleTravelSetting struct {
 	TimeoutMS                 int    `mapstructure:"timeoutms"`
 	EasyThresholdMinutes      int    `mapstructure:"easythresholdminutes"`
 	DifficultThresholdMinutes int    `mapstructure:"difficultthresholdminutes"`
+}
+
+type TomTomRouteSetting struct {
+	BaseURL    string `mapstructure:"baseurl"`
+	TimeoutMS  int    `mapstructure:"timeoutms"`
+	RetryCount int    `mapstructure:"retrycount"`
+}
+
+type TomTomStaticImageSetting struct {
+	BaseURL   string `mapstructure:"baseurl"`
+	TimeoutMS int    `mapstructure:"timeoutms"`
 }
 
 type WeatherSetting struct {
@@ -130,18 +143,20 @@ type AuthStateSetting struct {
 }
 
 type Config struct {
-	DB              Database               `mapstructure:"database"`
-	Redis           RedisSetting           `mapstructure:"redis"`
-	AuthState       AuthStateSetting       `mapstructure:"authstate"`
-	App             AppEnv                 `mapstructure:"app"`
-	LDAP            LDAPSetting            `mapstructure:"ldap"`
-	OIDC            OIDCSetting            `mapstructure:"oidc"`
-	CalendarGoogle  CalendarGoogleSetting  `mapstructure:"calendargoogle"`
-	APIKEY          APIKeySetting          `mapstructure:"apikey"`
-	ScheduleTravel  ScheduleTravelSetting  `mapstructure:"scheduletravel"`
-	Weather         WeatherSetting         `mapstructure:"weather"`
-	IntegrationAuth IntegrationAuthSetting `mapstructure:"integrationauth"`
-	Seed            SeedSetting            `mapstructure:"seed"`
+	DB                Database                 `mapstructure:"database"`
+	Redis             RedisSetting             `mapstructure:"redis"`
+	AuthState         AuthStateSetting         `mapstructure:"authstate"`
+	App               AppEnv                   `mapstructure:"app"`
+	LDAP              LDAPSetting              `mapstructure:"ldap"`
+	OIDC              OIDCSetting              `mapstructure:"oidc"`
+	CalendarGoogle    CalendarGoogleSetting    `mapstructure:"calendargoogle"`
+	APIKEY            APIKeySetting            `mapstructure:"apikey"`
+	ScheduleTravel    ScheduleTravelSetting    `mapstructure:"scheduletravel"`
+	TomTomRoute       TomTomRouteSetting       `mapstructure:"tomtomroute"`
+	TomTomStaticImage TomTomStaticImageSetting `mapstructure:"tomtomstaticimage"`
+	Weather           WeatherSetting           `mapstructure:"weather"`
+	IntegrationAuth   IntegrationAuthSetting   `mapstructure:"integrationauth"`
+	Seed              SeedSetting              `mapstructure:"seed"`
 }
 
 func Init() {
