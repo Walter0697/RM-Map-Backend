@@ -9,11 +9,12 @@ import (
 )
 
 type fakeRedisClient struct {
-	store   map[string]string
-	getErr  error
-	setErr  error
-	delErr  error
-	pingErr error
+	store      map[string]string
+	getErr     error
+	setErr     error
+	delErr     error
+	pingErr    error
+	lastSetTTL time.Duration
 }
 
 func (f *fakeRedisClient) Ping() error {
@@ -28,11 +29,12 @@ func (f *fakeRedisClient) Get(key string) (string, bool, error) {
 	return value, ok, nil
 }
 
-func (f *fakeRedisClient) SetEX(key string, value string, _ time.Duration) error {
+func (f *fakeRedisClient) SetEX(key string, value string, ttl time.Duration) error {
 	if f.setErr != nil {
 		return f.setErr
 	}
 	f.store[key] = value
+	f.lastSetTTL = ttl
 	return nil
 }
 
@@ -131,5 +133,37 @@ func TestAuthStateIssueDualWriteWritesBothStores(t *testing.T) {
 	}
 	if _, exists := redis.store[manager.sessionKey("alice")]; !exists {
 		t.Fatalf("expected redis write")
+	}
+	if redis.lastSetTTL != time.Hour {
+		t.Fatalf("expected redis ttl 1h, got %s", redis.lastSetTTL)
+	}
+}
+
+func TestAuthStateRevokeRedisPrimaryRemovesSession(t *testing.T) {
+	redis := &fakeRedisClient{store: map[string]string{}}
+	manager := &defaultAuthStateManager{
+		mode:               config.AuthStateModeRedisPrimary,
+		keyPrefix:          "auth:v1",
+		sessionTTL:         365 * 24 * time.Hour,
+		redisEnabled:       true,
+		redisClient:        redis,
+		writePostgresFn:    func(user *dbmodel.User, secret string) error { return nil },
+		validatePostgresFn: func(username string, secret string) (bool, error) { return false, nil },
+		revokePostgresFn:   func(user *dbmodel.User) error { return nil },
+	}
+
+	user := &dbmodel.User{Username: "alice"}
+	if err := manager.Issue(user, "secret-1"); err != nil {
+		t.Fatalf("Issue returned error: %v", err)
+	}
+	if _, exists := redis.store[manager.sessionKey("alice")]; !exists {
+		t.Fatalf("expected redis session to exist before revoke")
+	}
+
+	if err := manager.Revoke(user); err != nil {
+		t.Fatalf("Revoke returned error: %v", err)
+	}
+	if _, exists := redis.store[manager.sessionKey("alice")]; exists {
+		t.Fatalf("expected redis session to be removed after revoke")
 	}
 }

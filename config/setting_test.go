@@ -45,4 +45,30 @@ func TestApplyRedisEnvOverrides(t *testing.T) {
 			t.Fatalf("expected error for negative REDIS_DB")
 		}
 	})
+
+	t.Run("uses AUTH_SESSION_LIFETIME_SECONDS when set", func(t *testing.T) {
+		if err := os.Setenv("AUTH_SESSION_LIFETIME_SECONDS", "31536000"); err != nil {
+			t.Fatalf("failed to set AUTH_SESSION_LIFETIME_SECONDS: %v", err)
+		}
+		defer os.Unsetenv("AUTH_SESSION_LIFETIME_SECONDS")
+
+		Data.App.AuthSessionLifetimeSeconds = 0
+		if err := applyRedisEnvOverrides(); err != nil {
+			t.Fatalf("applyRedisEnvOverrides returned error: %v", err)
+		}
+		if Data.App.AuthSessionLifetimeSeconds != 31536000 {
+			t.Fatalf("expected app auth session lifetime 31536000, got %d", Data.App.AuthSessionLifetimeSeconds)
+		}
+	})
+
+	t.Run("rejects non-positive AUTH_SESSION_LIFETIME_SECONDS", func(t *testing.T) {
+		if err := os.Setenv("AUTH_SESSION_LIFETIME_SECONDS", "0"); err != nil {
+			t.Fatalf("failed to set AUTH_SESSION_LIFETIME_SECONDS: %v", err)
+		}
+		defer os.Unsetenv("AUTH_SESSION_LIFETIME_SECONDS")
+
+		if err := applyRedisEnvOverrides(); err == nil {
+			t.Fatalf("expected error for non-positive AUTH_SESSION_LIFETIME_SECONDS")
+		}
+	})
 }
