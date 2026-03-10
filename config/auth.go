@@ -7,8 +7,9 @@ import (
 )
 
 const (
-	AuthModeOIDC          = "oidc"
-	AuthModeLocalPassword = "local-password"
+	AuthModeOIDC                      = "oidc"
+	AuthModeLocalPassword             = "local-password"
+	DefaultAuthSessionLifetimeSeconds = 60 * 60 * 24 * 365
 )
 
 func IsLocalEnvironment(environment string) bool {
@@ -50,6 +51,7 @@ func ResolveAuthMode() (string, error) {
 }
 
 func ValidateAuthConfig() error {
+	applyAuthSessionDefaults()
 	applyIntegrationDefaults()
 	applyCalendarDefaults()
 	if err := ValidateAuthStateConfig(); err != nil {
@@ -62,6 +64,7 @@ func ValidateAuthConfig() error {
 	}
 
 	if mode != AuthModeOIDC {
+		logAuthLifetimeAlignment()
 		return nil
 	}
 
@@ -88,7 +91,75 @@ func ValidateAuthConfig() error {
 		Data.OIDC.UsernameClaim = "preferred_username"
 	}
 
+	logAuthLifetimeAlignment()
 	return nil
+}
+
+type AuthLifetimeAlignment struct {
+	ConfiguredSessionTTLSeconds int  `json:"configuredSessionTTLSeconds"`
+	AuthStateSessionTTLSeconds  int  `json:"authStateSessionTTLSeconds"`
+	OIDCSessionTTLSeconds       int  `json:"oidcSessionTTLSeconds"`
+	OIDCAccessTokenTTLSeconds   int  `json:"oidcAccessTokenTTLSeconds"`
+	OIDCRefreshTokenTTLSeconds  int  `json:"oidcRefreshTokenTTLSeconds"`
+	AuthStateAligned            bool `json:"authStateAligned"`
+	OIDCAligned                 bool `json:"oidcAligned"`
+}
+
+func AuthLifetimeAlignmentStatus() AuthLifetimeAlignment {
+	configuredTTL := Data.App.AuthSessionLifetimeSeconds
+	if configuredTTL <= 0 {
+		configuredTTL = DefaultAuthSessionLifetimeSeconds
+	}
+
+	authStateAligned := Data.AuthState.SessionTTLSeconds == configuredTTL
+
+	oidcSession := Data.OIDC.SessionLifetimeSeconds
+	oidcAccess := Data.OIDC.AccessTokenLifetimeSeconds
+	oidcRefresh := Data.OIDC.RefreshTokenLifetimeSeconds
+
+	oidcAligned := true
+	if oidcSession > 0 && oidcSession != configuredTTL {
+		oidcAligned = false
+	}
+	if oidcAccess > 0 && oidcAccess != configuredTTL {
+		oidcAligned = false
+	}
+	if oidcRefresh > 0 && oidcRefresh != configuredTTL {
+		oidcAligned = false
+	}
+
+	return AuthLifetimeAlignment{
+		ConfiguredSessionTTLSeconds: configuredTTL,
+		AuthStateSessionTTLSeconds:  Data.AuthState.SessionTTLSeconds,
+		OIDCSessionTTLSeconds:       oidcSession,
+		OIDCAccessTokenTTLSeconds:   oidcAccess,
+		OIDCRefreshTokenTTLSeconds:  oidcRefresh,
+		AuthStateAligned:            authStateAligned,
+		OIDCAligned:                 oidcAligned,
+	}
+}
+
+func applyAuthSessionDefaults() {
+	if Data.App.AuthSessionLifetimeSeconds <= 0 {
+		Data.App.AuthSessionLifetimeSeconds = DefaultAuthSessionLifetimeSeconds
+	}
+}
+
+func logAuthLifetimeAlignment() {
+	alignment := AuthLifetimeAlignmentStatus()
+	if alignment.AuthStateAligned && alignment.OIDCAligned {
+		log.Printf("Auth lifetime policy aligned (session=%ds)", alignment.ConfiguredSessionTTLSeconds)
+		return
+	}
+
+	log.Printf(
+		"Auth lifetime policy mismatch detected: app.authsessionttlseconds=%d authstate.sessionttlseconds=%d oidc.sessionttlseconds=%d oidc.accesstokenttlseconds=%d oidc.refreshtokenttlseconds=%d",
+		alignment.ConfiguredSessionTTLSeconds,
+		alignment.AuthStateSessionTTLSeconds,
+		alignment.OIDCSessionTTLSeconds,
+		alignment.OIDCAccessTokenTTLSeconds,
+		alignment.OIDCRefreshTokenTTLSeconds,
+	)
 }
 
 func applyIntegrationDefaults() {

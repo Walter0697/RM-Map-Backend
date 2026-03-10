@@ -9,12 +9,14 @@ This runbook describes how login/session token validation is configured and how 
 - `[authstate].migrationmode`: one of `dual-write`, `redis-primary`, `postgres-off`.
 - `[authstate].keyprefix`: Redis key prefix for auth state (example: `auth:v1`).
 - `[authstate].sessionttlseconds`: TTL for Redis auth session records.
+- `[app].authsessionttlseconds`: canonical session lifetime policy (target one year).
 - `[authstate].redisdialtimeoutms`, `[authstate].redisreadtimeoutms`, `[authstate].rediswritetimeoutms`: Redis timeouts.
 
 Runtime overrides:
 - `REDIS_DB`
 - `AUTH_STATE_MIGRATION_MODE`
 - `AUTH_STATE_SESSION_TTL_SECONDS`
+- `AUTH_SESSION_LIFETIME_SECONDS`
 
 ## Mode Behavior
 
@@ -42,10 +44,13 @@ Runtime overrides:
 [redis]
 enable=false
 
+[app]
+authsessionttlseconds=31536000
+
 [authstate]
 migrationmode="dual-write"
 keyprefix="auth:v1"
-sessionttlseconds=2592000
+sessionttlseconds=31536000
 ```
 
 ### Redis migration
@@ -57,10 +62,13 @@ port="6379"
 password=""
 db=0
 
+[app]
+authsessionttlseconds=31536000
+
 [authstate]
 migrationmode="redis-primary"
 keyprefix="auth:v1"
-sessionttlseconds=2592000
+sessionttlseconds=31536000
 redisdialtimeoutms=1500
 redisreadtimeoutms=1500
 rediswritetimeoutms=1500
@@ -79,11 +87,12 @@ migrationmode="postgres-off"
 
 1. Start in `dual-write` and confirm login/logout/authorized API traffic works.
 2. Enable Redis (`[redis].enable=true`) and switch to `redis-primary`.
-3. Monitor `/auth/health`:
+3. Keep `[app].authsessionttlseconds` and `[authstate].sessionttlseconds` aligned.
+4. Monitor `/auth/health`:
 - `authState.metrics.validateFallbackCount`
 - `authState.metrics.validateErrorCount`
 - `authState.metrics.revocationErrorCount`
-4. If metrics remain stable, switch to `postgres-off`.
+5. If metrics remain stable, switch to `postgres-off`.
 
 ## Rollback Procedure
 
