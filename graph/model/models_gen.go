@@ -225,6 +225,7 @@ type NewPin struct {
 	TopLeftY     int             `json:"top_left_y"`
 	BottomRightX int             `json:"bottom_right_x"`
 	BottomRightY int             `json:"bottom_right_y"`
+	GroupIds     []int           `json:"group_ids"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 
@@ -254,18 +255,20 @@ type PagedScheduleQuery struct {
 }
 
 type Pin struct {
-	ID           int    `json:"id"`
-	Label        string `json:"label"`
-	ImagePath    string `json:"image_path"`
-	DisplayPath  string `json:"display_path"`
-	TopLeftX     int    `json:"top_left_x"`
-	TopLeftY     int    `json:"top_left_y"`
-	BottomRightX int    `json:"bottom_right_x"`
-	BottomRightY int    `json:"bottom_right_y"`
-	CreatedAt    string `json:"created_at"`
-	CreatedBy    *User  `json:"created_by"`
-	UpdatedAt    string `json:"updated_at"`
-	UpdatedBy    *User  `json:"updated_by"`
+	ID           int      `json:"id"`
+	Label        string   `json:"label"`
+	ImagePath    string   `json:"image_path"`
+	DisplayPath  string   `json:"display_path"`
+	GroupIds     []int    `json:"group_ids"`
+	GroupNames   []string `json:"group_names"`
+	TopLeftX     int      `json:"top_left_x"`
+	TopLeftY     int      `json:"top_left_y"`
+	BottomRightX int      `json:"bottom_right_x"`
+	BottomRightY int      `json:"bottom_right_y"`
+	CreatedAt    string   `json:"created_at"`
+	CreatedBy    *User    `json:"created_by"`
+	UpdatedAt    string   `json:"updated_at"`
+	UpdatedBy    *User    `json:"updated_by"`
 }
 
 type PreviewPinInput struct {
@@ -430,6 +433,7 @@ type UpdatedPin struct {
 	TopLeftY     *int            `json:"top_left_y"`
 	BottomRightX *int            `json:"bottom_right_x"`
 	BottomRightY *int            `json:"bottom_right_y"`
+	GroupIds     []int           `json:"group_ids"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 

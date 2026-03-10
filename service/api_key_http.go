@@ -136,6 +136,15 @@ type integrationUpdateDefaultPinRequest struct {
 	PinID *int `json:"pin_id"`
 }
 
+type integrationSettingsPinResponse struct {
+	ID          uint     `json:"id"`
+	Label       string   `json:"label"`
+	ImagePath   string   `json:"image_path"`
+	DisplayPath string   `json:"display_path"`
+	GroupIDs    []uint   `json:"group_ids"`
+	GroupNames  []string `json:"group_names"`
+}
+
 type updateOwnPreviewPinRequest struct {
 	PinID *int `json:"pin_id"`
 }
@@ -1207,7 +1216,7 @@ func IntegrationListSettingsPinsHandler(w http.ResponseWriter, r *http.Request) 
 		"created_at": "created_at",
 		"updated_at": "updated_at",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "label", []string{"label"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "label", []string{"label", "group_id", "group_name"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -1218,10 +1227,26 @@ func IntegrationListSettingsPinsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	query := database.Connection.Model(&dbmodel.Pin{})
+	query := database.Connection.Model(&dbmodel.Pin{}).Preload("Groups")
 	if value, ok := queryOption.Filters["label"]; ok {
 		query = query.Where("label ILIKE ?", "%"+value+"%")
 	}
+	if value, ok := queryOption.Filters["group_id"]; ok {
+		groupID, convErr := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
+		if convErr != nil || groupID == 0 {
+			http.Error(w, "invalid group_id", http.StatusBadRequest)
+			return
+		}
+		query = query.Joins("JOIN pin_group_assignments pga ON pga.pin_id = pins.id").Where("pga.pin_group_id = ?", uint(groupID))
+	}
+	if value, ok := queryOption.Filters["group_name"]; ok {
+		query = query.
+			Joins("JOIN pin_group_assignments pga_filter ON pga_filter.pin_id = pins.id").
+			Joins("JOIN pin_groups pg_filter ON pg_filter.id = pga_filter.pin_group_id").
+			Where("pg_filter.name ILIKE ?", "%"+strings.TrimSpace(value)+"%")
+	}
+
+	query = query.Distinct("pins.id")
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -1235,7 +1260,25 @@ func IntegrationListSettingsPinsHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
+	responseItems := make([]integrationSettingsPinResponse, 0, len(items))
+	for _, item := range items {
+		groupIDs := make([]uint, 0, len(item.Groups))
+		groupNames := make([]string, 0, len(item.Groups))
+		for _, group := range item.Groups {
+			groupIDs = append(groupIDs, group.ID)
+			groupNames = append(groupNames, group.Name)
+		}
+		responseItems = append(responseItems, integrationSettingsPinResponse{
+			ID:          item.ID,
+			Label:       item.Label,
+			ImagePath:   item.ImagePath,
+			DisplayPath: item.DisplayPath,
+			GroupIDs:    groupIDs,
+			GroupNames:  groupNames,
+		})
+	}
+
+	respondJSON(w, http.StatusOK, integrationListResponse(responseItems, total, queryOption, ""))
 }
 
 func IntegrationListSettingsMarkerTypesHandler(w http.ResponseWriter, r *http.Request) {

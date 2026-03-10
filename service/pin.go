@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"mapmarker/backend/constant"
@@ -19,6 +20,20 @@ type Boundary struct {
 	TopLeftY     int
 	BottomRightX int
 	BottomRightY int
+}
+
+func convertGroupIDInput(groupIDs []int) ([]uint, error) {
+	if len(groupIDs) > 1 {
+		return nil, fmt.Errorf("%w", ErrPinGroupSingleAssignmentOnly)
+	}
+	converted := make([]uint, 0, len(groupIDs))
+	for _, id := range groupIDs {
+		if id <= 0 {
+			return nil, fmt.Errorf("group_ids must contain positive values")
+		}
+		converted = append(converted, uint(id))
+	}
+	return converted, nil
 }
 
 func PreviewPin(input model.PreviewPinInput, markertype dbmodel.MarkerType) (string, error) {
@@ -124,6 +139,16 @@ func CreatePin(input model.NewPin, user dbmodel.User) (*dbmodel.Pin, error) {
 		return nil, err
 	}
 
+	if input.GroupIds != nil {
+		groupIDs, convErr := convertGroupIDInput(input.GroupIds)
+		if convErr != nil {
+			return nil, convErr
+		}
+		if err := SetPinGroupAssignments(pin.ID, groupIDs, &user); err != nil {
+			return nil, err
+		}
+	}
+
 	UpdateTypePinByPin(pin)
 
 	return &pin, nil
@@ -222,6 +247,16 @@ func EditPin(input model.UpdatedPin, user dbmodel.User) (*dbmodel.Pin, error) {
 		return nil, err
 	}
 
+	if input.GroupIds != nil {
+		groupIDs, convErr := convertGroupIDInput(input.GroupIds)
+		if convErr != nil {
+			return nil, convErr
+		}
+		if err := SetPinGroupAssignments(pin.ID, groupIDs, &user); err != nil {
+			return nil, err
+		}
+	}
+
 	UpdateTypePinByPin(pin)
 
 	return &pin, nil
@@ -241,7 +276,7 @@ func RemovePin(input model.RemoveModel) error {
 
 func GetAllPin(requested []string) ([]dbmodel.Pin, error) {
 	var pins []dbmodel.Pin
-	query := database.Connection
+	query := database.Connection.Preload("Groups")
 	if utils.StringInSlice("created_by", requested) {
 		query = query.Preload("CreatedBy")
 	}
