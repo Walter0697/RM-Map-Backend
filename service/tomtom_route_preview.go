@@ -8,6 +8,7 @@ import (
 	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database/dbmodel"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -61,6 +62,7 @@ type RoutePlanResult struct {
 	Destination    RouteCoordinate         `json:"destination"`
 	DistanceMeters int                     `json:"distance_meters"`
 	Geometry       string                  `json:"geometry"`
+	Paths          map[string]string       `json:"paths,omitempty"`
 	ETA            map[string]RouteModeETA `json:"eta"`
 	Warnings       []string                `json:"warnings,omitempty"`
 }
@@ -140,6 +142,9 @@ func PlanTomTomRouteWithETA(ctx context.Context, origin RouteCoordinate, destina
 		Destination:    destination,
 		DistanceMeters: baseRoute.DistanceMeters,
 		Geometry:       baseRoute.Geometry,
+		Paths: map[string]string{
+			"driving": baseRoute.Geometry,
+		},
 		ETA:            map[string]RouteModeETA{},
 	}
 
@@ -152,6 +157,10 @@ func PlanTomTomRouteWithETA(ctx context.Context, origin RouteCoordinate, destina
 		modeResult, modeErr := fetchTomTomRouteWithRetry(ctx, "route_plan_"+modeConfig.PublicMode, modeConfig.TravelMode, origin, destination, false)
 		if modeErr == nil {
 			seconds := modeResult.TravelSeconds
+			if result.Paths == nil {
+				result.Paths = map[string]string{}
+			}
+			result.Paths[modeConfig.PublicMode] = modeResult.Geometry
 			result.ETA[modeConfig.PublicMode] = RouteModeETA{
 				Available: true,
 				Seconds:   &seconds,
@@ -361,6 +370,7 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 	}
 
 	if status == http.StatusTooManyRequests {
+		log.Printf("[tomtom-route] operation=%s travel_mode=%s status=%d detail=%s", operation, travelMode, status, summarizeProviderBody(body))
 		logTomTomRouteAudit(operation, dbmodel.ExternalAPIAuditStatusError, &status, requestStart, fmt.Errorf("status=%d", status))
 		return nil, &RouteServiceError{
 			Code:       RouteErrorUpstreamRate,
@@ -369,6 +379,7 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 		}
 	}
 	if status >= http.StatusInternalServerError {
+		log.Printf("[tomtom-route] operation=%s travel_mode=%s status=%d detail=%s", operation, travelMode, status, summarizeProviderBody(body))
 		logTomTomRouteAudit(operation, dbmodel.ExternalAPIAuditStatusError, &status, requestStart, fmt.Errorf("status=%d", status))
 		return nil, &RouteServiceError{
 			Code:       RouteErrorUpstreamRetry,
@@ -378,11 +389,13 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 		}
 	}
 	if status < http.StatusOK || status >= http.StatusMultipleChoices {
+		detail := summarizeProviderBody(body)
+		log.Printf("[tomtom-route] operation=%s travel_mode=%s status=%d detail=%s", operation, travelMode, status, detail)
 		logTomTomRouteAudit(operation, dbmodel.ExternalAPIAuditStatusError, &status, requestStart, fmt.Errorf("status=%d", status))
 		return nil, &RouteServiceError{
 			Code:       RouteErrorUpstreamFail,
-			Message:    "route mode is unavailable",
-			HTTPStatus: http.StatusOK,
+			Message:    fmt.Sprintf("route provider returned status %d (%s)", status, detail),
+			HTTPStatus: http.StatusBadGateway,
 		}
 	}
 
@@ -396,6 +409,7 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 		}
 	}
 	if len(result.Routes) == 0 {
+		log.Printf("[tomtom-route] operation=%s travel_mode=%s status=%d detail=empty route payload", operation, travelMode, status)
 		logTomTomRouteAudit(operation, dbmodel.ExternalAPIAuditStatusError, &status, requestStart, fmt.Errorf("empty route response"))
 		return nil, &RouteServiceError{
 			Code:       RouteErrorUpstreamFail,
@@ -406,6 +420,7 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 
 	summary := result.Routes[0].Summary
 	if summary.LengthInMeters <= 0 || summary.TravelTimeInSeconds <= 0 {
+		log.Printf("[tomtom-route] operation=%s travel_mode=%s status=%d detail=invalid route summary", operation, travelMode, status)
 		logTomTomRouteAudit(operation, dbmodel.ExternalAPIAuditStatusError, &status, requestStart, fmt.Errorf("missing route summary"))
 		return nil, &RouteServiceError{
 			Code:       RouteErrorUpstreamFail,
@@ -422,24 +437,98 @@ func fetchTomTomRoute(ctx context.Context, operation string, travelMode string, 
 	}, nil
 }
 
+func BuildFallbackRoutePlan(origin RouteCoordinate, destination RouteCoordinate, reason string) *RoutePlanResult {
+	distanceMeters := estimateStraightLineDistanceMeters(origin, destination)
+	warning := strings.TrimSpace(reason)
+	if warning == "" {
+		warning = "route provider unavailable; using straight-line preview"
+	}
+	return &RoutePlanResult{
+		Origin:         origin,
+		Destination:    destination,
+		DistanceMeters: distanceMeters,
+		Geometry:       fmt.Sprintf("%.5f,%.5f;%.5f,%.5f", origin.Lat, origin.Lon, destination.Lat, destination.Lon),
+		Paths: map[string]string{
+			"driving": fmt.Sprintf("%.5f,%.5f;%.5f,%.5f", origin.Lat, origin.Lon, destination.Lat, destination.Lon),
+		},
+		ETA: map[string]RouteModeETA{
+			RouteModeWalking: {
+				Available: false,
+				Code:      RouteErrorUpstreamFail,
+				Message:   warning,
+			},
+			RouteModeBus: {
+				Available: false,
+				Code:      RouteErrorUpstreamFail,
+				Message:   warning,
+			},
+			RouteModePublicTransit: {
+				Available: false,
+				Code:      RouteErrorUpstreamFail,
+				Message:   warning,
+			},
+		},
+		Warnings: []string{warning},
+	}
+}
+
+func estimateStraightLineDistanceMeters(origin RouteCoordinate, destination RouteCoordinate) int {
+	const earthRadiusMeters = 6371000.0
+	toRad := func(value float64) float64 {
+		return value * math.Pi / 180.0
+	}
+	lat1 := toRad(origin.Lat)
+	lat2 := toRad(destination.Lat)
+	dLat := toRad(destination.Lat - origin.Lat)
+	dLon := toRad(destination.Lon - origin.Lon)
+	a := math.Sin(dLat/2)*math.Sin(dLat/2) + math.Cos(lat1)*math.Cos(lat2)*math.Sin(dLon/2)*math.Sin(dLon/2)
+	c := 2 * math.Atan2(math.Sqrt(a), math.Sqrt(1-a))
+	return int(math.Round(earthRadiusMeters * c))
+}
+
+func summarizeProviderBody(body []byte) string {
+	trimmed := strings.TrimSpace(string(body))
+	if trimmed == "" {
+		return "empty response"
+	}
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(body, &parsed); err == nil {
+		for _, key := range []string{"errorText", "error", "message", "detailedError"} {
+			if raw, ok := parsed[key]; ok {
+				text := strings.TrimSpace(fmt.Sprintf("%v", raw))
+				if text != "" {
+					if len(text) > 180 {
+						return text[:180]
+					}
+					return text
+				}
+			}
+		}
+	}
+	if len(trimmed) > 180 {
+		return trimmed[:180]
+	}
+	return trimmed
+}
+
 func summarizeTomTomGeometry(legs []struct {
 	Points []struct {
 		Latitude  float64 `json:"latitude"`
 		Longitude float64 `json:"longitude"`
 	} `json:"points"`
 }) string {
-	if len(legs) == 0 || len(legs[0].Points) == 0 {
+	if len(legs) == 0 {
 		return ""
 	}
 
-	points := legs[0].Points
-	if len(points) > 24 {
-		points = points[:24]
+	result := make([]string, 0)
+	for _, leg := range legs {
+		for _, point := range leg.Points {
+			result = append(result, fmt.Sprintf("%.5f,%.5f", point.Latitude, point.Longitude))
+		}
 	}
-
-	result := make([]string, 0, len(points))
-	for _, point := range points {
-		result = append(result, fmt.Sprintf("%.5f,%.5f", point.Latitude, point.Longitude))
+	if len(result) == 0 {
+		return ""
 	}
 	return strings.Join(result, ";")
 }

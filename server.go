@@ -158,6 +158,7 @@ func startServer() {
 	})
 	router.Route("/schedules", func(r chi.Router) {
 		r.Post("/travel-analysis", service.ScheduleTravelAnalysisHandler)
+		r.Post("/route-preview", service.ScheduleRoutePreviewHandler)
 	})
 	router.Route("/auth/apikeys", func(r chi.Router) {
 		r.Get("/options", service.ListAPIKeyOptionsHandler)

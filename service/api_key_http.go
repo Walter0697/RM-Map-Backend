@@ -1552,6 +1552,8 @@ func SettingsGetPreviewPinHandler(w http.ResponseWriter, r *http.Request) {
 		response.PinID = preference.PreviewPinID
 		if preference.PreviewPin != nil {
 			response.PinLabel = preference.PreviewPin.Label
+		} else if label, labelErr := resolvePreviewPinLabelByID(*preference.PreviewPinID); labelErr == nil {
+			response.PinLabel = label
 		}
 	}
 
@@ -1621,6 +1623,8 @@ func IntegrationGetUserPreviewPinSelectionHandler(w http.ResponseWriter, r *http
 		response.PinID = preference.PreviewPinID
 		if preference.PreviewPin != nil {
 			response.PinLabel = preference.PreviewPin.Label
+		} else if label, labelErr := resolvePreviewPinLabelByID(*preference.PreviewPinID); labelErr == nil {
+			response.PinLabel = label
 		}
 	}
 
@@ -2007,6 +2011,18 @@ func trimmedStringPtr(value string) *string {
 		return nil
 	}
 	return &item
+}
+
+func resolvePreviewPinLabelByID(pinID uint) (string, error) {
+	if pinID == 0 {
+		return "", fmt.Errorf("pin_id is required")
+	}
+	var pin dbmodel.Pin
+	pin.ID = pinID
+	if err := pin.GetById(database.Connection); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(pin.Label), nil
 }
 
 func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {
