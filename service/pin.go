@@ -23,6 +23,9 @@ type Boundary struct {
 }
 
 func convertGroupIDInput(groupIDs []int) ([]uint, error) {
+	if len(groupIDs) > 1 {
+		return nil, fmt.Errorf("%w", ErrPinGroupSingleAssignmentOnly)
+	}
 	converted := make([]uint, 0, len(groupIDs))
 	for _, id := range groupIDs {
 		if id <= 0 {

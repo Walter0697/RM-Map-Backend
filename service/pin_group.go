@@ -14,6 +14,7 @@ var ErrPinGroupNameRequired = errors.New("pin group name is required")
 var ErrPinGroupDuplicateName = errors.New("pin group name already exists")
 var ErrPinGroupNotFound = errors.New("pin group not found")
 var ErrPinGroupInvalidAssignment = errors.New("pin group assignment contains unknown group ids")
+var ErrPinGroupSingleAssignmentOnly = errors.New("only one pin group can be assigned to a pin")
 
 func normalizePinGroupName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
@@ -127,6 +128,9 @@ func SetPinGroupAssignments(pinID uint, groupIDs []uint, actor *dbmodel.User) er
 		}
 		seen[id] = struct{}{}
 		cleaned = append(cleaned, id)
+	}
+	if len(cleaned) > 1 {
+		return ErrPinGroupSingleAssignmentOnly
 	}
 
 	groups := make([]dbmodel.PinGroup, 0, len(cleaned))

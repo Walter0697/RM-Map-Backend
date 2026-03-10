@@ -302,6 +302,8 @@ func AdminUpdatePinGroupAssignmentsHandler(w http.ResponseWriter, r *http.Reques
 		switch {
 		case errors.Is(err, ErrPinGroupInvalidAssignment):
 			http.Error(w, err.Error(), http.StatusBadRequest)
+		case errors.Is(err, ErrPinGroupSingleAssignmentOnly):
+			http.Error(w, err.Error(), http.StatusBadRequest)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
