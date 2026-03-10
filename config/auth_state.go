@@ -49,7 +49,11 @@ func applyAuthStateDefaults() {
 		Data.AuthState.KeyPrefix = "auth:v1"
 	}
 	if Data.AuthState.SessionTTLSeconds <= 0 {
-		Data.AuthState.SessionTTLSeconds = 60 * 60 * 24 * 30
+		if Data.App.AuthSessionLifetimeSeconds > 0 {
+			Data.AuthState.SessionTTLSeconds = Data.App.AuthSessionLifetimeSeconds
+		} else {
+			Data.AuthState.SessionTTLSeconds = DefaultAuthSessionLifetimeSeconds
+		}
 	}
 	if Data.AuthState.RedisDialTimeoutMS <= 0 {
 		Data.AuthState.RedisDialTimeoutMS = 1500

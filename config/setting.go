@@ -13,11 +13,12 @@ import (
 var Data Config
 
 type AppEnv struct {
-	Environment   string `mapstructure:"environment"`
-	JWT           string `mapstructure:"jwtkey"`
-	Port          string `mapstructure:"port"`
-	AllowedOrigin string `mapstructure:"allowedorigin"`
-	AuthMode      string `mapstructure:"authmode"`
+	Environment                string `mapstructure:"environment"`
+	JWT                        string `mapstructure:"jwtkey"`
+	Port                       string `mapstructure:"port"`
+	AllowedOrigin              string `mapstructure:"allowedorigin"`
+	AuthMode                   string `mapstructure:"authmode"`
+	AuthSessionLifetimeSeconds int    `mapstructure:"authsessionttlseconds"`
 }
 
 type Database struct {
@@ -40,18 +41,21 @@ type LDAPSetting struct {
 }
 
 type OIDCSetting struct {
-	Enable              bool     `mapstructure:"enable"`
-	Issuer              string   `mapstructure:"issuer"`
-	ClientID            string   `mapstructure:"clientid"`
-	ClientSecret        string   `mapstructure:"clientsecret"`
-	RedirectURL         string   `mapstructure:"redirecturl"`
-	FrontendRedirectURL string   `mapstructure:"frontendredirecturl"`
-	AuthEndpoint        string   `mapstructure:"authendpoint"`
-	TokenEndpoint       string   `mapstructure:"tokenendpoint"`
-	UserInfoEndpoint    string   `mapstructure:"userinfoendpoint"`
-	Scopes              []string `mapstructure:"scopes"`
-	UsernameClaim       string   `mapstructure:"usernameclaim"`
-	DefaultRole         string   `mapstructure:"defaultrole"`
+	Enable                      bool     `mapstructure:"enable"`
+	Issuer                      string   `mapstructure:"issuer"`
+	ClientID                    string   `mapstructure:"clientid"`
+	ClientSecret                string   `mapstructure:"clientsecret"`
+	RedirectURL                 string   `mapstructure:"redirecturl"`
+	FrontendRedirectURL         string   `mapstructure:"frontendredirecturl"`
+	AuthEndpoint                string   `mapstructure:"authendpoint"`
+	TokenEndpoint               string   `mapstructure:"tokenendpoint"`
+	UserInfoEndpoint            string   `mapstructure:"userinfoendpoint"`
+	Scopes                      []string `mapstructure:"scopes"`
+	UsernameClaim               string   `mapstructure:"usernameclaim"`
+	DefaultRole                 string   `mapstructure:"defaultrole"`
+	SessionLifetimeSeconds      int      `mapstructure:"sessionttlseconds"`
+	AccessTokenLifetimeSeconds  int      `mapstructure:"accesstokenttlseconds"`
+	RefreshTokenLifetimeSeconds int      `mapstructure:"refreshtokenttlseconds"`
 }
 
 type CalendarGoogleSetting struct {
@@ -203,6 +207,16 @@ func applyRedisEnvOverrides() error {
 			return fmt.Errorf("AUTH_STATE_SESSION_TTL_SECONDS must be an integer, got %q", ttlValue)
 		}
 		Data.AuthState.SessionTTLSeconds = parsedTTL
+	}
+	if lifetimeValue, exists := os.LookupEnv("AUTH_SESSION_LIFETIME_SECONDS"); exists {
+		parsedLifetime, err := strconv.Atoi(strings.TrimSpace(lifetimeValue))
+		if err != nil {
+			return fmt.Errorf("AUTH_SESSION_LIFETIME_SECONDS must be an integer, got %q", lifetimeValue)
+		}
+		if parsedLifetime <= 0 {
+			return fmt.Errorf("AUTH_SESSION_LIFETIME_SECONDS must be > 0, got %d", parsedLifetime)
+		}
+		Data.App.AuthSessionLifetimeSeconds = parsedLifetime
 	}
 	if easyThresholdValue, exists := os.LookupEnv("SCHEDULE_TRAVEL_EASY_THRESHOLD_MINUTES"); exists {
 		parsedEasyThreshold, err := strconv.Atoi(strings.TrimSpace(easyThresholdValue))

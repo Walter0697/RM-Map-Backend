@@ -163,6 +163,12 @@ func ConvertPin(pin dbmodel.Pin) model.Pin {
 	item.BottomRightY = pin.BottomRightY
 	item.ImagePath = pin.DisplayPath
 	item.DisplayPath = pin.ImagePath
+	item.GroupIds = []int{}
+	item.GroupNames = []string{}
+	for _, group := range pin.Groups {
+		item.GroupIds = append(item.GroupIds, int(group.ID))
+		item.GroupNames = append(item.GroupNames, group.Name)
+	}
 
 	item.CreatedAt = utils.ConvertToOutputTime(pin.CreatedAt)
 	item.UpdatedAt = utils.ConvertToOutputTime(pin.UpdatedAt)
