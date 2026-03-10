@@ -5,6 +5,7 @@ import "gorm.io/gorm"
 type PinGroup struct {
 	ObjectBase
 	Name           string `json:"name"`
+	IsNew          bool   `json:"is_new" gorm:"default:false"`
 	NormalizedName string `json:"normalizedName" gorm:"index:idx_pin_groups_normalized_name,unique"`
 	Pins           []Pin  `json:"pins,omitempty" gorm:"many2many:pin_group_assignments;"`
 }

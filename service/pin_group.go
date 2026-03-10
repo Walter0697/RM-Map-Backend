@@ -28,7 +28,7 @@ func ListPinGroups() ([]dbmodel.PinGroup, error) {
 	return items, nil
 }
 
-func CreatePinGroup(name string, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
+func CreatePinGroup(name string, isNew bool, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
 	trimmed := strings.TrimSpace(name)
 	if trimmed == "" {
 		return nil, ErrPinGroupNameRequired
@@ -36,6 +36,7 @@ func CreatePinGroup(name string, actor *dbmodel.User) (*dbmodel.PinGroup, error)
 
 	group := dbmodel.PinGroup{
 		Name:           trimmed,
+		IsNew:          isNew,
 		NormalizedName: normalizePinGroupName(trimmed),
 	}
 	if actor != nil {
@@ -52,7 +53,7 @@ func CreatePinGroup(name string, actor *dbmodel.User) (*dbmodel.PinGroup, error)
 	return &group, nil
 }
 
-func UpdatePinGroup(groupID uint, name string, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
+func UpdatePinGroup(groupID uint, name string, isNew bool, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
 	if groupID == 0 {
 		return nil, ErrPinGroupNotFound
 	}
@@ -71,6 +72,7 @@ func UpdatePinGroup(groupID uint, name string, actor *dbmodel.User) (*dbmodel.Pi
 	}
 
 	existing.Name = trimmed
+	existing.IsNew = isNew
 	existing.NormalizedName = normalizePinGroupName(trimmed)
 	if actor != nil {
 		existing.UpdatedBy = actor

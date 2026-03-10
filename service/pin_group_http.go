@@ -14,7 +14,8 @@ import (
 )
 
 type upsertPinGroupRequest struct {
-	Name string `json:"name"`
+	Name  string `json:"name"`
+	IsNew bool   `json:"is_new"`
 }
 
 type updatePinAssignmentsRequest struct {
@@ -22,8 +23,9 @@ type updatePinAssignmentsRequest struct {
 }
 
 type pinGroupResponse struct {
-	ID   uint   `json:"id"`
-	Name string `json:"name"`
+	ID    uint   `json:"id"`
+	Name  string `json:"name"`
+	IsNew bool   `json:"is_new"`
 }
 
 type pinSelectionResponse struct {
@@ -33,11 +35,13 @@ type pinSelectionResponse struct {
 	DisplayPath string   `json:"display_path"`
 	GroupIDs    []uint   `json:"group_ids"`
 	GroupNames  []string `json:"group_names"`
+	GroupIsNew  []bool   `json:"group_is_new"`
 }
 
 type pinSelectionGroupSection struct {
 	GroupID   *uint                  `json:"group_id"`
 	GroupName string                 `json:"group_name"`
+	IsNew     bool                   `json:"is_new"`
 	Pins      []pinSelectionResponse `json:"pins"`
 }
 
@@ -60,23 +64,39 @@ func mapPinGroupResponse(groups []dbmodel.PinGroup) []pinGroupResponse {
 	out := make([]pinGroupResponse, 0, len(groups))
 	for _, group := range groups {
 		out = append(out, pinGroupResponse{
-			ID:   group.ID,
-			Name: group.Name,
+			ID:    group.ID,
+			Name:  group.Name,
+			IsNew: group.IsNew,
 		})
 	}
 	return out
 }
 
 func mapPinSelection(pin dbmodel.Pin) pinSelectionResponse {
-	groupIDs := make([]uint, 0, len(pin.Groups))
-	groupNames := make([]string, 0, len(pin.Groups))
-	for _, group := range pin.Groups {
-		groupIDs = append(groupIDs, group.ID)
-		groupNames = append(groupNames, group.Name)
+	type groupPair struct {
+		ID    uint
+		Name  string
+		IsNew bool
 	}
-	sort.Slice(groupNames, func(i, j int) bool {
-		return strings.ToLower(groupNames[i]) < strings.ToLower(groupNames[j])
+	groupPairs := make([]groupPair, 0, len(pin.Groups))
+	for _, group := range pin.Groups {
+		groupPairs = append(groupPairs, groupPair{
+			ID:    group.ID,
+			Name:  group.Name,
+			IsNew: group.IsNew,
+		})
+	}
+	sort.Slice(groupPairs, func(i, j int) bool {
+		return strings.ToLower(groupPairs[i].Name) < strings.ToLower(groupPairs[j].Name)
 	})
+	groupIDs := make([]uint, 0, len(groupPairs))
+	groupNames := make([]string, 0, len(groupPairs))
+	groupIsNew := make([]bool, 0, len(groupPairs))
+	for _, pair := range groupPairs {
+		groupIDs = append(groupIDs, pair.ID)
+		groupNames = append(groupNames, pair.Name)
+		groupIsNew = append(groupIsNew, pair.IsNew)
+	}
 	return pinSelectionResponse{
 		ID:          pin.ID,
 		Label:       pin.Label,
@@ -84,6 +104,7 @@ func mapPinSelection(pin dbmodel.Pin) pinSelectionResponse {
 		DisplayPath: pin.DisplayPath,
 		GroupIDs:    groupIDs,
 		GroupNames:  groupNames,
+		GroupIsNew:  groupIsNew,
 	}
 }
 
@@ -105,6 +126,9 @@ func buildGroupedSelectionSections(items []pinSelectionResponse) []pinSelectionG
 				id := groupID
 				existing.GroupID = &id
 				existing.GroupName = name
+				if index < len(item.GroupIsNew) {
+					existing.IsNew = item.GroupIsNew[index]
+				}
 				existing.Pins = []pinSelectionResponse{}
 			}
 			existing.Pins = append(existing.Pins, item)
@@ -180,7 +204,7 @@ func AdminCreatePinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, err := createPinGroupFn(request.Name, user)
+	group, err := createPinGroupFn(request.Name, request.IsNew, user)
 	if err != nil {
 		switch {
 		case errors.Is(err, ErrPinGroupNameRequired):
@@ -193,7 +217,7 @@ func AdminCreatePinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, pinGroupResponse{ID: group.ID, Name: group.Name})
+	respondJSON(w, http.StatusCreated, pinGroupResponse{ID: group.ID, Name: group.Name, IsNew: group.IsNew})
 }
 
 func AdminUpdatePinGroupHandler(w http.ResponseWriter, r *http.Request) {
@@ -215,7 +239,7 @@ func AdminUpdatePinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	group, updateErr := updatePinGroupFn(uint(groupID), request.Name, user)
+	group, updateErr := updatePinGroupFn(uint(groupID), request.Name, request.IsNew, user)
 	if updateErr != nil {
 		switch {
 		case errors.Is(updateErr, ErrPinGroupNameRequired):
@@ -230,7 +254,7 @@ func AdminUpdatePinGroupHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, pinGroupResponse{ID: group.ID, Name: group.Name})
+	respondJSON(w, http.StatusOK, pinGroupResponse{ID: group.ID, Name: group.Name, IsNew: group.IsNew})
 }
 
 func AdminDeletePinGroupHandler(w http.ResponseWriter, r *http.Request) {

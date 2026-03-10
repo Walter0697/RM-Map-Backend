@@ -40,7 +40,7 @@ func TestSettingsListPinsHandlerGroupedAndUngrouped(t *testing.T) {
 				ImagePath:   "/uploads/pins/a.png",
 				DisplayPath: "/uploads/pins/a-display.png",
 				Groups: []dbmodel.PinGroup{
-					{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 21}}, Name: "Commuting"},
+					{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 21}}, Name: "Commuting", IsNew: true},
 				},
 			},
 			{
@@ -73,6 +73,9 @@ func TestSettingsListPinsHandlerGroupedAndUngrouped(t *testing.T) {
 
 	foundUngrouped := false
 	for _, section := range response.Groups {
+		if section.GroupName == "Commuting" && !section.IsNew {
+			t.Fatalf("expected Commuting group to be marked is_new")
+		}
 		if section.GroupName == "Ungrouped" {
 			foundUngrouped = true
 			if len(section.Pins) != 1 || section.Pins[0].Label != "Ungrouped Pin" {
@@ -99,10 +102,11 @@ func TestAdminPinGroupFlowCreateAssignAndList(t *testing.T) {
 	var createdGroup dbmodel.PinGroup
 	assignments := map[uint][]uint{}
 
-	createPinGroupFn = func(name string, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
+	createPinGroupFn = func(name string, isNew bool, actor *dbmodel.User) (*dbmodel.PinGroup, error) {
 		createdGroup = dbmodel.PinGroup{
 			ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 301}},
 			Name:       name,
+			IsNew:      isNew,
 		}
 		return &createdGroup, nil
 	}
@@ -132,6 +136,7 @@ func TestAdminPinGroupFlowCreateAssignAndList(t *testing.T) {
 					{
 						ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: createdGroup.ID}},
 						Name:       createdGroup.Name,
+						IsNew:      createdGroup.IsNew,
 					},
 				},
 			},
@@ -140,7 +145,7 @@ func TestAdminPinGroupFlowCreateAssignAndList(t *testing.T) {
 
 	// Create group
 	createRecorder := httptest.NewRecorder()
-	createRequest := httptest.NewRequest(http.MethodPost, "/admin/pin-groups", bytes.NewBufferString(`{"name":"Commuting"}`))
+	createRequest := httptest.NewRequest(http.MethodPost, "/admin/pin-groups", bytes.NewBufferString(`{"name":"Commuting","is_new":true}`))
 	AdminCreatePinGroupHandler(createRecorder, createRequest)
 	if createRecorder.Code != http.StatusCreated {
 		t.Fatalf("create expected 201, got %d", createRecorder.Code)
@@ -174,6 +179,9 @@ func TestAdminPinGroupFlowCreateAssignAndList(t *testing.T) {
 	}
 	if response.Groups[0].GroupName != "Commuting" {
 		t.Fatalf("expected group Commuting, got %s", response.Groups[0].GroupName)
+	}
+	if !response.Groups[0].IsNew {
+		t.Fatalf("expected group to be marked is_new")
 	}
 }
 
