@@ -509,6 +509,12 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 	if err := marker.GetById(database.Connection); err != nil {
 		return nil, helper.CheckDatabaseError(err, &helper.MarkerNotFound{})
 	}
+	if marker.RelationId != relation.ID {
+		return nil, &helper.InvalidRelationUpdateError{}
+	}
+	if marker.Status == constant.Cancelled {
+		return nil, &helper.MarkerNotFound{}
+	}
 
 	transaction := database.Connection.Begin()
 

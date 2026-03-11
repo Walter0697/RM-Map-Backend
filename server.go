@@ -151,6 +151,7 @@ func startServer() {
 	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
+		r.Get("/history-marker-preview", service.HistoryMarkerPreviewHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
 		r.Get("/release-notes", service.SettingsListReleaseNotesHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
