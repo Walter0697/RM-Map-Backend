@@ -69,6 +69,8 @@ scopes=["https://www.googleapis.com/auth/calendar.events"]
 [apikey]
 moviedb=""
 tomtommap=""
+tomtomrouting=""
+tomtomstaticimage=""
 yelp=""
 
 [scheduletravel]
@@ -77,6 +79,15 @@ baseurl="https://api.tomtom.com/routing/1"
 timeoutms=3000
 easythresholdminutes=20
 difficultthresholdminutes=45
+
+[tomtomroute]
+baseurl="https://api.tomtom.com/routing/1"
+timeoutms=3500
+retrycount=1
+
+[tomtomstaticimage]
+baseurl="https://api.tomtom.com/map/1/staticimage"
+timeoutms=8000
 
 [weather]
 enable=false

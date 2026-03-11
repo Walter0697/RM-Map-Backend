@@ -8,16 +8,22 @@ import (
 
 type Schedule struct {
 	ObjectBase
-	Label          string    `json:"label"`
-	Description    string    `json:"description"`
-	Status         string    `json:"status"`
-	SelectedDate   time.Time `json:"selectedDate"`
-	SelectedMarker *Marker   `gorm:"foreignKey:marker_id;reference:id"`
-	MarkerId       *uint
-	SelectedMovie  *Movie `gorm:"foreignKey:movie_id;referenece:id"`
-	MovieId        *uint
-	Relation       UserRelation `gorm:"foreignKey:relation_id;reference:id"`
-	RelationId     uint
+	Label                        string    `json:"label"`
+	Description                  string    `json:"description"`
+	Status                       string    `json:"status"`
+	SelectedDate                 time.Time `json:"selectedDate"`
+	RouteImageRef                *string   `json:"route_image_ref,omitempty" gorm:"type:text"`
+	RouteDistanceMeters          *int      `json:"route_distance_meters,omitempty"`
+	RouteETAWalkingSeconds       *int      `json:"route_eta_walking_seconds,omitempty"`
+	RouteETABusSeconds           *int      `json:"route_eta_bus_seconds,omitempty"`
+	RouteETAPublicTransitSeconds *int      `json:"route_eta_public_transit_seconds,omitempty"`
+	RoutePreviewWarning          *string   `json:"route_preview_warning,omitempty" gorm:"type:text"`
+	SelectedMarker               *Marker   `gorm:"foreignKey:marker_id;reference:id"`
+	MarkerId                     *uint
+	SelectedMovie                *Movie `gorm:"foreignKey:movie_id;referenece:id"`
+	MovieId                      *uint
+	Relation                     UserRelation `gorm:"foreignKey:relation_id;reference:id"`
+	RelationId                   uint
 }
 
 func (schedule *Schedule) Create(db *gorm.DB) error {

@@ -158,6 +158,7 @@ func startServer() {
 	})
 	router.Route("/schedules", func(r chi.Router) {
 		r.Post("/travel-analysis", service.ScheduleTravelAnalysisHandler)
+		r.Post("/route-preview", service.ScheduleRoutePreviewHandler)
 	})
 	router.Route("/auth/apikeys", func(r chi.Router) {
 		r.Get("/options", service.ListAPIKeyOptionsHandler)
@@ -176,6 +177,7 @@ func startServer() {
 		r.Delete("/markers/{id}", service.IntegrationDeleteMarkerHandler)
 		r.Get("/schedules", service.IntegrationListSchedulesHandler)
 		r.Post("/schedules", service.IntegrationCreateScheduleHandler)
+		r.Put("/schedules/{id}", service.IntegrationUpdateScheduleHandler)
 		r.Get("/stations", service.IntegrationListStationsHandler)
 		r.Put("/stations", service.IntegrationUpdateStationHandler)
 		r.Get("/settings/pins", service.IntegrationListSettingsPinsHandler)
@@ -186,6 +188,8 @@ func startServer() {
 		r.Put("/settings/users/{username}/preview-pin", service.IntegrationUpdateUserPreviewPinSelectionHandler)
 		r.Post("/static-map-preview/geocode", service.IntegrationGeocodeStaticMapPreviewHandler)
 		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
+		r.Post("/routes/plan", service.IntegrationPlanRouteHandler)
+		r.Post("/routes/static-image", service.IntegrationGenerateRouteStaticImageHandler)
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
