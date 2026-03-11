@@ -37,6 +37,7 @@ type ExportSnapshotSource struct {
 type ExportSnapshotMarker struct {
 	ID           uint                        `json:"id"`
 	Label        string                      `json:"label"`
+	Type         string                      `json:"type,omitempty"`
 	Latitude     float64                     `json:"latitude"`
 	Longitude    float64                     `json:"longitude"`
 	Address      string                      `json:"address,omitempty"`
@@ -124,6 +125,7 @@ func BuildExportSnapshot(input BuildExportSnapshotInput) (*ExportSnapshot, error
 		result.Markers = append(result.Markers, ExportSnapshotMarker{
 			ID:           marker.ID,
 			Label:        marker.Label,
+			Type:         strings.TrimSpace(marker.Type),
 			Latitude:     marker.Latitude,
 			Longitude:    marker.Longitude,
 			Address:      marker.Address,

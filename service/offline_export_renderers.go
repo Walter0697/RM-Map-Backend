@@ -28,28 +28,29 @@ func renderOfflineExportArtifact(format string, snapshot *ExportSnapshot, jobID 
 }
 
 func renderOfflineExportText(snapshot *ExportSnapshot, jobID string) offlineRenderedArtifact {
+	markerByID := buildExportMarkerLookup(snapshot.Markers)
 	builder := &strings.Builder{}
-	builder.WriteString("# Offline Export Snapshot\n")
-	builder.WriteString(fmt.Sprintf("job_id: %s\n", jobID))
-	builder.WriteString(fmt.Sprintf("generated_at: %s\n", snapshot.GeneratedAt.Format(timeRFC3339Milli)))
-	builder.WriteString(fmt.Sprintf("timezone: %s\n", snapshot.Timezone))
-	builder.WriteString(fmt.Sprintf("relation_id: %d\n", snapshot.Source.RelationID))
-	builder.WriteString("\n## Markers\n")
-	if len(snapshot.Markers) == 0 {
-		builder.WriteString("- none\n")
-	}
-	for _, marker := range snapshot.Markers {
-		builder.WriteString(fmt.Sprintf("- [%d] %s\n", marker.ID, marker.Label))
-		builder.WriteString(fmt.Sprintf("  website: provider=%s status=%s url=%s\n", marker.Website.Provider, marker.Website.Status, marker.Website.URL))
-		builder.WriteString(fmt.Sprintf("  estimate_time: %s\n", marker.EstimateTime.Display))
-	}
-	builder.WriteString("\n## Schedules\n")
 	if len(snapshot.Schedules) == 0 {
 		builder.WriteString("- none\n")
 	}
+	lastDateKey := ""
 	for _, schedule := range snapshot.Schedules {
-		builder.WriteString(fmt.Sprintf("- [%d] %s at %s\n", schedule.ID, schedule.Label, schedule.SelectedDate.Format(timeRFC3339Milli)))
-		builder.WriteString(fmt.Sprintf("  marker_id: %s\n", formatNullableUint(schedule.MarkerID)))
+		dateKey := schedule.SelectedDate.Format("2006-01-02")
+		if dateKey != lastDateKey {
+			if lastDateKey != "" {
+				builder.WriteString("\n")
+			}
+			builder.WriteString(fmt.Sprintf("========== %s ==========\n", schedule.SelectedDate.Format("Monday, Jan 2 2006")))
+			lastDateKey = dateKey
+		} else {
+			builder.WriteString("\n")
+		}
+		linkedMarker := exportMarkerForSchedule(schedule, markerByID)
+		builder.WriteString(fmt.Sprintf("- %s at %s\n", schedule.Label, schedule.SelectedDate.Format(timeRFC3339Milli)))
+		builder.WriteString(fmt.Sprintf("  marker_type: %s\n", fallbackExportValue(linkedMarker.Type)))
+		builder.WriteString(fmt.Sprintf("  address: %s\n", fallbackExportValue(linkedMarker.Address)))
+		builder.WriteString(fmt.Sprintf("  website: %s\n", formatWebsiteForExport(linkedMarker.Website)))
+		builder.WriteString(fmt.Sprintf("  description: %s\n", fallbackExportValue(firstNonEmptyExportValue(schedule.Description, linkedMarker.Description))))
 		builder.WriteString(fmt.Sprintf("  estimate_time: %s\n", schedule.EstimateTime.Display))
 	}
 	return offlineRenderedArtifact{
@@ -111,18 +112,24 @@ func renderOfflineExportNotion(snapshot *ExportSnapshot, jobID string) (offlineR
 	}})
 	for _, marker := range snapshot.Markers {
 		blocks = append(blocks, notionBlock{Type: "marker", Payload: map[string]interface{}{
-			"id":             marker.ID,
-			"label":          marker.Label,
-			"website_status": marker.Website.Status,
-			"website_url":    marker.Website.URL,
-			"estimate_time":  marker.EstimateTime.Display,
+			"label":         marker.Label,
+			"marker_type":   marker.Type,
+			"address":       marker.Address,
+			"description":   marker.Description,
+			"website":       formatWebsiteForExport(marker.Website),
+			"estimate_time": marker.EstimateTime.Display,
 		}})
 	}
+	markerByID := buildExportMarkerLookup(snapshot.Markers)
 	for _, schedule := range snapshot.Schedules {
+		linkedMarker := exportMarkerForSchedule(schedule, markerByID)
 		blocks = append(blocks, notionBlock{Type: "schedule", Payload: map[string]interface{}{
-			"id":            schedule.ID,
 			"label":         schedule.Label,
 			"selected_date": schedule.SelectedDate.Format(timeRFC3339Milli),
+			"marker_type":   linkedMarker.Type,
+			"address":       linkedMarker.Address,
+			"description":   firstNonEmptyExportValue(schedule.Description, linkedMarker.Description),
+			"website":       formatWebsiteForExport(linkedMarker.Website),
 			"estimate_time": schedule.EstimateTime.Display,
 		}})
 	}
@@ -151,6 +158,48 @@ func formatNullableUint(value *uint) string {
 		return "null"
 	}
 	return fmt.Sprintf("%d", *value)
+}
+
+func buildExportMarkerLookup(markers []ExportSnapshotMarker) map[uint]ExportSnapshotMarker {
+	result := make(map[uint]ExportSnapshotMarker, len(markers))
+	for _, marker := range markers {
+		result[marker.ID] = marker
+	}
+	return result
+}
+
+func exportMarkerForSchedule(schedule ExportSnapshotSchedule, markerByID map[uint]ExportSnapshotMarker) ExportSnapshotMarker {
+	if schedule.MarkerID == nil {
+		return ExportSnapshotMarker{}
+	}
+	return markerByID[*schedule.MarkerID]
+}
+
+func formatWebsiteForExport(website ExportSnapshotWebsite) string {
+	if strings.TrimSpace(website.URL) == "" {
+		return fmt.Sprintf("status=%s", fallbackExportValue(website.Status))
+	}
+	if strings.TrimSpace(website.Provider) == "" || strings.EqualFold(strings.TrimSpace(website.Provider), "unknown") {
+		return website.URL
+	}
+	return fmt.Sprintf("%s (%s, %s)", website.URL, website.Provider, fallbackExportValue(website.Status))
+}
+
+func fallbackExportValue(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" {
+		return "N/A"
+	}
+	return trimmed
+}
+
+func firstNonEmptyExportValue(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func escapeXML(value string) string {
