@@ -159,6 +159,9 @@ func startServer() {
 	router.Route("/schedules", func(r chi.Router) {
 		r.Post("/travel-analysis", service.ScheduleTravelAnalysisHandler)
 	})
+	router.Post("/exports", service.CreateOfflineExportHandler)
+	router.Get("/exports/{job_id}", service.GetOfflineExportStatusHandler)
+	router.Get("/exports/{job_id}/artifacts/{format}", service.GetOfflineExportArtifactHandler)
 	router.Route("/auth/apikeys", func(r chi.Router) {
 		r.Get("/options", service.ListAPIKeyOptionsHandler)
 		r.Get("/", service.ListAPIKeysHandler)

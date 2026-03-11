@@ -8,6 +8,7 @@ import (
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -59,14 +60,16 @@ type offlineExportCreateResponse struct {
 }
 
 var (
-	offlineExportJobsMu          sync.RWMutex
-	offlineExportJobs            = map[string]offlineExportJobContract{}
-	offlineExportArtifacts       = map[string]map[string]offlineRenderedArtifact{}
-	offlineExportSeq             uint64
-	offlineExportLoadRecordsFn   = loadOfflineExportRecords
-	offlineExportBuildSnapshotFn = BuildExportSnapshot
-	offlineExportRunJobFn        = runOfflineExportJob
-	offlineExportJobCleanupFn    = cleanupExpiredOfflineExportJobs
+	offlineExportJobsMu            sync.RWMutex
+	offlineExportJobs              = map[string]offlineExportJobContract{}
+	offlineExportArtifacts         = map[string]map[string]offlineRenderedArtifact{}
+	offlineExportSeq               uint64
+	offlineExportLoadRecordsFn     = loadOfflineExportRecords
+	offlineExportBuildSnapshotFn   = BuildExportSnapshot
+	offlineExportRunJobFn          = runOfflineExportJob
+	offlineExportJobCleanupFn      = cleanupExpiredOfflineExportJobs
+	offlineExportCurrentUserFn     = currentUserFromRequest
+	offlineExportCurrentRelationFn = GetCurrentRelation
 
 	offlineExportMetricJobsCreated   uint64
 	offlineExportMetricJobsSucceeded uint64
@@ -75,10 +78,143 @@ var (
 )
 
 func IntegrationCreateOfflineExportHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
 	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.exports.create", constant.APIKeyScopeSchedulesWrite, "")
 	if !ok {
 		return
 	}
+
+	createOfflineExportJobAndRespond(w, r, apiKey.Relation.ID, apiKey.ActorUser.ID, "/integration/exports")
+}
+
+func CreateOfflineExportHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
+	user := offlineExportCurrentUserFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	relation, err := offlineExportCurrentRelationFn(*user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if relation == nil {
+		http.Error(w, "selected relation is required", http.StatusBadRequest)
+		return
+	}
+
+	createOfflineExportJobAndRespond(w, r, relation.ID, user.ID, "/exports")
+}
+
+func IntegrationGetOfflineExportStatusHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
+	if _, ok := integrationAuthenticateRequestFn(w, r, "integration.exports.status", constant.APIKeyScopeSchedulesRead, ""); !ok {
+		return
+	}
+
+	writeOfflineExportStatusResponse(w, chi.URLParam(r, "job_id"))
+}
+
+func GetOfflineExportStatusHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
+	user := offlineExportCurrentUserFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	relation, err := offlineExportCurrentRelationFn(*user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if relation == nil {
+		http.Error(w, "selected relation is required", http.StatusBadRequest)
+		return
+	}
+
+	jobID := chi.URLParam(r, "job_id")
+	job, exists := getOfflineExportJob(strings.TrimSpace(jobID))
+	if !exists {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+	if !offlineExportJobBelongsToRelation(job, relation.ID) {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{"job": job})
+}
+
+func IntegrationGetOfflineExportArtifactHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
+	if _, ok := integrationAuthenticateRequestFn(w, r, "integration.exports.artifact", constant.APIKeyScopeSchedulesRead, ""); !ok {
+		return
+	}
+
+	writeOfflineExportArtifactResponse(w, chi.URLParam(r, "job_id"), chi.URLParam(r, "format"))
+}
+
+func GetOfflineExportArtifactHandler(w http.ResponseWriter, r *http.Request) {
+	if !offlineExportFeatureEnabled() {
+		http.Error(w, "offline export feature is disabled", http.StatusNotFound)
+		return
+	}
+
+	user := offlineExportCurrentUserFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	relation, err := offlineExportCurrentRelationFn(*user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if relation == nil {
+		http.Error(w, "selected relation is required", http.StatusBadRequest)
+		return
+	}
+
+	jobID := strings.TrimSpace(chi.URLParam(r, "job_id"))
+	job, exists := getOfflineExportJob(jobID)
+	if !exists {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+	if !offlineExportJobBelongsToRelation(job, relation.ID) {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+
+	writeOfflineExportArtifactResponse(w, jobID, chi.URLParam(r, "format"))
+}
+
+func createOfflineExportJobAndRespond(w http.ResponseWriter, r *http.Request, relationID uint, userID uint, downloadBasePath string) {
 
 	request := offlineExportCreateRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -98,15 +234,15 @@ func IntegrationCreateOfflineExportHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	markers, schedules, err := offlineExportLoadRecordsFn(apiKey.Relation.ID, filters)
+	markers, schedules, err := offlineExportLoadRecordsFn(relationID, filters)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	snapshot, err := offlineExportBuildSnapshotFn(BuildExportSnapshotInput{
-		RelationID: apiKey.Relation.ID,
-		UserID:     apiKey.ActorUser.ID,
+		RelationID: relationID,
+		UserID:     userID,
 		Timezone:   filters.Timezone,
 		Now:        time.Now().UTC(),
 		Markers:    markers,
@@ -124,7 +260,7 @@ func IntegrationCreateOfflineExportHandler(w http.ResponseWriter, r *http.Reques
 		artifacts = append(artifacts, offlineExportArtifactContract{
 			Format:      format,
 			Status:      offlineExportJobStatusQueued,
-			DownloadURL: fmt.Sprintf("/integration/exports/%s/artifacts/%s", jobID, format),
+			DownloadURL: fmt.Sprintf("%s/%s/artifacts/%s", strings.TrimRight(downloadBasePath, "/"), jobID, format),
 		})
 	}
 
@@ -147,77 +283,6 @@ func IntegrationCreateOfflineExportHandler(w http.ResponseWriter, r *http.Reques
 	go offlineExportRunJobFn(jobID)
 
 	respondJSON(w, http.StatusAccepted, offlineExportCreateResponse{Job: job})
-}
-
-func IntegrationGetOfflineExportStatusHandler(w http.ResponseWriter, r *http.Request) {
-	if _, ok := integrationAuthenticateRequestFn(w, r, "integration.exports.status", constant.APIKeyScopeSchedulesRead, ""); !ok {
-		return
-	}
-
-	jobID := strings.TrimSpace(chi.URLParam(r, "job_id"))
-	if jobID == "" {
-		http.Error(w, "job_id is required", http.StatusBadRequest)
-		return
-	}
-
-	offlineExportJobsMu.RLock()
-	job, exists := offlineExportJobs[jobID]
-	offlineExportJobsMu.RUnlock()
-	if !exists {
-		http.Error(w, "export job not found", http.StatusNotFound)
-		return
-	}
-
-	respondJSON(w, http.StatusOK, map[string]interface{}{"job": job})
-}
-
-func IntegrationGetOfflineExportArtifactHandler(w http.ResponseWriter, r *http.Request) {
-	if _, ok := integrationAuthenticateRequestFn(w, r, "integration.exports.artifact", constant.APIKeyScopeSchedulesRead, ""); !ok {
-		return
-	}
-
-	jobID := strings.TrimSpace(chi.URLParam(r, "job_id"))
-	format := strings.ToLower(strings.TrimSpace(chi.URLParam(r, "format")))
-	if jobID == "" {
-		http.Error(w, "job_id is required", http.StatusBadRequest)
-		return
-	}
-	if _, err := normalizeExportFormats([]string{format}); err != nil {
-		http.Error(w, "invalid artifact format", http.StatusBadRequest)
-		return
-	}
-
-	offlineExportJobsMu.RLock()
-	job, exists := offlineExportJobs[jobID]
-	offlineExportJobsMu.RUnlock()
-	if !exists {
-		http.Error(w, "export job not found", http.StatusNotFound)
-		return
-	}
-
-	for _, artifact := range job.Artifacts {
-		if artifact.Format == format {
-			if artifact.Status != offlineExportJobStatusSucceeded {
-				http.Error(w, "artifact is not ready", http.StatusConflict)
-				return
-			}
-			offlineExportJobsMu.RLock()
-			jobArtifacts := offlineExportArtifacts[jobID]
-			rendered, ok := jobArtifacts[format]
-			offlineExportJobsMu.RUnlock()
-			if !ok || len(rendered.Content) == 0 {
-				http.Error(w, "artifact payload unavailable", http.StatusNotFound)
-				return
-			}
-			w.Header().Set("Content-Type", rendered.ContentType)
-			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", rendered.FileName))
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write(rendered.Content)
-			return
-		}
-	}
-
-	http.Error(w, "artifact format not found for export job", http.StatusNotFound)
 }
 
 type offlineExportFilters struct {
@@ -277,12 +342,16 @@ func normalizeExportFormats(formats []string) ([]string, error) {
 	if len(formats) == 0 {
 		return nil, fmt.Errorf("formats are required")
 	}
+	allowedFormats := offlineExportAllowedFormats()
 	output := make([]string, 0, len(formats))
 	seen := map[string]bool{}
 	for _, format := range formats {
 		normalized := strings.ToLower(strings.TrimSpace(format))
 		switch normalized {
 		case offlineExportFormatText, offlineExportFormatImage, offlineExportFormatNotion:
+			if !allowedFormats[normalized] {
+				return nil, fmt.Errorf("format is disabled: %s", normalized)
+			}
 			if !seen[normalized] {
 				seen[normalized] = true
 				output = append(output, normalized)
@@ -297,17 +366,70 @@ func normalizeExportFormats(formats []string) ([]string, error) {
 	return output, nil
 }
 
+func offlineExportFeatureEnabled() bool {
+	value, exists := os.LookupEnv("OFFLINE_EXPORT_ENABLE")
+	if !exists {
+		return true
+	}
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+func offlineExportAllowedFormats() map[string]bool {
+	if !offlineExportFeatureEnabled() {
+		return map[string]bool{}
+	}
+
+	rawValue := strings.TrimSpace(os.Getenv("OFFLINE_EXPORT_FORMATS"))
+	if rawValue == "" {
+		return map[string]bool{
+			offlineExportFormatText:   true,
+			offlineExportFormatImage:  true,
+			offlineExportFormatNotion: true,
+		}
+	}
+
+	allowed := map[string]bool{}
+	for _, token := range strings.Split(rawValue, ",") {
+		switch strings.ToLower(strings.TrimSpace(token)) {
+		case offlineExportFormatText, offlineExportFormatImage, offlineExportFormatNotion:
+			allowed[strings.ToLower(strings.TrimSpace(token))] = true
+		}
+	}
+	if len(allowed) == 0 {
+		allowed[offlineExportFormatText] = true
+		allowed[offlineExportFormatImage] = true
+		allowed[offlineExportFormatNotion] = true
+	}
+	return allowed
+}
+
+func OfflineExportAllowedFormatsList() []string {
+	allowed := offlineExportAllowedFormats()
+	output := make([]string, 0, len(allowed))
+	for _, format := range []string{
+		offlineExportFormatText,
+		offlineExportFormatImage,
+		offlineExportFormatNotion,
+	} {
+		if allowed[format] {
+			output = append(output, format)
+		}
+	}
+	return output
+}
+
 func loadOfflineExportRecords(relationID uint, filters offlineExportFilters) ([]dbmodel.Marker, []dbmodel.Schedule, error) {
-	markerQuery := database.Connection.Model(&dbmodel.Marker{}).
-		Where("relation_id = ?", relationID).
-		Preload("RestaurantInfo")
 	scheduleQuery := database.Connection.Model(&dbmodel.Schedule{}).
 		Where("relation_id = ?", relationID).
 		Preload("SelectedMarker.RestaurantInfo")
 
-	if len(filters.MarkerIDs) > 0 {
-		markerQuery = markerQuery.Where("id in ?", filters.MarkerIDs)
-	}
 	if len(filters.ScheduleIDs) > 0 {
 		scheduleQuery = scheduleQuery.Where("id in ?", filters.ScheduleIDs)
 	}
@@ -318,15 +440,115 @@ func loadOfflineExportRecords(relationID uint, filters offlineExportFilters) ([]
 		scheduleQuery = scheduleQuery.Where("selected_date <= ?", filters.To.UTC())
 	}
 
-	markers := make([]dbmodel.Marker, 0)
-	if err := markerQuery.Find(&markers).Error; err != nil {
-		return nil, nil, err
-	}
 	schedules := make([]dbmodel.Schedule, 0)
 	if err := scheduleQuery.Find(&schedules).Error; err != nil {
 		return nil, nil, err
 	}
+
+	markerIDs := make([]uint, 0, len(filters.MarkerIDs))
+	markerIDSeen := map[uint]bool{}
+	for _, markerID := range filters.MarkerIDs {
+		if markerID == 0 || markerIDSeen[markerID] {
+			continue
+		}
+		markerIDSeen[markerID] = true
+		markerIDs = append(markerIDs, markerID)
+	}
+	if len(markerIDs) == 0 {
+		for _, schedule := range schedules {
+			if schedule.MarkerId == nil || *schedule.MarkerId == 0 || markerIDSeen[*schedule.MarkerId] {
+				continue
+			}
+			markerIDSeen[*schedule.MarkerId] = true
+			markerIDs = append(markerIDs, *schedule.MarkerId)
+		}
+	}
+
+	markers := make([]dbmodel.Marker, 0, len(markerIDs))
+	if len(markerIDs) == 0 {
+		return markers, schedules, nil
+	}
+	markerQuery := database.Connection.Model(&dbmodel.Marker{}).
+		Where("relation_id = ?", relationID).
+		Where("id in ?", markerIDs).
+		Preload("RestaurantInfo")
+	if err := markerQuery.Find(&markers).Error; err != nil {
+		return nil, nil, err
+	}
 	return markers, schedules, nil
+}
+
+func writeOfflineExportStatusResponse(w http.ResponseWriter, rawJobID string) {
+	jobID := strings.TrimSpace(rawJobID)
+	if jobID == "" {
+		http.Error(w, "job_id is required", http.StatusBadRequest)
+		return
+	}
+
+	job, exists := getOfflineExportJob(jobID)
+	if !exists {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{"job": job})
+}
+
+func writeOfflineExportArtifactResponse(w http.ResponseWriter, rawJobID string, rawFormat string) {
+	jobID := strings.TrimSpace(rawJobID)
+	format := strings.ToLower(strings.TrimSpace(rawFormat))
+	if jobID == "" {
+		http.Error(w, "job_id is required", http.StatusBadRequest)
+		return
+	}
+	if _, err := normalizeExportFormats([]string{format}); err != nil {
+		http.Error(w, "invalid artifact format", http.StatusBadRequest)
+		return
+	}
+
+	job, exists := getOfflineExportJob(jobID)
+	if !exists {
+		http.Error(w, "export job not found", http.StatusNotFound)
+		return
+	}
+
+	for _, artifact := range job.Artifacts {
+		if artifact.Format == format {
+			if artifact.Status != offlineExportJobStatusSucceeded {
+				http.Error(w, "artifact is not ready", http.StatusConflict)
+				return
+			}
+			offlineExportJobsMu.RLock()
+			jobArtifacts := offlineExportArtifacts[jobID]
+			rendered, ok := jobArtifacts[format]
+			offlineExportJobsMu.RUnlock()
+			if !ok || len(rendered.Content) == 0 {
+				http.Error(w, "artifact payload unavailable", http.StatusNotFound)
+				return
+			}
+			w.Header().Set("Content-Type", rendered.ContentType)
+			w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", rendered.FileName))
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(rendered.Content)
+			return
+		}
+	}
+
+	http.Error(w, "artifact format not found for export job", http.StatusNotFound)
+}
+
+func getOfflineExportJob(jobID string) (offlineExportJobContract, bool) {
+	offlineExportJobsMu.RLock()
+	job, exists := offlineExportJobs[jobID]
+	offlineExportJobsMu.RUnlock()
+	return job, exists
+}
+
+func offlineExportJobBelongsToRelation(job offlineExportJobContract, relationID uint) bool {
+	if job.Snapshot == nil {
+		return false
+	}
+	return job.Snapshot.Source.RelationID == relationID
 }
 
 func runOfflineExportJob(jobID string) {
