@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -20,8 +19,6 @@ func renderOfflineExportArtifact(format string, snapshot *ExportSnapshot, jobID 
 		return renderOfflineExportText(snapshot, jobID), nil
 	case offlineExportFormatImage:
 		return renderOfflineExportImage(snapshot, jobID), nil
-	case offlineExportFormatNotion:
-		return renderOfflineExportNotion(snapshot, jobID)
 	default:
 		return offlineRenderedArtifact{}, fmt.Errorf("unsupported format: %s", format)
 	}
@@ -87,68 +84,6 @@ func renderOfflineExportImage(snapshot *ExportSnapshot, jobID string) offlineRen
 		ContentType: "image/svg+xml",
 		Content:     []byte(svg),
 	}
-}
-
-func renderOfflineExportNotion(snapshot *ExportSnapshot, jobID string) (offlineRenderedArtifact, error) {
-	type notionBlock struct {
-		Type    string                 `json:"type"`
-		Payload map[string]interface{} `json:"payload"`
-	}
-	type notionDocument struct {
-		JobID       string        `json:"job_id"`
-		GeneratedAt string        `json:"generated_at"`
-		Timezone    string        `json:"timezone"`
-		Blocks      []notionBlock `json:"blocks"`
-	}
-
-	blocks := make([]notionBlock, 0, len(snapshot.Markers)+len(snapshot.Schedules)+2)
-	blocks = append(blocks, notionBlock{Type: "header", Payload: map[string]interface{}{
-		"title": "Offline Export Snapshot",
-		"jobId": jobID,
-	}})
-	blocks = append(blocks, notionBlock{Type: "metadata", Payload: map[string]interface{}{
-		"schema_version": snapshot.SchemaVersion,
-		"relation_id":    snapshot.Source.RelationID,
-	}})
-	for _, marker := range snapshot.Markers {
-		blocks = append(blocks, notionBlock{Type: "marker", Payload: map[string]interface{}{
-			"label":         marker.Label,
-			"marker_type":   marker.Type,
-			"address":       marker.Address,
-			"description":   marker.Description,
-			"website":       formatWebsiteForExport(marker.Website),
-			"estimate_time": marker.EstimateTime.Display,
-		}})
-	}
-	markerByID := buildExportMarkerLookup(snapshot.Markers)
-	for _, schedule := range snapshot.Schedules {
-		linkedMarker := exportMarkerForSchedule(schedule, markerByID)
-		blocks = append(blocks, notionBlock{Type: "schedule", Payload: map[string]interface{}{
-			"label":         schedule.Label,
-			"selected_date": schedule.SelectedDate.Format(timeRFC3339Milli),
-			"marker_type":   linkedMarker.Type,
-			"address":       linkedMarker.Address,
-			"description":   firstNonEmptyExportValue(schedule.Description, linkedMarker.Description),
-			"website":       formatWebsiteForExport(linkedMarker.Website),
-			"estimate_time": schedule.EstimateTime.Display,
-		}})
-	}
-
-	document := notionDocument{
-		JobID:       jobID,
-		GeneratedAt: snapshot.GeneratedAt.Format(timeRFC3339Milli),
-		Timezone:    snapshot.Timezone,
-		Blocks:      blocks,
-	}
-	content, err := json.MarshalIndent(document, "", "  ")
-	if err != nil {
-		return offlineRenderedArtifact{}, err
-	}
-	return offlineRenderedArtifact{
-		FileName:    fmt.Sprintf("%s.notion.json", jobID),
-		ContentType: "application/json",
-		Content:     content,
-	}, nil
 }
 
 const timeRFC3339Milli = "2006-01-02T15:04:05.000Z07:00"

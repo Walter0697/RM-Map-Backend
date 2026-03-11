@@ -20,7 +20,6 @@ import (
 const (
 	offlineExportFormatText   = "text"
 	offlineExportFormatImage  = "image"
-	offlineExportFormatNotion = "notion"
 
 	offlineExportJobStatusQueued     = "queued"
 	offlineExportJobStatusProcessing = "processing"
@@ -348,7 +347,7 @@ func normalizeExportFormats(formats []string) ([]string, error) {
 	for _, format := range formats {
 		normalized := strings.ToLower(strings.TrimSpace(format))
 		switch normalized {
-		case offlineExportFormatText, offlineExportFormatImage, offlineExportFormatNotion:
+		case offlineExportFormatText, offlineExportFormatImage:
 			if !allowedFormats[normalized] {
 				return nil, fmt.Errorf("format is disabled: %s", normalized)
 			}
@@ -391,21 +390,19 @@ func offlineExportAllowedFormats() map[string]bool {
 		return map[string]bool{
 			offlineExportFormatText:   true,
 			offlineExportFormatImage:  true,
-			offlineExportFormatNotion: true,
 		}
 	}
 
 	allowed := map[string]bool{}
 	for _, token := range strings.Split(rawValue, ",") {
 		switch strings.ToLower(strings.TrimSpace(token)) {
-		case offlineExportFormatText, offlineExportFormatImage, offlineExportFormatNotion:
+		case offlineExportFormatText, offlineExportFormatImage:
 			allowed[strings.ToLower(strings.TrimSpace(token))] = true
 		}
 	}
 	if len(allowed) == 0 {
 		allowed[offlineExportFormatText] = true
 		allowed[offlineExportFormatImage] = true
-		allowed[offlineExportFormatNotion] = true
 	}
 	return allowed
 }
@@ -416,7 +413,6 @@ func OfflineExportAllowedFormatsList() []string {
 	for _, format := range []string{
 		offlineExportFormatText,
 		offlineExportFormatImage,
-		offlineExportFormatNotion,
 	} {
 		if allowed[format] {
 			output = append(output, format)
@@ -646,7 +642,7 @@ func runOfflineExportJob(jobID string) {
 
 func isSupportedExportFormat(format string) bool {
 	switch strings.ToLower(strings.TrimSpace(format)) {
-	case offlineExportFormatText, offlineExportFormatImage, offlineExportFormatNotion:
+	case offlineExportFormatText, offlineExportFormatImage:
 		return true
 	default:
 		return false

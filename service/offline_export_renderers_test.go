@@ -67,23 +67,6 @@ func TestRenderOfflineExportArtifactFormats(t *testing.T) {
 	if imageArtifact.ContentType != "image/svg+xml" || !strings.Contains(string(imageArtifact.Content), "<svg") {
 		t.Fatalf("unexpected image artifact")
 	}
-
-	notionArtifact, err := renderOfflineExportArtifact(offlineExportFormatNotion, snapshot, "job_1")
-	if err != nil {
-		t.Fatalf("notion render failed: %v", err)
-	}
-	if notionArtifact.ContentType != "application/json" || !strings.Contains(string(notionArtifact.Content), "\"blocks\"") {
-		t.Fatalf("unexpected notion artifact")
-	}
-	notionBody := string(notionArtifact.Content)
-	if strings.Contains(notionBody, "\"id\"") || strings.Contains(notionBody, "\"marker_id\"") {
-		t.Fatalf("notion export should not expose ids: %s", notionBody)
-	}
-	for _, expected := range []string{"\"marker_type\": \"food\"", "\"address\": \"123 King St W, Toronto\"", "\"website\": \"https://example.com (yelp, available)\"", "\"description\": \"Dinner booking\""} {
-		if !strings.Contains(notionBody, expected) {
-			t.Fatalf("expected notion export to contain %q", expected)
-		}
-	}
 }
 
 func uintPtr(value uint) *uint {

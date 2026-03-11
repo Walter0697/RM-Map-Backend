@@ -39,12 +39,12 @@ func TestOfflineExportAllowedFormatsListUsesRolloutOrder(t *testing.T) {
 	resetOfflineExportHooks()
 	defer resetOfflineExportHooks()
 
-	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "notion,image,text"); err != nil {
+	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "image,text"); err != nil {
 		t.Fatalf("setenv: %v", err)
 	}
 
 	formats := OfflineExportAllowedFormatsList()
-	expected := []string{"text", "image", "notion"}
+	expected := []string{"text", "image"}
 	if len(formats) != len(expected) {
 		t.Fatalf("expected %d formats, got %d (%v)", len(expected), len(formats), formats)
 	}
@@ -106,7 +106,7 @@ func TestCreateOfflineExportHandlerAcceptedContract(t *testing.T) {
 	resetOfflineExportHooks()
 	defer resetOfflineExportHooks()
 
-	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "text,image,notion"); err != nil {
+	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "text,image"); err != nil {
 		t.Fatalf("setenv: %v", err)
 	}
 
@@ -171,7 +171,7 @@ func TestIntegrationCreateOfflineExportHandlerAcceptedContract(t *testing.T) {
 	resetOfflineExportHooks()
 	defer resetOfflineExportHooks()
 
-	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "text,image,notion"); err != nil {
+	if err := os.Setenv("OFFLINE_EXPORT_FORMATS", "text,image"); err != nil {
 		t.Fatalf("setenv: %v", err)
 	}
 
