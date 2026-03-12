@@ -33,16 +33,24 @@ func Middleware() func(http.Handler) http.Handler {
 					http.Error(w, "auth state unavailable", http.StatusServiceUnavailable)
 					return
 				}
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				var tokenValidation *service.TokenValidationError
+				if errors.As(err, &tokenValidation) {
+					w.Header().Set("X-RM-Auth-Reason", tokenValidation.Reason)
+					http.Error(w, tokenValidation.Error(), http.StatusUnauthorized)
+					return
+				}
+				http.Error(w, "invalid token: unknown", http.StatusUnauthorized)
 				return
 			}
 			if user == nil {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				w.Header().Set("X-RM-Auth-Reason", "missing_user_context")
+				http.Error(w, "invalid token: missing_user_context", http.StatusUnauthorized)
 				return
 			}
 
 			if !user.IsActivated {
-				http.Error(w, "Invalid token", http.StatusUnauthorized)
+				w.Header().Set("X-RM-Auth-Reason", "user_inactive")
+				http.Error(w, "invalid token: user_inactive", http.StatusUnauthorized)
 				return
 			}
 
