@@ -35,6 +35,11 @@ input PagedScheduleQuery {
   limit: Int
 }
 
+input PagedMarkerQuery {
+  cursor: String
+  limit: Int
+}
+
 type MarkerPage {
   items: [Marker]!
   next_cursor: String
@@ -298,6 +303,7 @@ type Query {
   me: String!
   viewportmarkers(params: MarkerViewportQuery!): MarkerPage!
   pagedschedules(params: PagedScheduleQuery!): SchedulePage!
+  pagedpreviousmarkers(params: PagedMarkerQuery!): MarkerPage!
 }
 
 input NewUser {
