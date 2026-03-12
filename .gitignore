@@ -4,3 +4,4 @@ config.toml
 
 docker-compose.yml
 docker.toml
+.air.toml
