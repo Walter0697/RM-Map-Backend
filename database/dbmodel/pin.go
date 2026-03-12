@@ -4,14 +4,15 @@ import "gorm.io/gorm"
 
 type Pin struct {
 	ObjectBase
-	Label         string  `json:"label"`
-	SettingsLabel *string `json:"settingsLabel,omitempty" gorm:"column:settings_label"`
-	ImagePath     string  `json:"imagePath"`
-	DisplayPath   string  `json:"displayPath"`
-	TopLeftX      int     `json:"topLeftx"`
-	TopLeftY      int     `json:"topLefty"`
-	BottomRightX  int     `json:"bottomRightx"`
-	BottomRightY  int     `json:"bottomRighty"`
+	Label         string     `json:"label"`
+	SettingsLabel *string    `json:"settingsLabel,omitempty" gorm:"column:settings_label"`
+	ImagePath     string     `json:"imagePath"`
+	DisplayPath   string     `json:"displayPath"`
+	TopLeftX      int        `json:"topLeftx"`
+	TopLeftY      int        `json:"topLefty"`
+	BottomRightX  int        `json:"bottomRightx"`
+	BottomRightY  int        `json:"bottomRighty"`
+	Groups        []PinGroup `json:"groups,omitempty" gorm:"many2many:pin_group_assignments;constraint:OnDelete:CASCADE;"`
 }
 
 func (pin *Pin) Create(db *gorm.DB) error {
