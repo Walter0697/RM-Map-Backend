@@ -170,6 +170,8 @@ type Pin {
   label: String!
   image_path: String!
   display_path: String!
+  group_ids: [Int!]!
+  group_names: [String!]!
   top_left_x: Int!
   top_left_y: Int!
   bottom_right_x: Int!
@@ -388,6 +390,7 @@ input NewPin {
   top_left_y: Int!
   bottom_right_x: Int!
   bottom_right_y: Int!
+  group_ids: [Int!]
   image_upload: Upload
 }
 
@@ -398,6 +401,7 @@ input UpdatedPin {
   top_left_y: Int
   bottom_right_x: Int
   bottom_right_y: Int
+  group_ids: [Int!]
   image_upload: Upload
 }
 

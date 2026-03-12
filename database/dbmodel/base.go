@@ -38,6 +38,8 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&Marker{})
 	database.Connection.AutoMigrate(&MarkerType{})
 	database.Connection.AutoMigrate(&Pin{})
+	database.Connection.AutoMigrate(&PinGroup{})
+	database.Connection.AutoMigrate(&PinGroupAssignment{})
 	database.Connection.AutoMigrate(&TypePin{})
 	database.Connection.AutoMigrate(&DefaultValue{})
 	database.Connection.AutoMigrate(&SystemSetting{})
@@ -67,6 +69,9 @@ func AutoMigration() {
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_schedule_calendar_sync_links_status_next_retry ON schedule_calendar_sync_links (sync_status, next_retry_at)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_due ON calendar_sync_jobs (status, next_attempt_at)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_schedule_provider ON calendar_sync_jobs (schedule_id, provider_key)")
+	database.Connection.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_pin_group_assignments_unique_pin_group ON pin_group_assignments (pin_id, pin_group_id)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_pin_group_assignments_pin_id ON pin_group_assignments (pin_id)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_pin_group_assignments_group_id ON pin_group_assignments (pin_group_id)")
 
 	log.Println("auto migration completed")
 }

@@ -6,6 +6,7 @@
 [app]
 environment="development"
 authmode="oidc"
+authsessionttlseconds=31536000
 
 [oidc]
 enable=true
@@ -17,6 +18,9 @@ frontendredirecturl="http://localhost:3000/login"
 scopes=["openid","profile","email"]
 usernameclaim="preferred_username"
 defaultrole="user"
+sessionttlseconds=31536000
+accesstokenttlseconds=31536000
+refreshtokenttlseconds=31536000
 ```
 
 ## Repeatable Local Workflow
