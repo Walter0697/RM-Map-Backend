@@ -35,6 +35,11 @@ input PagedScheduleQuery {
   limit: Int
 }
 
+input PagedMarkerQuery {
+  cursor: String
+  limit: Int
+}
+
 type MarkerPage {
   items: [Marker]!
   next_cursor: String
@@ -286,6 +291,7 @@ type Query {
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
   expiredmarkers: [Marker]!
+  pagedexpiredmarkers(params: PagedMarkerQuery!): MarkerPage!
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!
@@ -300,6 +306,7 @@ type Query {
   me: String!
   viewportmarkers(params: MarkerViewportQuery!): MarkerPage!
   pagedschedules(params: PagedScheduleQuery!): SchedulePage!
+  pagedpreviousmarkers(params: PagedMarkerQuery!): MarkerPage!
 }
 
 input NewUser {
