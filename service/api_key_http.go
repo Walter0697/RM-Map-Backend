@@ -175,12 +175,17 @@ type integrationUpdateDefaultPinRequest struct {
 }
 
 type integrationSettingsPinResponse struct {
-	ID          uint     `json:"id"`
-	Label       string   `json:"label"`
-	ImagePath   string   `json:"image_path"`
-	DisplayPath string   `json:"display_path"`
-	GroupIDs    []uint   `json:"group_ids"`
-	GroupNames  []string `json:"group_names"`
+	ID           uint     `json:"id"`
+	Value        string   `json:"value,omitempty"`
+	Label        string   `json:"label"`
+	ImagePath    string   `json:"image_path"`
+	DisplayPath  string   `json:"display_path"`
+	TopLeftX     int      `json:"top_left_x,omitempty"`
+	TopLeftY     int      `json:"top_left_y,omitempty"`
+	BottomRightX int      `json:"bottom_right_x,omitempty"`
+	BottomRightY int      `json:"bottom_right_y,omitempty"`
+	GroupIDs     []uint   `json:"group_ids"`
+	GroupNames   []string `json:"group_names"`
 }
 
 type updateOwnPreviewPinRequest struct {
@@ -305,6 +310,41 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+
+func normalizeSettingsPinLabel(value string, rawLabel *string) string {
+	if rawLabel == nil {
+		return value
+	}
+	trimmed := strings.TrimSpace(*rawLabel)
+	if trimmed == "" {
+		return value
+	}
+	return trimmed
+}
+
+func toIntegrationSettingsPinResponse(pin dbmodel.Pin) integrationSettingsPinResponse {
+	groupIDs := make([]uint, 0, len(pin.Groups))
+	groupNames := make([]string, 0, len(pin.Groups))
+	for _, group := range pin.Groups {
+		groupIDs = append(groupIDs, group.ID)
+		groupNames = append(groupNames, group.Name)
+	}
+
+	return integrationSettingsPinResponse{
+		ID:           pin.ID,
+		Value:        pin.Label,
+		Label:        normalizeSettingsPinLabel(pin.Label, pin.SettingsLabel),
+		ImagePath:    pin.ImagePath,
+		DisplayPath:  pin.DisplayPath,
+		TopLeftX:     pin.TopLeftX,
+		TopLeftY:     pin.TopLeftY,
+		BottomRightX: pin.BottomRightX,
+		BottomRightY: pin.BottomRightY,
+		GroupIDs:     groupIDs,
+		GroupNames:   groupNames,
+	}
+}
+
 var integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {

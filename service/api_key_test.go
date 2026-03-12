@@ -145,3 +145,63 @@ func TestParseIntegrationListQueryRejectsUnsupportedFilter(t *testing.T) {
 		t.Fatalf("expected error for unsupported filter")
 	}
 }
+
+func TestNormalizeSettingsPinLabelFallsBackToValue(t *testing.T) {
+	value := "canonical-value"
+	if got := normalizeSettingsPinLabel(value, nil); got != value {
+		t.Fatalf("expected fallback to value for nil label, got %q", got)
+	}
+
+	empty := ""
+	if got := normalizeSettingsPinLabel(value, &empty); got != value {
+		t.Fatalf("expected fallback to value for empty label, got %q", got)
+	}
+
+	whitespace := "   \t  "
+	if got := normalizeSettingsPinLabel(value, &whitespace); got != value {
+		t.Fatalf("expected fallback to value for whitespace label, got %q", got)
+	}
+}
+
+func TestNormalizeSettingsPinLabelUsesTrimmedLabel(t *testing.T) {
+	value := "canonical-value"
+	label := "  Friendly Label  "
+
+	if got := normalizeSettingsPinLabel(value, &label); got != "Friendly Label" {
+		t.Fatalf("expected trimmed settings label, got %q", got)
+	}
+}
+
+func TestToIntegrationSettingsPinResponse(t *testing.T) {
+	settingsLabel := "  Scenic Pin  "
+	pin := dbmodel.Pin{
+		ObjectBase: dbmodel.ObjectBase{
+			BaseModel: dbmodel.BaseModel{ID: 77},
+		},
+		Label:         "pin-value",
+		SettingsLabel: &settingsLabel,
+		ImagePath:     "/pins/original.png",
+		DisplayPath:   "/pins/display.png",
+		TopLeftX:      10,
+		TopLeftY:      20,
+		BottomRightX:  30,
+		BottomRightY:  40,
+	}
+
+	response := toIntegrationSettingsPinResponse(pin)
+	if response.ID != 77 {
+		t.Fatalf("expected id=77, got %d", response.ID)
+	}
+	if response.Value != "pin-value" {
+		t.Fatalf("expected value pin-value, got %q", response.Value)
+	}
+	if response.Label != "Scenic Pin" {
+		t.Fatalf("expected normalized label Scenic Pin, got %q", response.Label)
+	}
+	if response.ImagePath != "/pins/original.png" || response.DisplayPath != "/pins/display.png" {
+		t.Fatalf("unexpected image fields in response: %+v", response)
+	}
+	if response.TopLeftX != 10 || response.TopLeftY != 20 || response.BottomRightX != 30 || response.BottomRightY != 40 {
+		t.Fatalf("unexpected bounds in response: %+v", response)
+	}
+}
