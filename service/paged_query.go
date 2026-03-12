@@ -259,6 +259,51 @@ func GetPagedPreviousMarkers(params PagedMarkerFilter, requested []string, relat
 	}, logPagedQueryStats("paged_previous_markers", len(items), nextCursor)
 }
 
+func GetPagedExpiredMarkers(params PagedMarkerFilter, requested []string, relation dbmodel.UserRelation) (*markerViewportPage, error) {
+	limit := normalizePagedLimit(params.Limit)
+	cursor, err := parseCursor(params.Cursor)
+	if err != nil {
+		return nil, err
+	}
+
+	current := time.Now().AddDate(0, 0, -1)
+	query := database.Connection
+	if utils.StringInSlice("created_by", requested) || utils.StringInSlice("items.created_by", requested) {
+		query = query.Preload("CreatedBy")
+	}
+	if utils.StringInSlice("updated_by", requested) || utils.StringInSlice("items.updated_by", requested) {
+		query = query.Preload("UpdatedBy")
+	}
+	if utils.StringInSlice("restaurant", requested) || utils.StringInSlice("items.restaurant", requested) {
+		query = query.Preload("RestaurantInfo")
+	}
+
+	query = query.Model(&dbmodel.Marker{}).
+		Where("relation_id = ?", relation.ID).
+		Where("status = ?", constant.Empty).
+		Where("to_time IS NOT NULL AND to_time < ?", current.Format(time.RFC3339))
+
+	if cursor > 0 {
+		query = query.Where("id > ?", cursor)
+	}
+
+	items := make([]dbmodel.Marker, 0)
+	if err := query.Order("id asc").Limit(limit).Find(&items).Error; err != nil {
+		return nil, err
+	}
+
+	var nextCursor *string
+	if len(items) == limit {
+		cursorValue := strconv.FormatUint(uint64(items[len(items)-1].ID), 10)
+		nextCursor = &cursorValue
+	}
+
+	return &markerViewportPage{
+		Items:      items,
+		NextCursor: nextCursor,
+	}, logPagedQueryStats("paged_expired_markers", len(items), nextCursor)
+}
+
 func logPagedQueryStats(metric string, itemCount int, nextCursor *string) error {
 	next := ""
 	if nextCursor != nil {

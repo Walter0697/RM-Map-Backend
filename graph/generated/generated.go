@@ -230,6 +230,7 @@ type ComplexityRoot struct {
 		Me                  func(childComplexity int) int
 		Moviefetch          func(childComplexity int, filter model.MovieFilter) int
 		Movies              func(childComplexity int) int
+		Pagedexpiredmarkers func(childComplexity int, params model.PagedMarkerQuery) int
 		Pagedschedules      func(childComplexity int, params model.PagedScheduleQuery) int
 		Pagedpreviousmarkers func(childComplexity int, params model.PagedMarkerQuery) int
 		Pins                func(childComplexity int) int
@@ -390,6 +391,7 @@ type QueryResolver interface {
 	Countrylocations(ctx context.Context) ([]*model.CountryLocation, error)
 	Me(ctx context.Context) (string, error)
 	Viewportmarkers(ctx context.Context, params model.MarkerViewportQuery) (*model.MarkerPage, error)
+	Pagedexpiredmarkers(ctx context.Context, params model.PagedMarkerQuery) (*model.MarkerPage, error)
 	Pagedschedules(ctx context.Context, params model.PagedScheduleQuery) (*model.SchedulePage, error)
 	Pagedpreviousmarkers(ctx context.Context, params model.PagedMarkerQuery) (*model.MarkerPage, error)
 }
@@ -1563,6 +1565,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Pagedschedules(childComplexity, args["params"].(model.PagedScheduleQuery)), true
 
+	case "Query.pagedexpiredmarkers":
+		if e.complexity.Query.Pagedexpiredmarkers == nil {
+			break
+		}
+
+		args, err := ec.field_Query_pagedexpiredmarkers_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Pagedexpiredmarkers(childComplexity, args["params"].(model.PagedMarkerQuery)), true
+
 	case "Query.pagedpreviousmarkers":
 		if e.complexity.Query.Pagedpreviousmarkers == nil {
 			break
@@ -2463,6 +2477,7 @@ type Query {
   countrylocations: [CountryLocation]!
   me: String!
   viewportmarkers(params: MarkerViewportQuery!): MarkerPage!
+  pagedexpiredmarkers(params: PagedMarkerQuery!): MarkerPage!
   pagedschedules(params: PagedScheduleQuery!): SchedulePage!
   pagedpreviousmarkers(params: PagedMarkerQuery!): MarkerPage!
 }
@@ -3192,6 +3207,21 @@ func (ec *executionContext) field_Query_pagedschedules_args(ctx context.Context,
 	if tmp, ok := rawArgs["params"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
 		arg0, err = ec.unmarshalNPagedScheduleQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐPagedScheduleQuery(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["params"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_pagedexpiredmarkers_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 model.PagedMarkerQuery
+	if tmp, ok := rawArgs["params"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("params"))
+		arg0, err = ec.unmarshalNPagedMarkerQuery2mapmarkerᚋbackendᚋgraphᚋmodelᚐPagedMarkerQuery(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -8976,6 +9006,48 @@ func (ec *executionContext) _Query_pagedschedules(ctx context.Context, field gra
 	res := resTmp.(*model.SchedulePage)
 	fc.Result = res
 	return ec.marshalNSchedulePage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐSchedulePage(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_pagedexpiredmarkers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_pagedexpiredmarkers_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Pagedexpiredmarkers(rctx, args["params"].(model.PagedMarkerQuery))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.MarkerPage)
+	fc.Result = res
+	return ec.marshalNMarkerPage2ᚖmapmarkerᚋbackendᚋgraphᚋmodelᚐMarkerPage(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_pagedpreviousmarkers(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -14948,6 +15020,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_pagedschedules(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "pagedexpiredmarkers":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_pagedexpiredmarkers(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}

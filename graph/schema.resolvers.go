@@ -1713,6 +1713,48 @@ func (r *queryResolver) Expiredmarkers(ctx context.Context) ([]*model.Marker, er
 	return result, nil
 }
 
+func (r *queryResolver) Pagedexpiredmarkers(ctx context.Context, params model.PagedMarkerQuery) (*model.MarkerPage, error) {
+	var result []*model.Marker
+	user := middleware.ForContext(ctx)
+	if user == nil {
+		return nil, &helper.PermissionDeniedError{}
+	}
+
+	if err := helper.IsAuthorize(*user, helper.User); err != nil {
+		return nil, err
+	}
+
+	relation, err := service.GetCurrentRelation(*user)
+	if relation == nil {
+		if err == nil {
+			return &model.MarkerPage{Items: []*model.Marker{}, NextCursor: nil}, nil
+		}
+		if utils.RecordNotFound(err) {
+			return &model.MarkerPage{Items: []*model.Marker{}, NextCursor: nil}, nil
+		}
+		return nil, err
+	}
+
+	requestedField := utils.GetTopPreloads(ctx)
+	page, err := service.GetPagedExpiredMarkers(service.PagedMarkerFilter{
+		Cursor: params.Cursor,
+		Limit:  params.Limit,
+	}, requestedField, *relation)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, marker := range page.Items {
+		item := helper.ConvertMarker(marker)
+		result = append(result, &item)
+	}
+
+	return &model.MarkerPage{
+		Items:      result,
+		NextCursor: page.NextCursor,
+	}, nil
+}
+
 func (r *queryResolver) Markerschedules(ctx context.Context, params model.IDModel) ([]*model.Schedule, error) {
 	// USER
 	// get all schedules assiocated with this marker

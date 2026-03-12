@@ -291,6 +291,7 @@ type Query {
   today(params: CurrentTime!): TodayEvent!
   previousmarkers: [Marker]!
   expiredmarkers: [Marker]!
+  pagedexpiredmarkers(params: PagedMarkerQuery!): MarkerPage!
   markerschedules(params: IdModel!): [Schedule]!
   scrapimage(params: WebLink!): MetaDataOutput!
   moviefetch(filter: MovieFilter!): [MovieOutput]!
