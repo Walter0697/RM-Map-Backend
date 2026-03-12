@@ -4,6 +4,7 @@ port="1998"
 jwtkey=""
 allowedorigin=""
 authmode="local-password" # local-password or oidc
+authsessionttlseconds=31536000 # default auth session lifetime policy (one year)
 
 [database]
 host=""
@@ -22,7 +23,7 @@ db=0
 [authstate]
 migrationmode="dual-write" # dual-write | redis-primary | postgres-off
 keyprefix="auth:v1"
-sessionttlseconds=2592000
+sessionttlseconds=31536000
 redisdialtimeoutms=1500
 redisreadtimeoutms=1500
 rediswritetimeoutms=1500
@@ -36,6 +37,9 @@ host="localhost"
 bindpassword=""
 filter="(uid=%s)"
 defaultrole="user"
+sessionttlseconds=31536000 # Authentik/provider session lifetime target (optional; keep aligned with app.authsessionttlseconds)
+accesstokenttlseconds=31536000 # provider access token/session lifetime target (optional)
+refreshtokenttlseconds=31536000 # provider refresh token lifetime target (optional)
 
 [oidc]
 enable=false
@@ -65,6 +69,8 @@ scopes=["https://www.googleapis.com/auth/calendar.events"]
 [apikey]
 moviedb=""
 tomtommap=""
+tomtomrouting=""
+tomtomstaticimage=""
 yelp=""
 
 [scheduletravel]
@@ -73,6 +79,15 @@ baseurl="https://api.tomtom.com/routing/1"
 timeoutms=3000
 easythresholdminutes=20
 difficultthresholdminutes=45
+
+[tomtomroute]
+baseurl="https://api.tomtom.com/routing/1"
+timeoutms=3500
+retrycount=1
+
+[tomtomstaticimage]
+baseurl="https://api.tomtom.com/map/1/staticimage"
+timeoutms=8000
 
 [weather]
 enable=false

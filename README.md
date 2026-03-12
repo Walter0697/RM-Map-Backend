@@ -16,10 +16,15 @@
   - `oidc` for OpenID Connect login (recommended)
   - `local-password` for development/local testing only
 - `REDIS_DB` can override `[redis].db` at runtime (expects a non-negative integer).
+- `AUTH_SESSION_LIFETIME_SECONDS` can override `[app].authsessionttlseconds`.
 - `AUTH_STATE_MIGRATION_MODE` can override `[authstate].migrationmode`.
 - `AUTH_STATE_SESSION_TTL_SECONDS` can override `[authstate].sessionttlseconds`.
 - `GET /auth/mode` shows active auth mode.
 - `GET /auth/health` provides auth diagnostics.
+- Optional OIDC/provider lifetime mirrors for alignment checks:
+  - `[oidc].sessionttlseconds`
+  - `[oidc].accesstokenttlseconds`
+  - `[oidc].refreshtokenttlseconds`
 
 ### Authentication Token State (Postgres vs Redis)
 - Login/session token state is controlled by `[authstate]` + `[redis]`.
@@ -37,7 +42,7 @@ enable=false
 [authstate]
 migrationmode="dual-write"
 keyprefix="auth:v1"
-sessionttlseconds=2592000
+sessionttlseconds=31536000
 ```
 
 #### 2) Redis Migration Setup (safe cutover path)
@@ -53,7 +58,7 @@ db=0
 [authstate]
 migrationmode="redis-primary"
 keyprefix="auth:v1"
-sessionttlseconds=2592000
+sessionttlseconds=31536000
 redisdialtimeoutms=1500
 redisreadtimeoutms=1500
 rediswritetimeoutms=1500
@@ -71,12 +76,13 @@ migrationmode="postgres-off"
 
 #### Runtime Overrides
 - `REDIS_DB`: overrides `[redis].db`
+- `AUTH_SESSION_LIFETIME_SECONDS`: overrides `[app].authsessionttlseconds`
 - `AUTH_STATE_MIGRATION_MODE`: overrides `[authstate].migrationmode`
 - `AUTH_STATE_SESSION_TTL_SECONDS`: overrides `[authstate].sessionttlseconds`
 
 Example:
 ```bash
-AUTH_STATE_MIGRATION_MODE=redis-primary AUTH_STATE_SESSION_TTL_SECONDS=2592000 go run .
+AUTH_SESSION_LIFETIME_SECONDS=31536000 AUTH_STATE_MIGRATION_MODE=redis-primary AUTH_STATE_SESSION_TTL_SECONDS=31536000 go run .
 ```
 
 #### Recommended Rollout
