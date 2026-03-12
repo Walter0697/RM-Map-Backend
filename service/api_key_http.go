@@ -150,6 +150,18 @@ type integrationUserPreviewPinResponse struct {
 	PinLabel string `json:"pin_label,omitempty"`
 }
 
+type integrationSettingsPinResponse struct {
+	ID           uint   `json:"id"`
+	Value        string `json:"value"`
+	Label        string `json:"label"`
+	ImagePath    string `json:"image_path"`
+	DisplayPath  string `json:"display_path"`
+	TopLeftX     int    `json:"top_left_x"`
+	TopLeftY     int    `json:"top_left_y"`
+	BottomRightX int    `json:"bottom_right_x"`
+	BottomRightY int    `json:"bottom_right_y"`
+}
+
 type integrationStaticPreviewRequest struct {
 	Username       string   `json:"username"`
 	MarkerTypeName string   `json:"marker_type_name,omitempty"`
@@ -258,6 +270,32 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+
+func normalizeSettingsPinLabel(value string, rawLabel *string) string {
+	if rawLabel == nil {
+		return value
+	}
+	trimmed := strings.TrimSpace(*rawLabel)
+	if trimmed == "" {
+		return value
+	}
+	return trimmed
+}
+
+func toIntegrationSettingsPinResponse(pin dbmodel.Pin) integrationSettingsPinResponse {
+	return integrationSettingsPinResponse{
+		ID:           pin.ID,
+		Value:        pin.Label,
+		Label:        normalizeSettingsPinLabel(pin.Label, pin.SettingsLabel),
+		ImagePath:    pin.ImagePath,
+		DisplayPath:  pin.DisplayPath,
+		TopLeftX:     pin.TopLeftX,
+		TopLeftY:     pin.TopLeftY,
+		BottomRightX: pin.BottomRightX,
+		BottomRightY: pin.BottomRightY,
+	}
+}
+
 var integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -1234,8 +1272,12 @@ func IntegrationListSettingsPinsHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	responseItems := make([]integrationSettingsPinResponse, 0, len(items))
+	for _, pin := range items {
+		responseItems = append(responseItems, toIntegrationSettingsPinResponse(pin))
+	}
 
-	respondJSON(w, http.StatusOK, integrationListResponse(items, total, queryOption, ""))
+	respondJSON(w, http.StatusOK, integrationListResponse(responseItems, total, queryOption, ""))
 }
 
 func IntegrationListSettingsMarkerTypesHandler(w http.ResponseWriter, r *http.Request) {
@@ -1421,7 +1463,7 @@ func SettingsUpdatePreviewPinHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
 		Username: user.Username,
 		PinID:    preference.PreviewPinID,
-		PinLabel: pin.Label,
+		PinLabel: normalizeSettingsPinLabel(pin.Label, pin.SettingsLabel),
 	})
 }
 
@@ -1453,7 +1495,7 @@ func IntegrationGetUserPreviewPinSelectionHandler(w http.ResponseWriter, r *http
 	if preference != nil && preference.PreviewPinID != nil {
 		response.PinID = preference.PreviewPinID
 		if preference.PreviewPin != nil {
-			response.PinLabel = preference.PreviewPin.Label
+			response.PinLabel = normalizeSettingsPinLabel(preference.PreviewPin.Label, preference.PreviewPin.SettingsLabel)
 		}
 	}
 
@@ -1498,7 +1540,7 @@ func IntegrationUpdateUserPreviewPinSelectionHandler(w http.ResponseWriter, r *h
 	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
 		Username: username,
 		PinID:    preference.PreviewPinID,
-		PinLabel: pin.Label,
+		PinLabel: normalizeSettingsPinLabel(pin.Label, pin.SettingsLabel),
 	})
 }
 
