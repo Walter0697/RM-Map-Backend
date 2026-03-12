@@ -34,6 +34,7 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 		return nil, err
 	}
 	schedule.SelectedDate = selectedTime
+	applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(&marker, selectedTime))
 
 	schedule.Relation = relation
 	schedule.Status = ""
@@ -71,6 +72,9 @@ func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmode
 	schedule.SelectedDate = selectedTime
 
 	schedule.SelectedMovie = &movie
+	if marker != nil {
+		applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(marker, selectedTime))
+	}
 
 	schedule.Relation = relation
 	schedule.Status = ""
@@ -109,7 +113,10 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 		if err != nil {
 			return nil, err
 		}
-		schedule.SelectedDate = selectedTime
+		if !selectedTime.Equal(schedule.SelectedDate) {
+			schedule.SelectedDate = selectedTime
+			applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(schedule.SelectedMarker, selectedTime))
+		}
 	}
 
 	schedule.UpdatedBy = &user

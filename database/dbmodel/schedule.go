@@ -12,13 +12,21 @@ type Schedule struct {
 	Description                  string    `json:"description"`
 	Status                       string    `json:"status"`
 	SelectedDate                 time.Time `json:"selectedDate"`
-	RouteImageRef                *string   `json:"route_image_ref,omitempty" gorm:"type:text"`
-	RouteDistanceMeters          *int      `json:"route_distance_meters,omitempty"`
-	RouteETAWalkingSeconds       *int      `json:"route_eta_walking_seconds,omitempty"`
-	RouteETABusSeconds           *int      `json:"route_eta_bus_seconds,omitempty"`
-	RouteETAPublicTransitSeconds *int      `json:"route_eta_public_transit_seconds,omitempty"`
-	RoutePreviewWarning          *string   `json:"route_preview_warning,omitempty" gorm:"type:text"`
-	SelectedMarker               *Marker   `gorm:"foreignKey:marker_id;reference:id"`
+	WeatherCondition             *string   `json:"weather_condition,omitempty" gorm:"type:varchar(64)"`
+	WeatherForecastAt            *time.Time
+	WeatherTemperature           *float64 `json:"weather_temperature,omitempty"`
+	WeatherTemperatureUnit       *string  `json:"weather_temperature_unit,omitempty" gorm:"type:varchar(16)"`
+	WeatherSource                *string  `json:"weather_source,omitempty" gorm:"type:varchar(64)"`
+	WeatherFetchedAt             *time.Time
+	WeatherStatus                *string `json:"weather_status,omitempty" gorm:"type:varchar(32)"`
+	WeatherUnavailableReason     *string `json:"weather_unavailable_reason,omitempty" gorm:"type:varchar(64)"`
+	RouteImageRef                *string `json:"route_image_ref,omitempty" gorm:"type:text"`
+	RouteDistanceMeters          *int    `json:"route_distance_meters,omitempty"`
+	RouteETAWalkingSeconds       *int    `json:"route_eta_walking_seconds,omitempty"`
+	RouteETABusSeconds           *int    `json:"route_eta_bus_seconds,omitempty"`
+	RouteETAPublicTransitSeconds *int    `json:"route_eta_public_transit_seconds,omitempty"`
+	RoutePreviewWarning          *string `json:"route_preview_warning,omitempty" gorm:"type:text"`
+	SelectedMarker               *Marker `gorm:"foreignKey:marker_id;reference:id"`
 	MarkerId                     *uint
 	SelectedMovie                *Movie `gorm:"foreignKey:movie_id;referenece:id"`
 	MovieId                      *uint
