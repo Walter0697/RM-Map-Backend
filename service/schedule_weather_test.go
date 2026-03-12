@@ -122,3 +122,17 @@ func TestResolveScheduleWeatherSnapshotHorizonExceeded(t *testing.T) {
 		t.Fatalf("expected horizon-exceeded reason, got %#v", snapshot.UnavailableReason)
 	}
 }
+
+func TestClosestScheduleWeatherIndexOpenMeteoFormat(t *testing.T) {
+	target := time.Date(2026, time.March, 12, 13, 30, 0, 0, time.UTC)
+	times := []string{
+		"2026-03-12T12:00",
+		"2026-03-12T13:00",
+		"2026-03-12T14:00",
+	}
+
+	index := closestScheduleWeatherIndex(times, target)
+	if index != 1 {
+		t.Fatalf("expected closest index 1, got %d", index)
+	}
+}

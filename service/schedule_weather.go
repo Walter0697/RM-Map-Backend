@@ -172,7 +172,7 @@ func fetchScheduleWeatherFromOpenMeteo(lat float64, lon float64, selectedDateUTC
 	}
 
 	condition := mapOpenMeteoWeatherCodeToCondition(payload.Hourly.WeatherCode[idx])
-	forecastAt, parseErr := time.Parse(time.RFC3339, payload.Hourly.Time[idx])
+	forecastAt, parseErr := parseOpenMeteoTimestamp(payload.Hourly.Time[idx])
 	if parseErr != nil {
 		forecastAt = selectedDateUTC
 	}
@@ -199,7 +199,7 @@ func closestScheduleWeatherIndex(times []string, target time.Time) int {
 	bestIdx := -1
 	var bestDiff time.Duration
 	for i, raw := range times {
-		candidate, err := time.Parse(time.RFC3339, raw)
+		candidate, err := parseOpenMeteoTimestamp(raw)
 		if err != nil {
 			continue
 		}
@@ -213,6 +213,21 @@ func closestScheduleWeatherIndex(times []string, target time.Time) int {
 		}
 	}
 	return bestIdx
+}
+
+func parseOpenMeteoTimestamp(raw string) (time.Time, error) {
+	candidate, err := time.Parse(time.RFC3339, raw)
+	if err == nil {
+		return candidate.UTC(), nil
+	}
+
+	// Open-Meteo hourly timestamps are typically returned as "2006-01-02T15:04" without timezone.
+	candidate, err = time.Parse("2006-01-02T15:04", raw)
+	if err == nil {
+		return candidate.UTC(), nil
+	}
+
+	return time.Time{}, err
 }
 
 func mapOpenMeteoWeatherCodeToCondition(code int) string {
