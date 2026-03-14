@@ -70,6 +70,7 @@ func AuthHealthHandler(w http.ResponseWriter, _ *http.Request) {
 		"oidcEnabled":          config.Data.OIDC.Enable,
 		"sessionLifetime": map[string]interface{}{
 			"configured": alignment.ConfiguredSessionTTLSeconds,
+			"token":      config.ResolveAuthTokenLifetimeSeconds(),
 			"oidc": map[string]interface{}{
 				"sessionTTL":      alignment.OIDCSessionTTLSeconds,
 				"accessTokenTTL":  alignment.OIDCAccessTokenTTLSeconds,

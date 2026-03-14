@@ -222,13 +222,16 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 	case config.AuthStateModeRedisPrimary:
 		redisResult, err := m.validateRedis(username, secret)
 		if err != nil {
+			log.Printf("auth-state: redis-primary validate redis error username=%s: %v", username, err)
 			fallbackUsed = true
 			valid, pgErr := m.validatePostgresFn(username, secret)
 			if pgErr != nil {
 				m.metrics.validateErrorCount.Add(1)
+				log.Printf("auth-state: redis-primary postgres fallback failed username=%s: %v", username, pgErr)
 				return false, pgErr
 			}
 			if valid {
+				log.Printf("auth-state: redis-primary postgres fallback valid username=%s; attempting redis backfill", username)
 				if backfillErr := m.writeRedis(username, secret); backfillErr != nil {
 					log.Printf("auth-state: redis backfill failed after redis error username=%s: %v", username, backfillErr)
 				}
@@ -239,16 +242,20 @@ func (m *defaultAuthStateManager) Validate(username string, secret string) (bool
 			return true, nil
 		}
 		if redisResult == authStateLookupInvalid {
+			log.Printf("auth-state: redis-primary invalid session secret username=%s", username)
 			return false, nil
 		}
 
+		log.Printf("auth-state: redis-primary redis miss username=%s; using postgres fallback", username)
 		fallbackUsed = true
 		valid, pgErr := m.validatePostgresFn(username, secret)
 		if pgErr != nil {
 			m.metrics.validateErrorCount.Add(1)
+			log.Printf("auth-state: redis-primary postgres fallback after miss failed username=%s: %v", username, pgErr)
 			return false, pgErr
 		}
 		if valid {
+			log.Printf("auth-state: redis-primary postgres fallback after miss valid username=%s; attempting redis backfill", username)
 			if backfillErr := m.writeRedis(username, secret); backfillErr != nil {
 				log.Printf("auth-state: redis backfill failed after miss username=%s: %v", username, backfillErr)
 			}
