@@ -14,7 +14,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Marker, error) {
+func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Marker, error) {
 	var fromTime time.Time
 	var toTime time.Time
 	var err error
@@ -160,6 +160,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 	}
 
 	marker.Relation = relation
+	marker.Testing = testing
 
 	marker.Status = ""
 
@@ -175,7 +176,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 	return &marker, nil
 }
 
-func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Marker, error) {
+func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relation dbmodel.UserRelation, user dbmodel.User, testing *bool, canModifyTesting bool) (*dbmodel.Marker, error) {
 	var marker dbmodel.Marker
 
 	marker.ID = uint(input.ID)
@@ -185,6 +186,15 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 
 	if marker.RelationId != relation.ID {
 		return nil, &helper.InvalidRelationUpdateError{}
+	}
+	if marker.Testing && !canModifyTesting {
+		return nil, &helper.PermissionDeniedError{}
+	}
+	if testing != nil {
+		if !canModifyTesting {
+			return nil, &helper.PermissionDeniedError{}
+		}
+		marker.Testing = *testing
 	}
 
 	// handle variable that needs to be parsed first
@@ -371,7 +381,7 @@ func RevokeMarker(input model.UpdateModel, user dbmodel.User) (*dbmodel.Marker, 
 	return &marker, nil
 }
 
-func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
+func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Marker, error) {
 	var markers []dbmodel.Marker
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -385,6 +395,9 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	// filtering non-active markers
 	current := time.Now().AddDate(0, 0, -1) // minus one to make sure time zone won't affect the funcionality
@@ -398,7 +411,7 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation) ([]db
 	return markers, nil
 }
 
-func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
+func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Marker, error) {
 	var markers []dbmodel.Marker
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -412,6 +425,9 @@ func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	// filtering active markers
 	query = query.Where("status = ?", constant.Arrived)
@@ -422,7 +438,7 @@ func GetAllPreviousMarker(requested []string, relation dbmodel.UserRelation) ([]
 	return markers, nil
 }
 
-func GetAllExpiredMarker(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Marker, error) {
+func GetAllExpiredMarker(requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Marker, error) {
 	var markers []dbmodel.Marker
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -436,6 +452,9 @@ func GetAllExpiredMarker(requested []string, relation dbmodel.UserRelation) ([]d
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	// getting all markers without schedule
 	query = query.Where("status = ?", constant.Empty)

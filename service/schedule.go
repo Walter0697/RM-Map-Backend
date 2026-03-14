@@ -13,7 +13,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
+func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
 
 	schedule.Label = input.Label
@@ -34,8 +34,10 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 		return nil, err
 	}
 	schedule.SelectedDate = selectedTime
+	applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(&marker, selectedTime))
 
 	schedule.Relation = relation
+	schedule.Testing = testing
 	schedule.Status = ""
 	schedule.CreatedBy = &user
 	schedule.UpdatedBy = &user
@@ -47,7 +49,7 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 	return &schedule, nil
 }
 
-func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmodel.Movie, marker *dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
+func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmodel.Movie, marker *dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
 
 	schedule.Label = input.Label
@@ -71,8 +73,12 @@ func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmode
 	schedule.SelectedDate = selectedTime
 
 	schedule.SelectedMovie = &movie
+	if marker != nil {
+		applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(marker, selectedTime))
+	}
 
 	schedule.Relation = relation
+	schedule.Testing = testing
 	schedule.Status = ""
 	schedule.CreatedBy = &user
 	schedule.UpdatedBy = &user
@@ -84,7 +90,7 @@ func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmode
 	return &schedule, nil
 }
 
-func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, user dbmodel.User) (*dbmodel.Schedule, error) {
+func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, user dbmodel.User, testing *bool, canModifyTesting bool) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
 
 	schedule.ID = uint(input.ID)
@@ -94,6 +100,15 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 
 	if schedule.RelationId != relation.ID {
 		return nil, &helper.InvalidRelationUpdateError{}
+	}
+	if schedule.Testing && !canModifyTesting {
+		return nil, &helper.PermissionDeniedError{}
+	}
+	if testing != nil {
+		if !canModifyTesting {
+			return nil, &helper.PermissionDeniedError{}
+		}
+		schedule.Testing = *testing
 	}
 
 	if input.Label != nil {
@@ -109,7 +124,10 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 		if err != nil {
 			return nil, err
 		}
-		schedule.SelectedDate = selectedTime
+		if !selectedTime.Equal(schedule.SelectedDate) {
+			schedule.SelectedDate = selectedTime
+			applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(schedule.SelectedMarker, selectedTime))
+		}
 	}
 
 	schedule.UpdatedBy = &user
@@ -142,7 +160,7 @@ func RemoveSchedule(tx *gorm.DB, input model.RemoveModel) error {
 	return nil
 }
 
-func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -159,6 +177,9 @@ func GetAllSchedule(input model.CurrentTime, requested []string, relation dbmode
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	// filter previous schedules
 	now, err := time.Parse(utils.DayOnlyTime, input.Time)
@@ -228,7 +249,7 @@ func UpdateScheduleStatus(tx *gorm.DB, input model.ScheduleStatusList, relation 
 }
 
 // this function is used to get all yesterday schedules
-func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("yesterday_event.created_by", requested) {
@@ -242,6 +263,9 @@ func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	// filter only yesterday schedules
 	now, err := time.Parse(utils.DayOnlyTime, input.Time)
@@ -263,7 +287,7 @@ func GetYesterdaySchedules(input model.CurrentTime, requested []string, relation
 	return schedules, nil
 }
 
-func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -277,6 +301,9 @@ func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.Us
 	}
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	query = query.Where("marker_id", markerId)
 
@@ -287,7 +314,7 @@ func GetSchedulesByMarker(markerId uint, requested []string, relation dbmodel.Us
 	return schedules, nil
 }
 
-func GetArrivedMovieSchedule(requested []string, relation dbmodel.UserRelation) ([]dbmodel.Schedule, error) {
+func GetArrivedMovieSchedule(requested []string, relation dbmodel.UserRelation, includeTesting bool) ([]dbmodel.Schedule, error) {
 	var schedules []dbmodel.Schedule
 	query := database.Connection
 	if utils.StringInSlice("created_by", requested) {
@@ -303,6 +330,9 @@ func GetArrivedMovieSchedule(requested []string, relation dbmodel.UserRelation) 
 	query = query.Preload("SelectedMovie")
 
 	query = query.Where("relation_id = ?", relation.ID)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	query = query.Where("movie_id IS NOT NULL")
 

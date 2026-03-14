@@ -12,6 +12,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
+	"mapmarker/backend/utils"
 	"math"
 	"net"
 	"net/http"
@@ -20,27 +21,33 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"gorm.io/gorm"
 )
 
 type createAPIKeyRequest struct {
-	Name        string   `json:"name"`
-	Scopes      []string `json:"scopes"`
-	RelationID  uint     `json:"relation_id"`
-	ActorUserID uint     `json:"actor_user_id"`
-	ExpiresAt   *string  `json:"expires_at"`
+	Name             string   `json:"name"`
+	Testing          *bool    `json:"testing,omitempty"`
+	Scopes           []string `json:"scopes"`
+	RelationID       uint     `json:"relation_id"`
+	ActorUserID      *uint    `json:"actor_user_id,omitempty"`
+	ServiceAccountID *uint    `json:"service_account_id,omitempty"`
+	ExpiresAt        *string  `json:"expires_at"`
 }
 
 type apiKeyResponse struct {
-	ID          uint       `json:"id"`
-	Name        string     `json:"name"`
-	Prefix      string     `json:"prefix"`
-	Scopes      []string   `json:"scopes"`
-	Status      string     `json:"status"`
-	RelationID  uint       `json:"relation_id"`
-	ActorUserID uint       `json:"actor_user_id"`
-	LastUsedAt  *time.Time `json:"last_used_at"`
-	ExpiresAt   *time.Time `json:"expires_at"`
-	CreatedAt   time.Time  `json:"created_at"`
+	ID                 uint       `json:"id"`
+	Name               string     `json:"name"`
+	Testing            bool       `json:"testing"`
+	Prefix             string     `json:"prefix"`
+	Scopes             []string   `json:"scopes"`
+	Status             string     `json:"status"`
+	RelationID         uint       `json:"relation_id"`
+	ActorUserID        *uint      `json:"actor_user_id"`
+	ServiceAccountID   *uint      `json:"service_account_id,omitempty"`
+	ServiceAccountName *string    `json:"service_account_name,omitempty"`
+	LastUsedAt         *time.Time `json:"last_used_at"`
+	ExpiresAt          *time.Time `json:"expires_at"`
+	CreatedAt          time.Time  `json:"created_at"`
 }
 
 type createAPIKeyResponse struct {
@@ -63,8 +70,20 @@ type apiKeyRelationOptionResponse struct {
 	Display   string `json:"display"`
 }
 
+type apiKeyServiceAccountOptionResponse struct {
+	ID             uint   `json:"id"`
+	Name           string `json:"name"`
+	Description    string `json:"description"`
+	Role           string `json:"role"`
+	RelationID     uint   `json:"relation_id"`
+	Active         bool   `json:"active"`
+	ActingUserID   *uint  `json:"acting_user_id,omitempty"`
+	ActingUsername string `json:"acting_username,omitempty"`
+}
+
 type integrationCreateMarkerRequest struct {
 	Label             string  `json:"label"`
+	Testing           *bool   `json:"testing,omitempty"`
 	Latitude          float64 `json:"latitude"`
 	Longitude         float64 `json:"longitude"`
 	Address           string  `json:"address"`
@@ -85,6 +104,7 @@ type integrationCreateMarkerRequest struct {
 
 type integrationUpdateMarkerRequest struct {
 	Label             *string `json:"label"`
+	Testing           *bool   `json:"testing,omitempty"`
 	Address           *string `json:"address"`
 	ImageLink         *string `json:"image_link"`
 	NoImage           bool    `json:"no_image"`
@@ -114,6 +134,7 @@ type integrationCreateMarkerOutcomeRequest struct {
 
 type integrationCreateScheduleRequest struct {
 	Label        string                                  `json:"label"`
+	Testing      *bool                                   `json:"testing,omitempty"`
 	Description  string                                  `json:"description"`
 	SelectedTime string                                  `json:"selected_time"`
 	MarkerID     int                                     `json:"marker_id"`
@@ -122,9 +143,42 @@ type integrationCreateScheduleRequest struct {
 
 type integrationUpdateScheduleRequest struct {
 	Label        *string                                 `json:"label,omitempty"`
+	Testing      *bool                                   `json:"testing,omitempty"`
 	Description  *string                                 `json:"description,omitempty"`
 	SelectedTime *string                                 `json:"selected_time,omitempty"`
 	RoutePreview *integrationScheduleRoutePreviewRequest `json:"route_preview,omitempty"`
+}
+
+type integrationOverwriteScheduleByDateRequest struct {
+	Date  string                             `json:"date"`
+	Items []integrationCreateScheduleRequest `json:"items"`
+}
+
+type integrationOverwriteScheduleByDateResponse struct {
+	Date         string                        `json:"date"`
+	DeletedCount int64                         `json:"deleted_count"`
+	CreatedCount int                           `json:"created_count"`
+	Items        []integrationScheduleResponse `json:"items"`
+}
+
+type integrationCalendarGoogleSyncByDateRequest struct {
+	Date string `json:"date"`
+}
+
+type integrationCalendarGoogleSyncByDateItem struct {
+	ScheduleID uint   `json:"schedule_id"`
+	Status     string `json:"status"`
+	Action     string `json:"action,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+type integrationCalendarGoogleSyncByDateResponse struct {
+	Date     string                                    `json:"date"`
+	Provider string                                    `json:"provider"`
+	Total    int                                       `json:"total"`
+	Synced   int                                       `json:"synced"`
+	Failed   int                                       `json:"failed"`
+	Items    []integrationCalendarGoogleSyncByDateItem `json:"items"`
 }
 
 type integrationScheduleRoutePreviewRequest struct {
@@ -153,6 +207,7 @@ type integrationScheduleRoutePreviewResponse struct {
 
 type integrationScheduleResponse struct {
 	model.Schedule
+	Testing      bool                                     `json:"testing"`
 	RoutePreview *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
 	Warnings     []string                                 `json:"warnings,omitempty"`
 }
@@ -175,12 +230,17 @@ type integrationUpdateDefaultPinRequest struct {
 }
 
 type integrationSettingsPinResponse struct {
-	ID          uint     `json:"id"`
-	Label       string   `json:"label"`
-	ImagePath   string   `json:"image_path"`
-	DisplayPath string   `json:"display_path"`
-	GroupIDs    []uint   `json:"group_ids"`
-	GroupNames  []string `json:"group_names"`
+	ID           uint     `json:"id"`
+	Value        string   `json:"value,omitempty"`
+	Label        string   `json:"label"`
+	ImagePath    string   `json:"image_path"`
+	DisplayPath  string   `json:"display_path"`
+	TopLeftX     int      `json:"top_left_x,omitempty"`
+	TopLeftY     int      `json:"top_left_y,omitempty"`
+	BottomRightX int      `json:"bottom_right_x,omitempty"`
+	BottomRightY int      `json:"bottom_right_y,omitempty"`
+	GroupIDs     []uint   `json:"group_ids"`
+	GroupNames   []string `json:"group_names"`
 }
 
 type updateOwnPreviewPinRequest struct {
@@ -257,6 +317,7 @@ type integrationStaticPreviewGeocodeResponse struct {
 
 type integrationMarkerResponse struct {
 	model.Marker
+	Testing                 bool                                   `json:"testing"`
 	IntegrationSource       string                                 `json:"integration_source"`
 	CreatedAgo              string                                 `json:"created_ago"`
 	EditableWithSameAPIKey  bool                                   `json:"editable_with_same_api_key"`
@@ -337,6 +398,144 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+var integrationExecuteManualCalendarSyncFn = executeManualCalendarSync
+var integrationListRelationSchedulesByDateFn = func(relationID uint, dayStart time.Time, dayEnd time.Time, includeTesting bool) ([]dbmodel.Schedule, error) {
+	query := database.Connection.Model(&dbmodel.Schedule{}).Where("relation_id = ?", relationID)
+	query = query.Where("selected_date >= ? AND selected_date < ?", dayStart.Format(time.RFC3339), dayEnd.Format(time.RFC3339))
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
+	items := make([]dbmodel.Schedule, 0)
+	if err := query.Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+var integrationResolveCalendarSyncUserIDFn = func(apiKey *dbmodel.APIKey) (uint, error) {
+	if apiKey == nil {
+		return 0, fmt.Errorf("api key context missing")
+	}
+	if apiKey.ActorUser.ID != 0 {
+		return apiKey.ActorUser.ID, nil
+	}
+	if apiKey.ActorUserID != nil && *apiKey.ActorUserID != 0 {
+		return *apiKey.ActorUserID, nil
+	}
+	if apiKey.Relation.UserOneUID != 0 {
+		return apiKey.Relation.UserOneUID, nil
+	}
+	if apiKey.Relation.UserTwoUID != 0 {
+		return apiKey.Relation.UserTwoUID, nil
+	}
+	return 0, fmt.Errorf("unable to resolve calendar sync actor user")
+}
+var integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
+	tx := database.Connection.Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return tx, nil
+}
+var integrationListSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) ([]dbmodel.Schedule, error) {
+	items := make([]dbmodel.Schedule, 0)
+	err := tx.Preload("SelectedMarker").
+		Where("relation_id = ?", relationID).
+		Where("selected_date >= ? AND selected_date < ?", start.Format(time.RFC3339), end.Format(time.RFC3339)).
+		Find(&items).Error
+	return items, err
+}
+var integrationDeleteSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) (int64, error) {
+	result := tx.Where("relation_id = ?", relationID).
+		Where("selected_date >= ? AND selected_date < ?", start.Format(time.RFC3339), end.Format(time.RFC3339)).
+		Delete(&dbmodel.Schedule{})
+	return result.RowsAffected, result.Error
+}
+var integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmodel.Marker, error) {
+	marker := &dbmodel.Marker{}
+	marker.ID = markerID
+	if err := marker.GetById(tx); err != nil {
+		return nil, err
+	}
+	return marker, nil
+}
+var integrationCreateScheduleFn = CreateSchedule
+var integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error {
+	return schedule.Update(tx)
+}
+var integrationResetMarkerStatusForOverwriteFn = func(tx *gorm.DB, marker *dbmodel.Marker, actor dbmodel.User) error {
+	if marker == nil {
+		return nil
+	}
+	marker.Status = ""
+	marker.UpdatedBy = &actor
+	return marker.Update(tx)
+}
+var integrationCommitScheduleOverwriteTxFn = func(tx *gorm.DB) error {
+	return tx.Commit().Error
+}
+var integrationRollbackScheduleOverwriteTxFn = func(tx *gorm.DB) {
+	if tx == nil {
+		return
+	}
+	tx.Rollback()
+}
+
+func normalizeSettingsPinLabel(value string, rawLabel *string) string {
+	if rawLabel == nil {
+		return value
+	}
+	trimmed := strings.TrimSpace(*rawLabel)
+	if trimmed == "" {
+		return value
+	}
+	return trimmed
+}
+
+func canAccessTestingEntities(role string) bool {
+	return strings.EqualFold(strings.TrimSpace(role), "admin")
+}
+
+func resolveRequestedTestingFlag(requested *bool, canAccess bool) (bool, error) {
+	if requested == nil {
+		return false, nil
+	}
+	if *requested && !canAccess {
+		return false, fmt.Errorf("permission denied")
+	}
+	return *requested, nil
+}
+
+func resolveCreateTestingFlagForAPIKey(apiKey *dbmodel.APIKey, requested *bool, canAccess bool) (bool, error) {
+	// Testing API keys always create testing entities, regardless of payload.
+	if apiKey != nil && apiKey.Testing {
+		return true, nil
+	}
+	return resolveRequestedTestingFlag(requested, canAccess)
+}
+
+func toIntegrationSettingsPinResponse(pin dbmodel.Pin) integrationSettingsPinResponse {
+	groupIDs := make([]uint, 0, len(pin.Groups))
+	groupNames := make([]string, 0, len(pin.Groups))
+	for _, group := range pin.Groups {
+		groupIDs = append(groupIDs, group.ID)
+		groupNames = append(groupNames, group.Name)
+	}
+
+	return integrationSettingsPinResponse{
+		ID:           pin.ID,
+		Value:        pin.Label,
+		Label:        normalizeSettingsPinLabel(pin.Label, pin.SettingsLabel),
+		ImagePath:    pin.ImagePath,
+		DisplayPath:  pin.DisplayPath,
+		TopLeftX:     pin.TopLeftX,
+		TopLeftY:     pin.TopLeftY,
+		BottomRightX: pin.BottomRightX,
+		BottomRightY: pin.BottomRightY,
+		GroupIDs:     groupIDs,
+		GroupNames:   groupNames,
+	}
+}
+
 var integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -367,11 +566,13 @@ func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiKey, token, err := CreateAPIKey(APIKeyCreateInput{
-		Name:        request.Name,
-		Scopes:      request.Scopes,
-		RelationID:  request.RelationID,
-		ActorUserID: request.ActorUserID,
-		ExpiresAt:   expiresAt,
+		Name:             request.Name,
+		Testing:          request.Testing != nil && *request.Testing,
+		Scopes:           request.Scopes,
+		RelationID:       request.RelationID,
+		ActorUserID:      request.ActorUserID,
+		ServiceAccountID: request.ServiceAccountID,
+		ExpiresAt:        expiresAt,
 	}, operator)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -400,6 +601,20 @@ func ListAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	testingFilter := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("testing")))
+	if testingFilter == "true" || testingFilter == "false" {
+		filtered := make([]dbmodel.APIKey, 0, len(keys))
+		for _, item := range keys {
+			if testingFilter == "true" && item.Testing {
+				filtered = append(filtered, item)
+				continue
+			}
+			if testingFilter == "false" && !item.Testing {
+				filtered = append(filtered, item)
+			}
+		}
+		keys = filtered
+	}
 
 	result := make([]apiKeyResponse, 0, len(keys))
 	for _, item := range keys {
@@ -422,7 +637,7 @@ func ListAPIKeyOptionsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	users, relations, err := ListAPIKeyOptions()
+	users, relations, serviceAccounts, err := ListAPIKeyOptions()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -448,10 +663,24 @@ func ListAPIKeyOptionsHandler(w http.ResponseWriter, r *http.Request) {
 			Display:   item.Display,
 		})
 	}
+	serviceAccountResponse := make([]apiKeyServiceAccountOptionResponse, 0, len(serviceAccounts))
+	for _, item := range serviceAccounts {
+		serviceAccountResponse = append(serviceAccountResponse, apiKeyServiceAccountOptionResponse{
+			ID:             item.ID,
+			Name:           item.Name,
+			Description:    item.Description,
+			Role:           item.Role,
+			RelationID:     item.RelationID,
+			Active:         item.Active,
+			ActingUserID:   item.ActingUserID,
+			ActingUsername: item.ActingUsername,
+		})
+	}
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"users":     userResponse,
-		"relations": relationResponse,
+		"users":            userResponse,
+		"relations":        relationResponse,
+		"service_accounts": serviceAccountResponse,
 	})
 }
 
@@ -548,7 +777,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		"type":       "type",
 		"to_time":    "to_time",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "west", "south", "east", "north", "zoom"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "west", "south", "east", "north", "zoom", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -564,6 +793,18 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	query = query.Where("relation_id = ?", apiKey.Relation.ID)
 	query = query.Where("status != ?", constant.Arrived)
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+
+	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	if value, ok := queryOption.Filters["testing"]; ok {
+		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
+		if requestTesting && !canAccessTesting {
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
+		}
+		query = query.Where("testing = ?", requestTesting)
+	} else if !canAccessTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	if value, ok := queryOption.Filters["type"]; ok {
 		query = query.Where("type = ?", value)
@@ -657,8 +898,8 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		response = append(response, helper.ConvertMarker(item))
 	}
 	decorated := make([]integrationMarkerResponse, 0, len(response))
-	for _, marker := range response {
-		decorated = append(decorated, buildIntegrationMarkerResponse(marker))
+	for index, marker := range response {
+		decorated = append(decorated, buildIntegrationMarkerResponse(marker, markers[index].Testing))
 	}
 	nextCursor := ""
 	if len(markers) == queryOption.Limit {
@@ -680,7 +921,7 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery)
+	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery, canAccessTestingEntities(APIKeyActorRole(apiKey)))
 	if err != nil {
 		writeIntegrationError(w, http.StatusInternalServerError, "nearby_search_failed", "failed to retrieve nearby markers")
 		return
@@ -688,7 +929,7 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 
 	items := make([]integrationNearbyMarkerResponse, 0, len(rows))
 	for _, row := range rows {
-		decorated := buildIntegrationMarkerResponse(helper.ConvertMarker(row.Marker))
+		decorated := buildIntegrationMarkerResponse(helper.ConvertMarker(row.Marker), row.Marker.Testing)
 		items = append(items, integrationNearbyMarkerResponse{
 			integrationMarkerResponse: decorated,
 			DistanceMeters:            row.DistanceMeters,
@@ -715,6 +956,12 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 	request := integrationCreateMarkerRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	testing, err := resolveCreateTestingFlagForAPIKey(apiKey, request.Testing, canAccessTestingEntities(APIKeyActorRole(apiKey)))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
@@ -764,13 +1011,13 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		restaurantPtr = &restaurant
 	}
 
-	marker, err := CreateMarker(input, restaurantPtr, apiKey.ActorUser, apiKey.Relation)
+	marker, err := CreateMarker(input, restaurantPtr, apiKey.ActorUser, apiKey.Relation, testing)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
+	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker), marker.Testing))
 }
 
 func IntegrationCreateMarkerOutcomeHandler(w http.ResponseWriter, r *http.Request) {
@@ -896,13 +1143,14 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		restaurantPtr = &restaurant
 	}
 
-	marker, err := EditMarker(input, restaurantPtr, apiKey.Relation, apiKey.ActorUser)
+	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	marker, err := EditMarker(input, restaurantPtr, apiKey.Relation, apiKey.ActorUser, request.Testing, canModifyTesting)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker)))
+	respondJSON(w, http.StatusOK, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker), marker.Testing))
 }
 
 func IntegrationDeleteMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -924,6 +1172,10 @@ func IntegrationDeleteMarkerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if marker.RelationId != apiKey.Relation.ID {
 		http.Error(w, "api key cannot delete marker outside assigned relation", http.StatusForbidden)
+		return
+	}
+	if marker.Testing && !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
+		http.Error(w, "permission denied", http.StatusForbidden)
 		return
 	}
 
@@ -948,7 +1200,7 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 		"label":         "label",
 		"status":        "status",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "selected_date", []string{"status", "marker_id", "label", "search", "from", "to", "time"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "selected_date", []string{"status", "marker_id", "label", "search", "from", "to", "time", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -972,6 +1224,17 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := database.Connection.Model(&dbmodel.Schedule{}).Preload("SelectedMarker.RestaurantInfo").Where("relation_id = ?", apiKey.Relation.ID)
 	query = query.Where("selected_date >= ?", baseDay.Format(time.RFC3339))
+	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	if value, ok := queryOption.Filters["testing"]; ok {
+		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
+		if requestTesting && !canAccessTesting {
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
+		}
+		query = query.Where("testing = ?", requestTesting)
+	} else if !canAccessTesting {
+		query = query.Where("testing = ?", false)
+	}
 	if value, ok := queryOption.Filters["status"]; ok {
 		query = query.Where("status = ?", value)
 	}
@@ -1055,6 +1318,13 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, request.Testing, canModifyTesting)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusForbidden)
+		return
+	}
+
 	var marker dbmodel.Marker
 	marker.ID = uint(request.MarkerID)
 	if err := marker.GetById(database.Connection); err != nil {
@@ -1063,6 +1333,10 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	if marker.RelationId != apiKey.Relation.ID {
 		http.Error(w, "api key cannot access marker outside assigned relation", http.StatusForbidden)
+		return
+	}
+	if marker.Testing && !canModifyTesting {
+		http.Error(w, "permission denied", http.StatusForbidden)
 		return
 	}
 
@@ -1074,7 +1348,8 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tx := database.Connection.Begin()
-	schedule, err := CreateSchedule(tx, input, marker, apiKey.ActorUser, apiKey.Relation)
+	scheduleTesting := requestedTesting || marker.Testing
+	schedule, err := CreateSchedule(tx, input, marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
 	if err != nil {
 		tx.Rollback()
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1139,6 +1414,11 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "api key cannot access schedule outside assigned relation", http.StatusForbidden)
 		return
 	}
+	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	if schedule.Testing && !canModifyTesting {
+		http.Error(w, "permission denied", http.StatusForbidden)
+		return
+	}
 
 	if request.Label != nil {
 		schedule.Label = strings.TrimSpace(*request.Label)
@@ -1166,12 +1446,249 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	schedule.UpdatedBy = &apiKey.ActorUser
+	if request.Testing != nil {
+		if !canModifyTesting {
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
+		}
+		schedule.Testing = *request.Testing
+	}
 	if err := schedule.Update(database.Connection); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	respondJSON(w, http.StatusOK, buildIntegrationScheduleResponse(schedule, warnings))
+}
+
+func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.schedules.overwrite_by_date", constant.APIKeyScopeSchedulesWrite, "")
+	if !ok {
+		return
+	}
+	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationOverwriteScheduleByDateRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Date = strings.TrimSpace(request.Date)
+	if request.Date == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayStart, err := time.Parse(utils.DayOnlyTime, request.Date)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	for index := range request.Items {
+		item := &request.Items[index]
+		item.Label = strings.TrimSpace(item.Label)
+		item.Description = strings.TrimSpace(item.Description)
+		if item.Label == "" {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "label is required for each schedule item")
+			return
+		}
+		if item.MarkerID <= 0 {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id must be a positive integer for each schedule item")
+			return
+		}
+		selectedAt, parseErr := time.Parse(utils.StandardTime, strings.TrimSpace(item.SelectedTime))
+		if parseErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
+			return
+		}
+		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
+			return
+		}
+	}
+
+	tx, err := integrationBeginScheduleOverwriteTxFn()
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to begin overwrite transaction")
+		return
+	}
+	defer integrationRollbackScheduleOverwriteTxFn(tx)
+
+	existingSchedules, err := integrationListSchedulesByDateFn(tx, apiKey.Relation.ID, dayStart, dayEnd)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to read existing schedules for target date")
+		return
+	}
+
+	resetMarkerIDs := map[uint]struct{}{}
+	for _, existing := range existingSchedules {
+		if existing.SelectedMarker == nil || existing.SelectedMarker.ID == 0 {
+			continue
+		}
+		if _, exists := resetMarkerIDs[existing.SelectedMarker.ID]; exists {
+			continue
+		}
+		if err := integrationResetMarkerStatusForOverwriteFn(tx, existing.SelectedMarker, apiKey.ActorUser); err != nil {
+			writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to reset marker status before overwrite")
+			return
+		}
+		resetMarkerIDs[existing.SelectedMarker.ID] = struct{}{}
+	}
+
+	deletedCount, err := integrationDeleteSchedulesByDateFn(tx, apiKey.Relation.ID, dayStart, dayEnd)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to remove existing schedules for target date")
+		return
+	}
+
+	createdItems := make([]integrationScheduleResponse, 0, len(request.Items))
+	for _, item := range request.Items {
+		marker, err := integrationGetScheduleMarkerByIDFn(tx, uint(item.MarkerID))
+		if err != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id references a non-existent marker")
+			return
+		}
+		if marker.RelationId != apiKey.Relation.ID {
+			writeIntegrationError(w, http.StatusForbidden, "api_key_scope_denied", "api key cannot access marker outside assigned relation")
+			return
+		}
+		if marker.Testing && !canModifyTesting {
+			writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
+			return
+		}
+		requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, item.Testing, canModifyTesting)
+		if err != nil {
+			writeIntegrationError(w, http.StatusForbidden, "permission_denied", err.Error())
+			return
+		}
+
+		label := item.Label
+		if apiKey.Testing {
+			label = "testing schedule"
+		}
+		scheduleTesting := requestedTesting || marker.Testing
+
+		schedule, err := integrationCreateScheduleFn(tx, model.NewSchedule{
+			Label:        label,
+			Description:  item.Description,
+			SelectedTime: item.SelectedTime,
+			MarkerID:     item.MarkerID,
+		}, *marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
+		if err != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", err.Error())
+			return
+		}
+
+		warnings := []string{}
+		if item.RoutePreview != nil {
+			applyWarnings, applyErr := applyRoutePreviewToSchedule(schedule, item.RoutePreview)
+			if applyErr != nil {
+				warnings = append(warnings, applyErr.Error())
+				schedule.RoutePreviewWarning = trimmedStringPtr(strings.TrimSpace(applyErr.Error()))
+			}
+			warnings = append(warnings, applyWarnings...)
+		}
+		if err := integrationUpdateScheduleModelFn(tx, schedule); err != nil {
+			writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to persist overwritten schedules")
+			return
+		}
+
+		createdItems = append(createdItems, buildIntegrationScheduleResponse(*schedule, warnings))
+	}
+
+	if err := integrationCommitScheduleOverwriteTxFn(tx); err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to commit overwrite transaction")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationOverwriteScheduleByDateResponse{
+		Date:         dayStart.Format(utils.DayOnlyTime),
+		DeletedCount: deletedCount,
+		CreatedCount: len(createdItems),
+		Items:        createdItems,
+	})
+}
+
+func IntegrationCalendarGoogleSyncByDateHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.calendar.google.sync_by_date", constant.APIKeyScopeCalendarSync, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+	request := integrationCalendarGoogleSyncByDateRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Date = strings.TrimSpace(request.Date)
+	if request.Date == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayStart, err := time.Parse(utils.DayOnlyTime, request.Date)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	syncUserID, err := integrationResolveCalendarSyncUserIDFn(apiKey)
+	if err != nil {
+		writeIntegrationError(w, http.StatusForbidden, "calendar_sync_actor_unavailable", "unable to resolve calendar sync actor user")
+		return
+	}
+
+	includeTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	schedules, err := integrationListRelationSchedulesByDateFn(apiKey.Relation.ID, dayStart, dayEnd, includeTesting)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "calendar_sync_query_failed", "failed to load schedules for date")
+		return
+	}
+
+	items := make([]integrationCalendarGoogleSyncByDateItem, 0, len(schedules))
+	synced := 0
+	failed := 0
+	for _, schedule := range schedules {
+		result, syncErr := integrationExecuteManualCalendarSyncFn(r.Context(), syncUserID, schedule.ID, CalendarProviderGoogle, "")
+		if syncErr != nil {
+			failed++
+			items = append(items, integrationCalendarGoogleSyncByDateItem{
+				ScheduleID: schedule.ID,
+				Status:     "failed",
+				Error:      syncErr.Error(),
+			})
+			continue
+		}
+		synced++
+		items = append(items, integrationCalendarGoogleSyncByDateItem{
+			ScheduleID: schedule.ID,
+			Status:     strings.TrimSpace(result.SyncStatus),
+			Action:     strings.TrimSpace(result.Action),
+		})
+	}
+
+	respondJSON(w, http.StatusOK, integrationCalendarGoogleSyncByDateResponse{
+		Date:     dayStart.Format(utils.DayOnlyTime),
+		Provider: CalendarProviderGoogle,
+		Total:    len(schedules),
+		Synced:   synced,
+		Failed:   failed,
+		Items:    items,
+	})
 }
 
 func IntegrationListStationsHandler(w http.ResponseWriter, r *http.Request) {
@@ -2041,9 +2558,10 @@ func decodeStrictJSONPayload(payload []byte, target interface{}) error {
 	return nil
 }
 
-func buildIntegrationMarkerResponse(marker model.Marker) integrationMarkerResponse {
+func buildIntegrationMarkerResponse(marker model.Marker, testing bool) integrationMarkerResponse {
 	return integrationMarkerResponse{
 		Marker:                  marker,
+		Testing:                 testing,
 		IntegrationSource:       "api_key",
 		CreatedAgo:              humanizeRFC3339Duration(marker.CreatedAt, integrationNowFn()),
 		EditableWithSameAPIKey:  true,
@@ -2146,6 +2664,7 @@ func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []stri
 	modelSchedule := helper.ConvertSchedule(schedule)
 	response := integrationScheduleResponse{
 		Schedule: modelSchedule,
+		Testing:  schedule.Testing,
 	}
 	if len(warnings) > 0 {
 		response.Warnings = warnings
@@ -2454,12 +2973,15 @@ func parseIntegrationNearbySearchQuery(r *http.Request) (integrationNearbySearch
 	return query, nil
 }
 
-func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrationNearbySearchQuery, includeTesting bool) ([]integrationNearbyMarkerRow, error) {
 	current := time.Now().AddDate(0, 0, -1)
 	baseQuery := database.Connection.Model(&dbmodel.Marker{}).
 		Where("relation_id = ?", relation.ID).
 		Where("status != ?", constant.Arrived).
 		Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+	if !includeTesting {
+		baseQuery = baseQuery.Where("testing = ?", false)
+	}
 
 	latDelta := params.RadiusMeters / 111320.0
 	south := math.Max(-90, params.Latitude-latDelta)
@@ -2556,17 +3078,27 @@ func normalizeLongitude(value float64) float64 {
 }
 
 func formatAPIKey(apiKey *dbmodel.APIKey) apiKeyResponse {
+	var serviceAccountName *string
+	if apiKey.ServiceAccount != nil {
+		name := strings.TrimSpace(apiKey.ServiceAccount.Name)
+		if name != "" {
+			serviceAccountName = &name
+		}
+	}
 	return apiKeyResponse{
-		ID:          apiKey.ID,
-		Name:        apiKey.Name,
-		Prefix:      apiKey.Prefix,
-		Scopes:      apiKey.ScopeList(),
-		Status:      apiKey.Status,
-		RelationID:  apiKey.RelationID,
-		ActorUserID: apiKey.ActorUserID,
-		LastUsedAt:  apiKey.LastUsedAt,
-		ExpiresAt:   apiKey.ExpiresAt,
-		CreatedAt:   apiKey.CreatedAt,
+		ID:                 apiKey.ID,
+		Name:               apiKey.Name,
+		Testing:            apiKey.Testing,
+		Prefix:             apiKey.Prefix,
+		Scopes:             apiKey.ScopeList(),
+		Status:             apiKey.Status,
+		RelationID:         apiKey.RelationID,
+		ActorUserID:        apiKey.ActorUserID,
+		ServiceAccountID:   apiKey.ServiceAccountID,
+		ServiceAccountName: serviceAccountName,
+		LastUsedAt:         apiKey.LastUsedAt,
+		ExpiresAt:          apiKey.ExpiresAt,
+		CreatedAt:          apiKey.CreatedAt,
 	}
 }
 

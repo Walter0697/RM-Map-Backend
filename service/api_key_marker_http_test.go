@@ -132,7 +132,7 @@ func TestBuildIntegrationMarkerResponseAddsIndicator(t *testing.T) {
 	integrationNowFn = func() time.Time { return fixedNow }
 	defer func() { integrationNowFn = time.Now }()
 
-	item := buildIntegrationMarkerResponse(model.Marker{ID: 99, CreatedAt: "2026-03-03T12:30:00Z"})
+	item := buildIntegrationMarkerResponse(model.Marker{ID: 99, CreatedAt: "2026-03-03T12:30:00Z"}, false)
 	if item.IntegrationSource != "api_key" {
 		t.Fatalf("unexpected integration source: %s", item.IntegrationSource)
 	}
@@ -158,7 +158,7 @@ func TestBuildIntegrationMarkerResponseWebsitePayload(t *testing.T) {
 			Rating:   stringPtr(`{"like":"80","average":"10","dislike":"10"}`),
 			Website:  stringPtr("https://s.openrice.com/abc123"),
 		},
-	})
+	}, false)
 	if item.WebsiteIntegration == nil {
 		t.Fatalf("expected website integration payload")
 	}
@@ -226,7 +226,7 @@ func TestIntegrationNearbySearchMarkersHandlerSuccessDistanceOrdering(t *testing
 			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
 		}, true
 	}
-	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery, includeTesting bool) ([]integrationNearbyMarkerRow, error) {
 		return []integrationNearbyMarkerRow{
 			{
 				Marker: dbmodel.Marker{
@@ -288,7 +288,7 @@ func TestIntegrationNearbySearchMarkersHandlerEmptyResult(t *testing.T) {
 			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}},
 		}, true
 	}
-	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery) ([]integrationNearbyMarkerRow, error) {
+	integrationFindNearbyMarkersFn = func(relation dbmodel.UserRelation, params integrationNearbySearchQuery, includeTesting bool) ([]integrationNearbyMarkerRow, error) {
 		return []integrationNearbyMarkerRow{}, nil
 	}
 

@@ -20,7 +20,7 @@ func SeedSchedules() {
 		panic(err)
 	}
 
-	markers, err := service.GetAllActiveMarker([]string{}, relation)
+	markers, err := service.GetAllActiveMarker([]string{}, relation, false)
 	if err != nil {
 		panic(err)
 	}

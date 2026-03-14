@@ -1,0 +1,2 @@
+ALTER TABLE pins
+    ADD COLUMN IF NOT EXISTS settings_label TEXT;
