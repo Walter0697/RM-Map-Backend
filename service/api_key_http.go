@@ -161,6 +161,26 @@ type integrationOverwriteScheduleByDateResponse struct {
 	Items        []integrationScheduleResponse `json:"items"`
 }
 
+type integrationCalendarGoogleSyncByDateRequest struct {
+	Date string `json:"date"`
+}
+
+type integrationCalendarGoogleSyncByDateItem struct {
+	ScheduleID uint   `json:"schedule_id"`
+	Status     string `json:"status"`
+	Action     string `json:"action,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+type integrationCalendarGoogleSyncByDateResponse struct {
+	Date     string                                    `json:"date"`
+	Provider string                                    `json:"provider"`
+	Total    int                                       `json:"total"`
+	Synced   int                                       `json:"synced"`
+	Failed   int                                       `json:"failed"`
+	Items    []integrationCalendarGoogleSyncByDateItem `json:"items"`
+}
+
 type integrationScheduleRoutePreviewRequest struct {
 	ImageRef       *string                             `json:"image_ref,omitempty"`
 	DistanceMeters *int                                `json:"distance_meters,omitempty"`
@@ -346,6 +366,37 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+var integrationExecuteManualCalendarSyncFn = executeManualCalendarSync
+var integrationListRelationSchedulesByDateFn = func(relationID uint, dayStart time.Time, dayEnd time.Time, includeTesting bool) ([]dbmodel.Schedule, error) {
+	query := database.Connection.Model(&dbmodel.Schedule{}).Where("relation_id = ?", relationID)
+	query = query.Where("selected_date >= ? AND selected_date < ?", dayStart.Format(time.RFC3339), dayEnd.Format(time.RFC3339))
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
+	items := make([]dbmodel.Schedule, 0)
+	if err := query.Find(&items).Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+var integrationResolveCalendarSyncUserIDFn = func(apiKey *dbmodel.APIKey) (uint, error) {
+	if apiKey == nil {
+		return 0, fmt.Errorf("api key context missing")
+	}
+	if apiKey.ActorUser.ID != 0 {
+		return apiKey.ActorUser.ID, nil
+	}
+	if apiKey.ActorUserID != nil && *apiKey.ActorUserID != 0 {
+		return *apiKey.ActorUserID, nil
+	}
+	if apiKey.Relation.UserOneUID != 0 {
+		return apiKey.Relation.UserOneUID, nil
+	}
+	if apiKey.Relation.UserTwoUID != 0 {
+		return apiKey.Relation.UserTwoUID, nil
+	}
+	return 0, fmt.Errorf("unable to resolve calendar sync actor user")
+}
 var integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
 	tx := database.Connection.Begin()
 	if tx.Error != nil {
@@ -1531,6 +1582,80 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		DeletedCount: deletedCount,
 		CreatedCount: len(createdItems),
 		Items:        createdItems,
+	})
+}
+
+func IntegrationCalendarGoogleSyncByDateHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.calendar.google.sync_by_date", constant.APIKeyScopeCalendarSync, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+	request := integrationCalendarGoogleSyncByDateRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Date = strings.TrimSpace(request.Date)
+	if request.Date == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayStart, err := time.Parse(utils.DayOnlyTime, request.Date)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	syncUserID, err := integrationResolveCalendarSyncUserIDFn(apiKey)
+	if err != nil {
+		writeIntegrationError(w, http.StatusForbidden, "calendar_sync_actor_unavailable", "unable to resolve calendar sync actor user")
+		return
+	}
+
+	includeTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	schedules, err := integrationListRelationSchedulesByDateFn(apiKey.Relation.ID, dayStart, dayEnd, includeTesting)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "calendar_sync_query_failed", "failed to load schedules for date")
+		return
+	}
+
+	items := make([]integrationCalendarGoogleSyncByDateItem, 0, len(schedules))
+	synced := 0
+	failed := 0
+	for _, schedule := range schedules {
+		result, syncErr := integrationExecuteManualCalendarSyncFn(r.Context(), syncUserID, schedule.ID, CalendarProviderGoogle, "")
+		if syncErr != nil {
+			failed++
+			items = append(items, integrationCalendarGoogleSyncByDateItem{
+				ScheduleID: schedule.ID,
+				Status:     "failed",
+				Error:      syncErr.Error(),
+			})
+			continue
+		}
+		synced++
+		items = append(items, integrationCalendarGoogleSyncByDateItem{
+			ScheduleID: schedule.ID,
+			Status:     strings.TrimSpace(result.SyncStatus),
+			Action:     strings.TrimSpace(result.Action),
+		})
+	}
+
+	respondJSON(w, http.StatusOK, integrationCalendarGoogleSyncByDateResponse{
+		Date:     dayStart.Format(utils.DayOnlyTime),
+		Provider: CalendarProviderGoogle,
+		Total:    len(schedules),
+		Synced:   synced,
+		Failed:   failed,
+		Items:    items,
 	})
 }
 

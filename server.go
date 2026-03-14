@@ -198,6 +198,7 @@ func startServer() {
 		r.Get("/exports/{job_id}/artifacts/{format}", service.IntegrationGetOfflineExportArtifactHandler)
 		r.Post("/routes/plan", service.IntegrationPlanRouteHandler)
 		r.Post("/routes/static-image", service.IntegrationGenerateRouteStaticImageHandler)
+		r.Post("/calendar/google/sync-by-date", service.IntegrationCalendarGoogleSyncByDateHandler)
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
