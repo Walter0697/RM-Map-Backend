@@ -18,9 +18,11 @@ const rawAPIKeyPrefix = "rmk_"
 
 type APIKeyCreateInput struct {
 	Name        string
+	Testing     bool
 	Scopes      []string
 	RelationID  uint
-	ActorUserID uint
+	ActorUserID *uint
+	ServiceAccountID *uint
 	ExpiresAt   *time.Time
 }
 
@@ -46,17 +48,72 @@ type APIKeyRelationOption struct {
 	Display    string
 }
 
+type APIKeyServiceAccountOption struct {
+	ID            uint
+	Name          string
+	Description   string
+	Role          string
+	RelationID    uint
+	Active        bool
+	ActingUserID  *uint
+	ActingUsername string
+}
+
 func CreateAPIKey(input APIKeyCreateInput, operator *dbmodel.User) (*dbmodel.APIKey, string, error) {
+	if input.ActorUserID == nil && input.ServiceAccountID == nil {
+		return nil, "", fmt.Errorf("actor_user_id or service_account_id is required")
+	}
+	if input.ActorUserID != nil && input.ServiceAccountID != nil {
+		return nil, "", fmt.Errorf("actor_user_id and service_account_id are mutually exclusive")
+	}
+
+	effectiveRelationID := input.RelationID
+	var actor dbmodel.User
+	var serviceAccountID *uint
+	var actorUserID *uint = input.ActorUserID
+	if input.ActorUserID != nil {
+		actor.ID = *input.ActorUserID
+		if err := actor.GetUserById(database.Connection); err != nil {
+			return nil, "", err
+		}
+	} else {
+		var serviceAccount dbmodel.ServiceAccount
+		serviceAccount.ID = *input.ServiceAccountID
+		if err := serviceAccount.GetByID(database.Connection); err != nil {
+			return nil, "", err
+		}
+		if !serviceAccount.Active {
+			return nil, "", fmt.Errorf("service account is inactive")
+		}
+		if serviceAccount.RelationID == 0 {
+			return nil, "", fmt.Errorf("service account relation_id is missing")
+		}
+		if effectiveRelationID != 0 && effectiveRelationID != serviceAccount.RelationID {
+			return nil, "", fmt.Errorf("relation_id must match service account relation_id")
+		}
+		effectiveRelationID = serviceAccount.RelationID
+		if serviceAccount.ActingUserID != nil && serviceAccount.ActingUser != nil {
+			actor = *serviceAccount.ActingUser
+			actorUserID = serviceAccount.ActingUserID
+		} else if operator != nil && operator.ID != 0 {
+			// Temporary fallback: when no acting user is configured, use request operator for audit linkage.
+			actor = *operator
+			actorUserID = &operator.ID
+		}
+		serviceAccountID = &serviceAccount.ID
+	}
+	if effectiveRelationID == 0 {
+		return nil, "", fmt.Errorf("relation_id is required")
+	}
 	var relation dbmodel.UserRelation
-	relation.ID = input.RelationID
+	relation.ID = effectiveRelationID
 	if err := relation.GetRelationById(database.Connection); err != nil {
 		return nil, "", err
 	}
-
-	var actor dbmodel.User
-	actor.ID = input.ActorUserID
-	if err := actor.GetUserById(database.Connection); err != nil {
-		return nil, "", err
+	if actorUserID == nil {
+		// Keep legacy flows working even when service account has no acting user configured.
+		fallbackActorUserID := relation.UserOneUID
+		actorUserID = &fallbackActorUserID
 	}
 
 	secret := generateAPIKeySecret()
@@ -72,12 +129,14 @@ func CreateAPIKey(input APIKeyCreateInput, operator *dbmodel.User) (*dbmodel.API
 
 	apiKey := &dbmodel.APIKey{
 		Name:        strings.TrimSpace(input.Name),
+		Testing:     input.Testing,
 		Prefix:      prefixSecret(secret),
 		KeyHash:     keyHash,
 		Scopes:      strings.Join(normalizedScopes, ","),
 		Status:      dbmodel.APIKeyStatusActive,
-		RelationID:  input.RelationID,
-		ActorUserID: input.ActorUserID,
+		RelationID:  effectiveRelationID,
+		ActorUserID: actorUserID,
+		ServiceAccountID: serviceAccountID,
 		ExpiresAt:   input.ExpiresAt,
 	}
 
@@ -96,16 +155,16 @@ func CreateAPIKey(input APIKeyCreateInput, operator *dbmodel.User) (*dbmodel.API
 
 func ListAPIKeys() ([]dbmodel.APIKey, error) {
 	var keys []dbmodel.APIKey
-	if err := database.Connection.Preload("Relation").Preload("ActorUser").Find(&keys).Error; err != nil {
+	if err := database.Connection.Preload("Relation").Preload("ActorUser").Preload("ServiceAccount").Find(&keys).Error; err != nil {
 		return nil, err
 	}
 	return keys, nil
 }
 
-func ListAPIKeyOptions() ([]APIKeyUserOption, []APIKeyRelationOption, error) {
+func ListAPIKeyOptions() ([]APIKeyUserOption, []APIKeyRelationOption, []APIKeyServiceAccountOption, error) {
 	users := make([]dbmodel.User, 0)
 	if err := database.Connection.Order("username asc").Find(&users).Error; err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	userOptions := make([]APIKeyUserOption, 0, len(users))
@@ -119,7 +178,7 @@ func ListAPIKeyOptions() ([]APIKeyUserOption, []APIKeyRelationOption, error) {
 
 	relations := make([]dbmodel.UserRelation, 0)
 	if err := database.Connection.Preload("UserOne").Preload("UserTwo").Order("id asc").Find(&relations).Error; err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	relationOptions := make([]APIKeyRelationOption, 0, len(relations))
@@ -134,7 +193,33 @@ func ListAPIKeyOptions() ([]APIKeyUserOption, []APIKeyRelationOption, error) {
 		})
 	}
 
-	return userOptions, relationOptions, nil
+	serviceAccounts := make([]dbmodel.ServiceAccount, 0)
+	if err := database.Connection.
+		Where("active = ?", true).
+		Preload("ActingUser").
+		Order("name asc").
+		Find(&serviceAccounts).Error; err != nil {
+		return nil, nil, nil, err
+	}
+	serviceAccountOptions := make([]APIKeyServiceAccountOption, 0, len(serviceAccounts))
+	for _, item := range serviceAccounts {
+		actingUsername := ""
+		if item.ActingUser != nil {
+			actingUsername = item.ActingUser.Username
+		}
+		serviceAccountOptions = append(serviceAccountOptions, APIKeyServiceAccountOption{
+			ID:             item.ID,
+			Name:           item.Name,
+			Description:    item.Description,
+			Role:           item.Role,
+			RelationID:     item.RelationID,
+			Active:         item.Active,
+			ActingUserID:   item.ActingUserID,
+			ActingUsername: actingUsername,
+		})
+	}
+
+	return userOptions, relationOptions, serviceAccountOptions, nil
 }
 
 func RevokeAPIKey(id uint, operator *dbmodel.User) (*dbmodel.APIKey, error) {
@@ -173,9 +258,11 @@ func RotateAPIKey(id uint, operator *dbmodel.User) (*dbmodel.APIKey, string, err
 	scopes := current.ScopeList()
 	newKey, raw, err := CreateAPIKey(APIKeyCreateInput{
 		Name:        current.Name,
+		Testing:     current.Testing,
 		Scopes:      scopes,
 		RelationID:  current.RelationID,
 		ActorUserID: current.ActorUserID,
+		ServiceAccountID: current.ServiceAccountID,
 		ExpiresAt:   current.ExpiresAt,
 	}, operator)
 	if err != nil {
@@ -302,6 +389,16 @@ func HasScope(apiKey *dbmodel.APIKey, scope string) bool {
 		}
 	}
 	return false
+}
+
+func APIKeyActorRole(apiKey *dbmodel.APIKey) string {
+	if apiKey == nil {
+		return ""
+	}
+	if apiKey.ServiceAccountID != nil && apiKey.ServiceAccount != nil {
+		return strings.TrimSpace(apiKey.ServiceAccount.Role)
+	}
+	return strings.TrimSpace(apiKey.ActorUser.Role)
 }
 
 func BuildRawAPIKey(id uint, secret string) string {

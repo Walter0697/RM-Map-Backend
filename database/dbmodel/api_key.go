@@ -15,6 +15,7 @@ const (
 type APIKey struct {
 	ObjectBase
 	Name          string       `json:"name" gorm:"index"`
+	Testing       bool         `json:"testing" gorm:"not null;default:false;index"`
 	Prefix        string       `json:"prefix"`
 	KeyHash       string       `json:"key_hash"`
 	Scopes        string       `json:"scopes"`
@@ -22,7 +23,9 @@ type APIKey struct {
 	Relation      UserRelation `gorm:"foreignKey:relation_id;references:id"`
 	RelationID    uint
 	ActorUser     User `gorm:"foreignKey:actor_user_id;references:id"`
-	ActorUserID   uint
+	ActorUserID   *uint
+	ServiceAccount   *ServiceAccount `gorm:"foreignKey:service_account_id;references:id"`
+	ServiceAccountID *uint
 	LastUsedAt    *time.Time
 	ExpiresAt     *time.Time
 	RotatedFromID *uint
@@ -41,7 +44,12 @@ func (apiKey *APIKey) GetByID(db *gorm.DB) error {
 }
 
 func (apiKey *APIKey) GetByIDWithRelation(db *gorm.DB) error {
-	return db.Where("id = ?", apiKey.ID).Preload("Relation").Preload("ActorUser").First(apiKey).Error
+	return db.Where("id = ?", apiKey.ID).
+		Preload("Relation").
+		Preload("ActorUser").
+		Preload("ServiceAccount").
+		Preload("ServiceAccount.ActingUser").
+		First(apiKey).Error
 }
 
 func (apiKey *APIKey) IsActive() bool {

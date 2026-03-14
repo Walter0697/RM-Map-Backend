@@ -9,6 +9,7 @@ import (
 type Schedule struct {
 	ObjectBase
 	Label                        string    `json:"label"`
+	Testing                      bool      `json:"testing" gorm:"not null;default:false;index"`
 	Description                  string    `json:"description"`
 	Status                       string    `json:"status"`
 	SelectedDate                 time.Time `json:"selectedDate"`
