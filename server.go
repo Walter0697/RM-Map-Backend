@@ -181,6 +181,7 @@ func startServer() {
 		r.Delete("/markers/{id}", service.IntegrationDeleteMarkerHandler)
 		r.Get("/schedules", service.IntegrationListSchedulesHandler)
 		r.Post("/schedules", service.IntegrationCreateScheduleHandler)
+		r.Put("/schedules/overwrite-by-date", service.IntegrationOverwriteSchedulesByDateHandler)
 		r.Put("/schedules/{id}", service.IntegrationUpdateScheduleHandler)
 		r.Get("/stations", service.IntegrationListStationsHandler)
 		r.Put("/stations", service.IntegrationUpdateStationHandler)

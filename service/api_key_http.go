@@ -12,6 +12,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
+	"mapmarker/backend/utils"
 	"math"
 	"net"
 	"net/http"
@@ -20,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi"
+	"gorm.io/gorm"
 )
 
 type createAPIKeyRequest struct {
@@ -125,6 +127,18 @@ type integrationUpdateScheduleRequest struct {
 	Description  *string                                 `json:"description,omitempty"`
 	SelectedTime *string                                 `json:"selected_time,omitempty"`
 	RoutePreview *integrationScheduleRoutePreviewRequest `json:"route_preview,omitempty"`
+}
+
+type integrationOverwriteScheduleByDateRequest struct {
+	Date  string                             `json:"date"`
+	Items []integrationCreateScheduleRequest `json:"items"`
+}
+
+type integrationOverwriteScheduleByDateResponse struct {
+	Date         string                        `json:"date"`
+	DeletedCount int64                         `json:"deleted_count"`
+	CreatedCount int                           `json:"created_count"`
+	Items        []integrationScheduleResponse `json:"items"`
 }
 
 type integrationScheduleRoutePreviewRequest struct {
@@ -310,6 +324,56 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+var integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
+	tx := database.Connection.Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return tx, nil
+}
+var integrationListSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) ([]dbmodel.Schedule, error) {
+	items := make([]dbmodel.Schedule, 0)
+	err := tx.Preload("SelectedMarker").
+		Where("relation_id = ?", relationID).
+		Where("selected_date >= ? AND selected_date < ?", start.Format(time.RFC3339), end.Format(time.RFC3339)).
+		Find(&items).Error
+	return items, err
+}
+var integrationDeleteSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) (int64, error) {
+	result := tx.Where("relation_id = ?", relationID).
+		Where("selected_date >= ? AND selected_date < ?", start.Format(time.RFC3339), end.Format(time.RFC3339)).
+		Delete(&dbmodel.Schedule{})
+	return result.RowsAffected, result.Error
+}
+var integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmodel.Marker, error) {
+	marker := &dbmodel.Marker{}
+	marker.ID = markerID
+	if err := marker.GetById(tx); err != nil {
+		return nil, err
+	}
+	return marker, nil
+}
+var integrationCreateScheduleFn = CreateSchedule
+var integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error {
+	return schedule.Update(tx)
+}
+var integrationResetMarkerStatusForOverwriteFn = func(tx *gorm.DB, marker *dbmodel.Marker, actor dbmodel.User) error {
+	if marker == nil {
+		return nil
+	}
+	marker.Status = ""
+	marker.UpdatedBy = &actor
+	return marker.Update(tx)
+}
+var integrationCommitScheduleOverwriteTxFn = func(tx *gorm.DB) error {
+	return tx.Commit().Error
+}
+var integrationRollbackScheduleOverwriteTxFn = func(tx *gorm.DB) {
+	if tx == nil {
+		return
+	}
+	tx.Rollback()
+}
 
 func normalizeSettingsPinLabel(value string, rawLabel *string) string {
 	if rawLabel == nil {
@@ -1180,6 +1244,146 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, buildIntegrationScheduleResponse(schedule, warnings))
+}
+
+func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.schedules.overwrite_by_date", constant.APIKeyScopeSchedulesWrite, "")
+	if !ok {
+		return
+	}
+
+	requestPayload, err := readJSONBody(r)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request := integrationOverwriteScheduleByDateRequest{}
+	if err := decodeStrictJSONPayload(requestPayload, &request); err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_payload", "request body must be valid JSON")
+		return
+	}
+
+	request.Date = strings.TrimSpace(request.Date)
+	if request.Date == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayStart, err := time.Parse(utils.DayOnlyTime, request.Date)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_target_date", "date is required and must be YYYY-MM-DD")
+		return
+	}
+	dayEnd := dayStart.Add(24 * time.Hour)
+
+	for index := range request.Items {
+		item := &request.Items[index]
+		item.Label = strings.TrimSpace(item.Label)
+		item.Description = strings.TrimSpace(item.Description)
+		if item.Label == "" {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "label is required for each schedule item")
+			return
+		}
+		if item.MarkerID <= 0 {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id must be a positive integer for each schedule item")
+			return
+		}
+		selectedAt, parseErr := time.Parse(utils.StandardTime, strings.TrimSpace(item.SelectedTime))
+		if parseErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
+			return
+		}
+		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
+			return
+		}
+	}
+
+	tx, err := integrationBeginScheduleOverwriteTxFn()
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to begin overwrite transaction")
+		return
+	}
+	defer integrationRollbackScheduleOverwriteTxFn(tx)
+
+	existingSchedules, err := integrationListSchedulesByDateFn(tx, apiKey.Relation.ID, dayStart, dayEnd)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to read existing schedules for target date")
+		return
+	}
+
+	resetMarkerIDs := map[uint]struct{}{}
+	for _, existing := range existingSchedules {
+		if existing.SelectedMarker == nil || existing.SelectedMarker.ID == 0 {
+			continue
+		}
+		if _, exists := resetMarkerIDs[existing.SelectedMarker.ID]; exists {
+			continue
+		}
+		if err := integrationResetMarkerStatusForOverwriteFn(tx, existing.SelectedMarker, apiKey.ActorUser); err != nil {
+			writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to reset marker status before overwrite")
+			return
+		}
+		resetMarkerIDs[existing.SelectedMarker.ID] = struct{}{}
+	}
+
+	deletedCount, err := integrationDeleteSchedulesByDateFn(tx, apiKey.Relation.ID, dayStart, dayEnd)
+	if err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to remove existing schedules for target date")
+		return
+	}
+
+	createdItems := make([]integrationScheduleResponse, 0, len(request.Items))
+	for _, item := range request.Items {
+		marker, err := integrationGetScheduleMarkerByIDFn(tx, uint(item.MarkerID))
+		if err != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id references a non-existent marker")
+			return
+		}
+		if marker.RelationId != apiKey.Relation.ID {
+			writeIntegrationError(w, http.StatusForbidden, "api_key_scope_denied", "api key cannot access marker outside assigned relation")
+			return
+		}
+
+		schedule, err := integrationCreateScheduleFn(tx, model.NewSchedule{
+			Label:        item.Label,
+			Description:  item.Description,
+			SelectedTime: item.SelectedTime,
+			MarkerID:     item.MarkerID,
+		}, *marker, apiKey.ActorUser, apiKey.Relation)
+		if err != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", err.Error())
+			return
+		}
+
+		warnings := []string{}
+		if item.RoutePreview != nil {
+			applyWarnings, applyErr := applyRoutePreviewToSchedule(schedule, item.RoutePreview)
+			if applyErr != nil {
+				warnings = append(warnings, applyErr.Error())
+				schedule.RoutePreviewWarning = trimmedStringPtr(strings.TrimSpace(applyErr.Error()))
+			}
+			warnings = append(warnings, applyWarnings...)
+		}
+		if err := integrationUpdateScheduleModelFn(tx, schedule); err != nil {
+			writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to persist overwritten schedules")
+			return
+		}
+
+		createdItems = append(createdItems, buildIntegrationScheduleResponse(*schedule, warnings))
+	}
+
+	if err := integrationCommitScheduleOverwriteTxFn(tx); err != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "overwrite_failed", "failed to commit overwrite transaction")
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationOverwriteScheduleByDateResponse{
+		Date:         dayStart.Format(utils.DayOnlyTime),
+		DeletedCount: deletedCount,
+		CreatedCount: len(createdItems),
+		Items:        createdItems,
+	})
 }
 
 func IntegrationListStationsHandler(w http.ResponseWriter, r *http.Request) {
