@@ -75,7 +75,7 @@ func parseCursor(cursor *string) (uint, error) {
 	return uint(parsed), nil
 }
 
-func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, relation dbmodel.UserRelation) (*markerViewportPage, error) {
+func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, relation dbmodel.UserRelation, includeTesting bool) (*markerViewportPage, error) {
 	if params.South > params.North {
 		return nil, fmt.Errorf("south cannot be greater than north")
 	}
@@ -115,6 +115,9 @@ func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, rel
 		Where("status != ?", constant.Arrived).
 		Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339)).
 		Where("latitude >= ? AND latitude <= ?", params.South, params.North)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	if params.West <= params.East {
 		query = query.Where("longitude >= ? AND longitude <= ?", params.West, params.East)
@@ -142,7 +145,7 @@ func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, rel
 	}, logPagedQueryStats("viewport_markers", len(items), nextCursor)
 }
 
-func GetPagedSchedules(params PagedScheduleFilter, requested []string, relation dbmodel.UserRelation) (*schedulePage, error) {
+func GetPagedSchedules(params PagedScheduleFilter, requested []string, relation dbmodel.UserRelation, includeTesting bool) (*schedulePage, error) {
 	limit := normalizePagedLimit(params.Limit)
 	cursor, err := parseCursor(params.Cursor)
 	if err != nil {
@@ -167,6 +170,9 @@ func GetPagedSchedules(params PagedScheduleFilter, requested []string, relation 
 	query = query.Model(&dbmodel.Schedule{}).
 		Where("relation_id = ?", relation.ID).
 		Where("selected_date >= ?", baseDay.Format(time.RFC3339))
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	if params.Status != nil && strings.TrimSpace(*params.Status) != "" {
 		query = query.Where("status = ?", strings.TrimSpace(*params.Status))
@@ -216,7 +222,7 @@ func GetPagedSchedules(params PagedScheduleFilter, requested []string, relation 
 	}, logPagedQueryStats("paged_schedules", len(items), nextCursor)
 }
 
-func GetPagedPreviousMarkers(params PagedMarkerFilter, requested []string, relation dbmodel.UserRelation) (*markerViewportPage, error) {
+func GetPagedPreviousMarkers(params PagedMarkerFilter, requested []string, relation dbmodel.UserRelation, includeTesting bool) (*markerViewportPage, error) {
 	limit := normalizePagedLimit(params.Limit)
 	cursor, err := parseCursor(params.Cursor)
 	if err != nil {
@@ -237,6 +243,9 @@ func GetPagedPreviousMarkers(params PagedMarkerFilter, requested []string, relat
 	query = query.Model(&dbmodel.Marker{}).
 		Where("relation_id = ?", relation.ID).
 		Where("status = ?", constant.Arrived)
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	if cursor > 0 {
 		query = query.Where("id > ?", cursor)
@@ -259,7 +268,7 @@ func GetPagedPreviousMarkers(params PagedMarkerFilter, requested []string, relat
 	}, logPagedQueryStats("paged_previous_markers", len(items), nextCursor)
 }
 
-func GetPagedExpiredMarkers(params PagedMarkerFilter, requested []string, relation dbmodel.UserRelation) (*markerViewportPage, error) {
+func GetPagedExpiredMarkers(params PagedMarkerFilter, requested []string, relation dbmodel.UserRelation, includeTesting bool) (*markerViewportPage, error) {
 	limit := normalizePagedLimit(params.Limit)
 	cursor, err := parseCursor(params.Cursor)
 	if err != nil {
@@ -282,6 +291,9 @@ func GetPagedExpiredMarkers(params PagedMarkerFilter, requested []string, relati
 		Where("relation_id = ?", relation.ID).
 		Where("status = ?", constant.Empty).
 		Where("to_time IS NOT NULL AND to_time < ?", current.Format(time.RFC3339))
+	if !includeTesting {
+		query = query.Where("testing = ?", false)
+	}
 
 	if cursor > 0 {
 		query = query.Where("id > ?", cursor)

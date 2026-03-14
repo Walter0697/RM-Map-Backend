@@ -37,6 +37,7 @@ type adminCleanupScheduleRequest struct {
 type adminCleanupMarkerResponse struct {
 	ID          uint       `json:"id"`
 	Label       string     `json:"label"`
+	Testing     bool       `json:"testing"`
 	Type        string     `json:"type"`
 	Status      string     `json:"status"`
 	RelationID  uint       `json:"relation_id"`
@@ -49,6 +50,7 @@ type adminCleanupMarkerResponse struct {
 type adminCleanupScheduleResponse struct {
 	ID           uint      `json:"id"`
 	Label        string    `json:"label"`
+	Testing      bool      `json:"testing"`
 	Description  string    `json:"description"`
 	Status       string    `json:"status"`
 	RelationID   uint      `json:"relation_id"`
@@ -67,6 +69,11 @@ type adminCleanupJobResponse struct {
 	ExecuteAt    time.Time `json:"execute_at"`
 	Status       string    `json:"status"`
 	CreatedAt    time.Time `json:"created_at"`
+}
+
+type adminClearTestingResponse struct {
+	MarkerDeleted   int64 `json:"marker_deleted"`
+	ScheduleDeleted int64 `json:"schedule_deleted"`
 }
 
 var cleanupCurrentUserFn = currentUserFromRequest
@@ -100,6 +107,9 @@ var cleanupListMarkersFn = func(queryOption integrationListQuery) ([]adminCleanu
 		}
 		query = query.Where("relation_id = ?", relationID)
 	}
+	if value, ok := queryOption.Filters["testing"]; ok {
+		query = query.Where("testing = ?", strings.EqualFold(strings.TrimSpace(value), "true"))
+	}
 
 	var total int64
 	if err := query.Count(&total).Error; err != nil {
@@ -123,6 +133,7 @@ var cleanupListMarkersFn = func(queryOption integrationListQuery) ([]adminCleanu
 		response = append(response, adminCleanupMarkerResponse{
 			ID:          item.ID,
 			Label:       item.Label,
+			Testing:     item.Testing,
 			Type:        item.Type,
 			Status:      item.Status,
 			RelationID:  item.RelationId,
@@ -162,6 +173,9 @@ var cleanupListSchedulesFn = func(queryOption integrationListQuery) ([]adminClea
 			return nil, 0, fmt.Errorf("invalid relation_id")
 		}
 		query = query.Where("relation_id = ?", relationID)
+	}
+	if value, ok := queryOption.Filters["testing"]; ok {
+		query = query.Where("testing = ?", strings.EqualFold(strings.TrimSpace(value), "true"))
 	}
 	if value, ok := queryOption.Filters["from"]; ok {
 		fromTime, err := time.Parse(time.RFC3339, value)
@@ -211,6 +225,7 @@ var cleanupListSchedulesFn = func(queryOption integrationListQuery) ([]adminClea
 		response = append(response, adminCleanupScheduleResponse{
 			ID:           item.ID,
 			Label:        item.Label,
+			Testing:      item.Testing,
 			Description:  item.Description,
 			Status:       item.Status,
 			RelationID:   item.RelationId,
@@ -291,6 +306,36 @@ var cleanupCreateJobFn = func(request adminCleanupScheduleRequest, executeAt tim
 	}, nil
 }
 
+var cleanupClearTestingFn = func(actor dbmodel.User) (*adminClearTestingResponse, error) {
+	tx := database.Connection.Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	var deletedSchedules int64
+	var deletedMarkers int64
+	if err := tx.Unscoped().Where("testing = ?", true).Delete(&dbmodel.Schedule{}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	deletedSchedules = tx.RowsAffected
+
+	if err := tx.Unscoped().Where("testing = ?", true).Delete(&dbmodel.Marker{}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	deletedMarkers = tx.RowsAffected
+
+	if err := tx.Commit().Error; err != nil {
+		return nil, err
+	}
+
+	return &adminClearTestingResponse{
+		MarkerDeleted:   deletedMarkers,
+		ScheduleDeleted: deletedSchedules,
+	}, nil
+}
+
 func requireCleanupAdmin(w http.ResponseWriter, r *http.Request) *dbmodel.User {
 	user := cleanupCurrentUserFn(r)
 	if user == nil {
@@ -313,7 +358,7 @@ func AdminCleanupListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		"status":     "status",
 		"to_time":    "to_time",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "relation_id"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "relation_id", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -340,7 +385,7 @@ func AdminCleanupListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 		"label":         "label",
 		"status":        "status",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "selected_date", []string{"status", "marker_id", "label", "search", "from", "to", "time", "relation_id"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "selected_date", []string{"status", "marker_id", "label", "search", "from", "to", "time", "relation_id", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -524,6 +569,29 @@ func AdminCleanupScheduleJobHandler(w http.ResponseWriter, r *http.Request) {
 
 	cleanupAuditLog("schedule", request.EntityType, uint(request.TargetID), actor.ID, true, strings.TrimSpace(request.Reason))
 	respondJSON(w, http.StatusCreated, response)
+}
+
+func AdminCleanupClearTestingHandler(w http.ResponseWriter, r *http.Request) {
+	actor := requireCleanupAdmin(w, r)
+	if actor == nil {
+		return
+	}
+	result, err := cleanupClearTestingFn(*actor)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		cleanupAuditLog("clear_testing", "all", 0, actor.ID, false, err.Error())
+		return
+	}
+
+	cleanupAuditLog(
+		"clear_testing",
+		"all",
+		0,
+		actor.ID,
+		true,
+		fmt.Sprintf("schedule_deleted=%d marker_deleted=%d", result.ScheduleDeleted, result.MarkerDeleted),
+	)
+	respondJSON(w, http.StatusOK, result)
 }
 
 func cleanupTargetLabel(entityType string, id uint) (string, error) {
