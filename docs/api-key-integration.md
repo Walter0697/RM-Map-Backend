@@ -34,6 +34,7 @@ Create request example:
 ```json
 {
   "name": "integration-bot",
+  "testing": false,
   "scopes": ["markers:read", "markers:write"],
   "relation_id": 1,
   "actor_user_id": 1,
@@ -80,6 +81,7 @@ Endpoint-specific filters:
 
 - `GET /integration/markers`
   - `type`, `status`, `country`, `country_code`, `label`, `search`
+  - `testing` (`true` or `false`, admin-only for `true`)
   - `west`, `south`, `east`, `north` (viewport bounding box, all required together)
   - `zoom` (optional zoom hint)
 - `GET /integration/markers/nearby`
@@ -88,7 +90,7 @@ Endpoint-specific filters:
   - `radius` or `area` in meters (required, positive, max `50000`)
   - `limit` (optional, default `20`, max `50`)
 - `GET /integration/schedules`
-  - `time` (`YYYY-MM-DD`), `status`, `marker_id`, `label`, `search`, `from` (`RFC3339`), `to` (`RFC3339`)
+  - `time` (`YYYY-MM-DD`), `status`, `marker_id`, `label`, `search`, `from` (`RFC3339`), `to` (`RFC3339`), `testing`
 - `GET /integration/stations`
   - `map_name`, `identifier`, `label`, `active`
 - `GET /integration/settings/pins`
@@ -321,6 +323,14 @@ Every integration request writes API key audit logs with:
 - key name/identifier
 - operation
 - outcome and failure reason
+
+## Testing Data Behavior
+
+- API keys, markers, and schedules support a `testing` flag.
+- Non-admin callers do not receive testing markers/schedules in list/read responses.
+- Non-admin callers cannot request `testing=true` reads and cannot mutate testing entities.
+- Admin cleanup endpoint `POST /admin/cleanup/testing/clear` deletes only testing markers/schedules.
+- API keys are explicitly excluded from bulk testing-clear actions.
 
 ## Retention and Cleanup
 

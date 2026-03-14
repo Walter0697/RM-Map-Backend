@@ -38,6 +38,12 @@ func stubCleanupHooks() {
 	cleanupDeleteMarkerByIDFn = func(id uint) error { return nil }
 	cleanupDeleteScheduleByIDFn = func(id uint) error { return nil }
 	cleanupValidateMarkerDeletionFn = func(id uint) error { return nil }
+	cleanupClearTestingFn = func(actor dbmodel.User) (*adminClearTestingResponse, error) {
+		return &adminClearTestingResponse{
+			MarkerDeleted:   3,
+			ScheduleDeleted: 5,
+		}, nil
+	}
 	cleanupCreateJobFn = func(request adminCleanupScheduleRequest, executeAt time.Time, actor dbmodel.User) (*adminCleanupJobResponse, error) {
 		return &adminCleanupJobResponse{
 			ID:           1,
@@ -66,6 +72,7 @@ func TestCleanupEndpointsRequireAdminAuth(t *testing.T) {
 	handlers := []http.HandlerFunc{
 		AdminCleanupListMarkersHandler,
 		AdminCleanupListSchedulesHandler,
+		AdminCleanupClearTestingHandler,
 		AdminCleanupDeleteMarkerHandler,
 		AdminCleanupDeleteScheduleHandler,
 		AdminCleanupScheduleJobHandler,
@@ -210,5 +217,28 @@ func TestCleanupE2ESuccessAndNonAdminRejection(t *testing.T) {
 	router.ServeHTTP(denyRec, denyReq)
 	if denyRec.Code != http.StatusForbidden {
 		t.Fatalf("expected non-admin rejection status 403, got %d", denyRec.Code)
+	}
+}
+
+func TestCleanupClearTestingReturnsCounts(t *testing.T) {
+	stubCleanupHooks()
+	defer stubCleanupHooks()
+	cleanupCurrentUserFn = func(r *http.Request) *dbmodel.User {
+		return &dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 1}, Role: "admin", Username: "admin"}
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/admin/cleanup/testing/clear", nil)
+	AdminCleanupClearTestingHandler(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	var payload adminClearTestingResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if payload.MarkerDeleted != 3 || payload.ScheduleDeleted != 5 {
+		t.Fatalf("unexpected clear counts: %+v", payload)
 	}
 }

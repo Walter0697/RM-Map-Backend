@@ -9,6 +9,7 @@ import (
 type Marker struct {
 	ObjectBase
 	Label          string      `json:"label"` // required fields
+	Testing        bool        `json:"testing" gorm:"not null;default:false;index"`
 	Latitude       float64     `json:"latitude"`
 	Longitude      float64     `json:"longitude"`
 	Type           string      `json:"type"`

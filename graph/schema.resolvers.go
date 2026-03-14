@@ -173,7 +173,7 @@ func (r *mutationResolver) CreateMarker(ctx context.Context, input model.NewMark
 		)
 	}
 
-	marker, err := service.CreateMarker(input, restaurantPtr, *user, *relation)
+	marker, err := service.CreateMarker(input, restaurantPtr, *user, *relation, false)
 	if err != nil {
 		log.Printf(
 			"create_marker failed requested_restaurant_id=%d actor=%s err=%v",
@@ -233,7 +233,8 @@ func (r *mutationResolver) EditMarker(ctx context.Context, input model.UpdateMar
 		restaurantPtr = &restaurant
 	}
 
-	marker, err := service.EditMarker(input, restaurantPtr, *relation, *user)
+	canModifyTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	marker, err := service.EditMarker(input, restaurantPtr, *relation, *user, nil, canModifyTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -518,7 +519,7 @@ func (r *mutationResolver) CreateSchedule(ctx context.Context, input model.NewSc
 
 	transaction := database.Connection.Begin()
 
-	schedule, err := service.CreateSchedule(transaction, input, marker, *user, *relation)
+	schedule, err := service.CreateSchedule(transaction, input, marker, *user, *relation, false)
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
@@ -588,7 +589,8 @@ func (r *mutationResolver) CreateMovieSchedule(ctx context.Context, input model.
 		markerPtr = nil
 	}
 
-	schedule, err := service.CreateMovieSchedule(transaction, input, *movie, markerPtr, *user, *relation)
+	testing := markerPtr != nil && markerPtr.Testing
+	schedule, err := service.CreateMovieSchedule(transaction, input, *movie, markerPtr, *user, *relation, testing)
 	if err != nil {
 		transaction.Rollback()
 		return nil, err
@@ -621,7 +623,8 @@ func (r *mutationResolver) EditSchedule(ctx context.Context, input model.UpdateS
 		return nil, helper.CheckDatabaseError(err, &helper.RelationNotFoundError{})
 	}
 
-	schedule, err := service.EditSchedule(input, *relation, *user)
+	canModifyTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	schedule, err := service.EditSchedule(input, *relation, *user, nil, canModifyTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1195,7 +1198,8 @@ func (r *queryResolver) Markers(ctx context.Context) ([]*model.Marker, error) {
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	markers, err := service.GetAllActiveMarker(requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	markers, err := service.GetAllActiveMarker(requested_field, *relation, includeTesting)
 	if err != nil {
 		return result, err
 	}
@@ -1413,7 +1417,8 @@ func (r *queryResolver) Schedules(ctx context.Context, params model.CurrentTime)
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	schedules, err := service.GetAllSchedule(params, requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	schedules, err := service.GetAllSchedule(params, requested_field, *relation, includeTesting)
 	if err != nil {
 		return result, err
 	}
@@ -1444,6 +1449,7 @@ func (r *queryResolver) Viewportmarkers(ctx context.Context, params model.Marker
 	}
 
 	requestedField := utils.GetPreloads(ctx)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
 	page, err := service.GetViewportMarkersPage(service.MarkerViewportFilter{
 		West:   params.West,
 		South:  params.South,
@@ -1452,7 +1458,7 @@ func (r *queryResolver) Viewportmarkers(ctx context.Context, params model.Marker
 		Zoom:   params.Zoom,
 		Cursor: params.Cursor,
 		Limit:  params.Limit,
-	}, requestedField, *relation)
+	}, requestedField, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1487,6 +1493,7 @@ func (r *queryResolver) Pagedschedules(ctx context.Context, params model.PagedSc
 	}
 
 	requestedField := utils.GetTopPreloads(ctx)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
 	page, err := service.GetPagedSchedules(service.PagedScheduleFilter{
 		Time:     params.Time,
 		Status:   params.Status,
@@ -1497,7 +1504,7 @@ func (r *queryResolver) Pagedschedules(ctx context.Context, params model.PagedSc
 		To:       params.To,
 		Cursor:   params.Cursor,
 		Limit:    params.Limit,
-	}, requestedField, *relation)
+	}, requestedField, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1581,7 +1588,8 @@ func (r *queryResolver) Today(ctx context.Context, params model.CurrentTime) (*m
 
 	requested_field := utils.GetPreloads(ctx)
 
-	yesterday_schedules, err := service.GetYesterdaySchedules(params, requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	yesterday_schedules, err := service.GetYesterdaySchedules(params, requested_field, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1621,7 +1629,8 @@ func (r *queryResolver) Previousmarkers(ctx context.Context) ([]*model.Marker, e
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	markers, err := service.GetAllPreviousMarker(requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	markers, err := service.GetAllPreviousMarker(requested_field, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1657,10 +1666,11 @@ func (r *queryResolver) Pagedpreviousmarkers(ctx context.Context, params model.P
 	}
 
 	requestedField := utils.GetTopPreloads(ctx)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
 	page, err := service.GetPagedPreviousMarkers(service.PagedMarkerFilter{
 		Cursor: params.Cursor,
 		Limit:  params.Limit,
-	}, requestedField, *relation)
+	}, requestedField, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1700,7 +1710,8 @@ func (r *queryResolver) Expiredmarkers(ctx context.Context) ([]*model.Marker, er
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	markers, err := service.GetAllExpiredMarker(requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	markers, err := service.GetAllExpiredMarker(requested_field, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1736,10 +1747,11 @@ func (r *queryResolver) Pagedexpiredmarkers(ctx context.Context, params model.Pa
 	}
 
 	requestedField := utils.GetTopPreloads(ctx)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
 	page, err := service.GetPagedExpiredMarkers(service.PagedMarkerFilter{
 		Cursor: params.Cursor,
 		Limit:  params.Limit,
-	}, requestedField, *relation)
+	}, requestedField, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1779,7 +1791,8 @@ func (r *queryResolver) Markerschedules(ctx context.Context, params model.IDMode
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	schedules, err := service.GetSchedulesByMarker(uint(params.ID), requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	schedules, err := service.GetSchedulesByMarker(uint(params.ID), requested_field, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
@@ -1972,7 +1985,8 @@ func (r *queryResolver) Watchedmovies(ctx context.Context) ([]*model.Schedule, e
 
 	requested_field := utils.GetTopPreloads(ctx)
 
-	schedule_movies, err := service.GetArrivedMovieSchedule(requested_field, *relation)
+	includeTesting := helper.IsAuthorize(*user, helper.Admin) == nil
+	schedule_movies, err := service.GetArrivedMovieSchedule(requested_field, *relation, includeTesting)
 	if err != nil {
 		return nil, err
 	}
