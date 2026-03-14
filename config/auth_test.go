@@ -165,3 +165,22 @@ func TestAuthLifetimeAlignmentStatus(t *testing.T) {
 		t.Fatalf("expected auth state mismatch")
 	}
 }
+
+func TestResolveAuthTokenLifetimeSeconds(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+
+	Data = Config{
+		App:  AppEnv{AuthSessionLifetimeSeconds: 3600},
+		OIDC: OIDCSetting{Enable: false, SessionLifetimeSeconds: 7200},
+	}
+
+	if got := ResolveAuthTokenLifetimeSeconds(); got != 3600 {
+		t.Fatalf("expected local auth session ttl 3600, got %d", got)
+	}
+
+	Data.OIDC.Enable = true
+	if got := ResolveAuthTokenLifetimeSeconds(); got != 7200 {
+		t.Fatalf("expected oidc auth token ttl 7200, got %d", got)
+	}
+}

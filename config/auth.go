@@ -50,6 +50,19 @@ func ResolveAuthMode() (string, error) {
 	}
 }
 
+func ResolveAuthTokenLifetimeSeconds() int {
+	configuredTTL := Data.App.AuthSessionLifetimeSeconds
+	if Data.OIDC.Enable && Data.OIDC.SessionLifetimeSeconds > 0 {
+		configuredTTL = Data.OIDC.SessionLifetimeSeconds
+	}
+
+	if configuredTTL <= 0 {
+		configuredTTL = DefaultAuthSessionLifetimeSeconds
+	}
+
+	return configuredTTL
+}
+
 func ValidateAuthConfig() error {
 	applyAuthSessionDefaults()
 	applyIntegrationDefaults()
