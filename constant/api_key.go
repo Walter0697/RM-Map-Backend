@@ -10,6 +10,7 @@ const (
 	APIKeyScopeSettingsRead   = "settings:read"
 	APIKeyScopeSettingsWrite  = "settings:write"
 	APIKeyScopeStaticPreview  = "static-preview:generate"
+	APIKeyScopeCalendarSync   = "calendar:sync"
 )
 
 func AllAPIKeyScopes() []string {
@@ -23,5 +24,6 @@ func AllAPIKeyScopes() []string {
 		APIKeyScopeSettingsRead,
 		APIKeyScopeSettingsWrite,
 		APIKeyScopeStaticPreview,
+		APIKeyScopeCalendarSync,
 	}
 }

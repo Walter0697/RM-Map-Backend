@@ -14,6 +14,7 @@ Supported scopes:
 - `settings:read`
 - `settings:write`
 - `static-preview:generate`
+- `calendar:sync`
 
 ## Management Endpoints
 
@@ -64,6 +65,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 - `PUT /integration/settings/users/{username}/preview-pin`
 - `POST /integration/static-map-preview/geocode`
 - `POST /integration/static-map-preview`
+- `POST /integration/calendar/google/sync-by-date`
 
 JWT user auth is not required for these integration endpoints and should not be used for automation.
 
