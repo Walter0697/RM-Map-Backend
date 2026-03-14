@@ -4,20 +4,21 @@ import "gorm.io/gorm"
 
 type UserPreference struct {
 	BaseModel
-	CurrentUser      User `gorm:"foreignKey:user_id;reference:id"`
-	UserId           uint
-	SelectedRelation *UserRelation `gorm:"foreignKey:relation_id;reference:id"`
-	RelationId       *uint
-	RegularPin       *Pin `gorm:"foreignKey:rpin_id;reference:id"` // selected pin
-	RpinId           *uint
-	FavouritePin     *Pin `gorm:"foreignKey:fpin_id;reference:id"`
-	FpinId           *uint
-	SelectedPin      *Pin `gorm:"foreignKey:spin_id;reference:id"`
-	SpinId           *uint
-	HurryPin         *Pin `gorm:"foreignKey:hpin_id;reference:id"`
-	HpinId           *uint
-	PreviewPin       *Pin `gorm:"foreignKey:preview_pin_id;reference:id"`
-	PreviewPinID     *uint
+	CurrentUser           User `gorm:"foreignKey:user_id;reference:id"`
+	UserId                uint
+	SelectedRelation      *UserRelation `gorm:"foreignKey:relation_id;reference:id"`
+	RelationId            *uint
+	RegularPin            *Pin `gorm:"foreignKey:rpin_id;reference:id"` // selected pin
+	RpinId                *uint
+	FavouritePin          *Pin `gorm:"foreignKey:fpin_id;reference:id"`
+	FpinId                *uint
+	SelectedPin           *Pin `gorm:"foreignKey:spin_id;reference:id"`
+	SpinId                *uint
+	HurryPin              *Pin `gorm:"foreignKey:hpin_id;reference:id"`
+	HpinId                *uint
+	PreviewPin            *Pin `gorm:"foreignKey:preview_pin_id;reference:id"`
+	PreviewPinID          *uint
+	PreferredReminderTime *string `gorm:"column:preferred_reminder_time;size:5"`
 }
 
 func (preference *UserPreference) Create(db *gorm.DB) error {

@@ -10,6 +10,8 @@ var (
 	systemSettingRequireAdminFn                = requireAdmin
 	systemSettingGetIOSShortcutInstallURLFn    = GetIOSShortcutInstallURL
 	systemSettingSetIOSShortcutInstallURLFn    = SetIOSShortcutInstallURL
+	systemSettingGetTelegramBotURLFn           = GetTelegramBotURL
+	systemSettingSetTelegramBotURLFn           = SetTelegramBotURL
 	systemSettingGetScheduleTravelThresholdsFn = GetScheduleTravelThresholds
 	systemSettingSetScheduleTravelThresholdsFn = SetScheduleTravelThresholds
 	systemSettingGetCalendarSyncDurationsFn    = GetCalendarSyncDurations
@@ -20,8 +22,16 @@ type updateIOSShortcutInstallURLRequest struct {
 	IOSShortcutInstallURL *string `json:"ios_shortcut_install_url"`
 }
 
+type updateTelegramBotURLRequest struct {
+	TelegramBotURL *string `json:"telegram_bot_url"`
+}
+
 type iosShortcutInstallURLResponse struct {
 	IOSShortcutInstallURL string `json:"ios_shortcut_install_url,omitempty"`
+}
+
+type telegramBotURLResponse struct {
+	TelegramBotURL string `json:"telegram_bot_url,omitempty"`
 }
 
 type updateScheduleTravelThresholdsRequest struct {
@@ -114,6 +124,76 @@ func AdminUpdateIOSShortcutInstallURLHandler(w http.ResponseWriter, r *http.Requ
 	response := iosShortcutInstallURLResponse{}
 	if present {
 		response.IOSShortcutInstallURL = shortcutURL
+	}
+	respondJSON(w, http.StatusOK, response)
+}
+
+func SettingsGetTelegramBotURLHandler(w http.ResponseWriter, r *http.Request) {
+	user := systemSettingCurrentUserFromRequestFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	botURL, present, err := systemSettingGetTelegramBotURLFn()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := telegramBotURLResponse{}
+	if present {
+		response.TelegramBotURL = botURL
+	}
+	respondJSON(w, http.StatusOK, response)
+}
+
+func AdminGetTelegramBotURLHandler(w http.ResponseWriter, r *http.Request) {
+	if systemSettingRequireAdminFn(w, r) == nil {
+		return
+	}
+
+	botURL, present, err := systemSettingGetTelegramBotURLFn()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := telegramBotURLResponse{}
+	if present {
+		response.TelegramBotURL = botURL
+	}
+	respondJSON(w, http.StatusOK, response)
+}
+
+func AdminUpdateTelegramBotURLHandler(w http.ResponseWriter, r *http.Request) {
+	if systemSettingRequireAdminFn(w, r) == nil {
+		return
+	}
+
+	request := updateTelegramBotURLRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if request.TelegramBotURL == nil {
+		http.Error(w, "telegram_bot_url is required", http.StatusBadRequest)
+		return
+	}
+
+	botURL, present, err := systemSettingSetTelegramBotURLFn(*request.TelegramBotURL)
+	if err != nil {
+		if err == ErrInvalidTelegramBotURL {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := telegramBotURLResponse{}
+	if present {
+		response.TelegramBotURL = botURL
 	}
 	respondJSON(w, http.StatusOK, response)
 }

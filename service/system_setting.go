@@ -16,6 +16,7 @@ import (
 
 const (
 	SystemSettingKeyIOSShortcutInstallURL                   = "ios_shortcut_install_url"
+	SystemSettingKeyTelegramBotURL                          = "telegram_bot_url"
 	SystemSettingKeyScheduleTravelEasyThresholdMinutes      = "schedule_travel_easy_threshold_minutes"
 	SystemSettingKeyScheduleTravelDifficultThresholdMinutes = "schedule_travel_difficult_threshold_minutes"
 	SystemSettingKeyCalendarSyncShortMinutes                = "calendar_sync_short_minutes"
@@ -32,10 +33,58 @@ const (
 )
 
 var ErrInvalidIOSShortcutInstallURL = errors.New("ios_shortcut_install_url must be a valid absolute http or https URL")
+var ErrInvalidTelegramBotURL = errors.New("telegram_bot_url must be a Telegram bot URL or bot name (for example: roroadbot, @roroadbot, or https://t.me/roroadbot)")
 var ErrInvalidScheduleTravelThreshold = errors.New("schedule travel thresholds must be positive integers and easy threshold must be less than difficult threshold")
 var ErrInvalidCalendarSyncDurations = errors.New("calendar sync durations must be positive integers")
 
 func ValidateIOSShortcutInstallURL(raw string) (string, bool) {
+	return validateAbsoluteHTTPURL(raw)
+}
+
+func ValidateTelegramBotURL(raw string) (string, bool) {
+	normalized, err := NormalizeTelegramBotURLInput(raw)
+	if err != nil {
+		return "", false
+	}
+	return normalized, true
+}
+
+func NormalizeTelegramBotURLInput(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", errors.New("empty input")
+	}
+
+	// Full URL mode: keep absolute http(s) URLs with hostname.
+	if strings.HasPrefix(strings.ToLower(trimmed), "http://") || strings.HasPrefix(strings.ToLower(trimmed), "https://") {
+		parsed, err := url.Parse(trimmed)
+		if err != nil || !parsed.IsAbs() {
+			return "", errors.New("invalid url")
+		}
+		if parsed.Scheme != "http" && parsed.Scheme != "https" {
+			return "", errors.New("invalid scheme")
+		}
+		if strings.TrimSpace(parsed.Host) == "" {
+			return "", errors.New("missing host")
+		}
+		return trimmed, nil
+	}
+
+	// Bot handle mode: allow roroadbot or @roroadbot
+	handle := strings.TrimPrefix(trimmed, "@")
+	if handle == "" {
+		return "", errors.New("missing handle")
+	}
+	for _, r := range handle {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '_' {
+			continue
+		}
+		return "", errors.New("invalid handle characters")
+	}
+	return "https://t.me/" + handle, nil
+}
+
+func validateAbsoluteHTTPURL(raw string) (string, bool) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
 		return "", false
@@ -82,6 +131,46 @@ func SetIOSShortcutInstallURL(raw string) (string, bool, error) {
 
 	setting := dbmodel.SystemSetting{
 		Key:   SystemSettingKeyIOSShortcutInstallURL,
+		Value: trimmed,
+	}
+	if err := setting.UpsertByKey(database.Connection); err != nil {
+		return "", false, err
+	}
+
+	if trimmed == "" {
+		return "", false, nil
+	}
+	return trimmed, true, nil
+}
+
+func GetTelegramBotURL() (string, bool, error) {
+	setting := dbmodel.SystemSetting{Key: SystemSettingKeyTelegramBotURL}
+	if err := setting.GetByKey(database.Connection); err != nil {
+		if utils.RecordNotFound(err) {
+			return "", false, nil
+		}
+		return "", false, err
+	}
+
+	validated, ok := ValidateTelegramBotURL(setting.Value)
+	if !ok {
+		return "", false, nil
+	}
+	return validated, true, nil
+}
+
+func SetTelegramBotURL(raw string) (string, bool, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed != "" {
+		validated, ok := ValidateTelegramBotURL(trimmed)
+		if !ok {
+			return "", false, ErrInvalidTelegramBotURL
+		}
+		trimmed = validated
+	}
+
+	setting := dbmodel.SystemSetting{
+		Key:   SystemSettingKeyTelegramBotURL,
 		Value: trimmed,
 	}
 	if err := setting.UpsertByKey(database.Connection); err != nil {
