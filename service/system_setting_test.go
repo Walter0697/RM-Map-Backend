@@ -58,6 +58,44 @@ func TestValidateScheduleTravelThresholds(t *testing.T) {
 	})
 }
 
+func TestValidateTelegramBotURL(t *testing.T) {
+	t.Run("accepts telegram handle", func(t *testing.T) {
+		value, ok := ValidateTelegramBotURL("roroadbot")
+		if !ok {
+			t.Fatalf("expected handle to be valid")
+		}
+		if value != "https://t.me/roroadbot" {
+			t.Fatalf("unexpected normalized value: %s", value)
+		}
+	})
+
+	t.Run("accepts @telegram handle", func(t *testing.T) {
+		value, ok := ValidateTelegramBotURL("@roroad_bot")
+		if !ok {
+			t.Fatalf("expected @handle to be valid")
+		}
+		if value != "https://t.me/roroad_bot" {
+			t.Fatalf("unexpected normalized value: %s", value)
+		}
+	})
+
+	t.Run("accepts absolute URL", func(t *testing.T) {
+		value, ok := ValidateTelegramBotURL("https://t.me/roroadbot")
+		if !ok {
+			t.Fatalf("expected url to be valid")
+		}
+		if value != "https://t.me/roroadbot" {
+			t.Fatalf("unexpected normalized value: %s", value)
+		}
+	})
+
+	t.Run("rejects invalid handle characters", func(t *testing.T) {
+		if _, ok := ValidateTelegramBotURL("ro-road-bot"); ok {
+			t.Fatalf("expected handle with hyphen to be invalid")
+		}
+	})
+}
+
 func TestValidateCalendarSyncDurations(t *testing.T) {
 	t.Run("accepts positive durations", func(t *testing.T) {
 		if !ValidateCalendarSyncDurations(30, 60, 120, 30) {

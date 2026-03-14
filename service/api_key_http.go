@@ -191,10 +191,39 @@ type integrationUpdateUserPreviewPinRequest struct {
 	PinID *int `json:"pin_id"`
 }
 
+type integrationUpdateUserReminderTimeRequest struct {
+	Time string `json:"time"`
+}
+
 type integrationUserPreviewPinResponse struct {
+	Username     string `json:"username"`
+	PinID        *uint  `json:"pin_id,omitempty"`
+	PinLabel     string `json:"pin_label,omitempty"`
+	PinImagePath string `json:"pin_image_path,omitempty"`
+}
+
+type integrationUserReminderTimeResponse struct {
 	Username string `json:"username"`
-	PinID    *uint  `json:"pin_id,omitempty"`
-	PinLabel string `json:"pin_label,omitempty"`
+	Time     string `json:"time"`
+	Source   string `json:"source"`
+}
+
+type integrationDueReminderResponse struct {
+	ScheduleID       uint    `json:"schedule_id"`
+	ScheduleLabel    string  `json:"schedule_label"`
+	ScheduleStatus   string  `json:"schedule_status"`
+	ScheduleTime     string  `json:"schedule_time"`
+	MarkerID         uint    `json:"marker_id"`
+	MarkerLabel      string  `json:"marker_label"`
+	MarkerLatitude   float64 `json:"marker_latitude"`
+	MarkerLongitude  float64 `json:"marker_longitude"`
+	MarkerTimezone   string  `json:"marker_timezone"`
+	LocalDate        string  `json:"local_date"`
+	LocalNow         string  `json:"local_now"`
+	ReminderTime     string  `json:"reminder_time"`
+	ReminderAtLocal  string  `json:"reminder_at_local"`
+	RelationID       uint    `json:"relation_id"`
+	ReminderUsername string  `json:"username"`
 }
 
 type integrationStaticPreviewRequest struct {
@@ -293,6 +322,9 @@ var integrationAuthenticateNearbyRequestFn = authenticateIntegrationRequestJSON
 var integrationCreateAuditLogFn = CreateAPIKeyAuditLog
 var integrationCreateMarkerOutcomeLogFn = CreateMarkerCreationOutcomeLog
 var integrationNowFn = time.Now
+var integrationGetDueScheduleRemindersByUsernameFn = getDueScheduleRemindersByUsername
+var integrationGetUserReminderTimeFn = GetUserReminderTime
+var integrationSetUserReminderTimeFn = SetUserReminderTime
 var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 	marker := &dbmodel.Marker{}
 	marker.ID = id
@@ -1552,8 +1584,14 @@ func SettingsGetPreviewPinHandler(w http.ResponseWriter, r *http.Request) {
 		response.PinID = preference.PreviewPinID
 		if preference.PreviewPin != nil {
 			response.PinLabel = preference.PreviewPin.Label
+			response.PinImagePath = preference.PreviewPin.ImagePath
 		} else if label, labelErr := resolvePreviewPinLabelByID(*preference.PreviewPinID); labelErr == nil {
 			response.PinLabel = label
+		}
+		if response.PinImagePath == "" {
+			if imagePath, imagePathErr := resolvePreviewPinImagePathByID(*preference.PreviewPinID); imagePathErr == nil {
+				response.PinImagePath = imagePath
+			}
 		}
 	}
 
@@ -1588,9 +1626,56 @@ func SettingsUpdatePreviewPinHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
+		Username:     user.Username,
+		PinID:        preference.PreviewPinID,
+		PinLabel:     pin.Label,
+		PinImagePath: pin.ImagePath,
+	})
+}
+
+func SettingsGetReminderTimeHandler(w http.ResponseWriter, r *http.Request) {
+	user := currentUserFromRequest(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	_, reminderTime, source, err := integrationGetUserReminderTimeFn(user.Username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserReminderTimeResponse{
 		Username: user.Username,
-		PinID:    preference.PreviewPinID,
-		PinLabel: pin.Label,
+		Time:     reminderTime,
+		Source:   source,
+	})
+}
+
+func SettingsUpdateReminderTimeHandler(w http.ResponseWriter, r *http.Request) {
+	user := currentUserFromRequest(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+
+	request := integrationUpdateUserReminderTimeRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, reminderTime, err := integrationSetUserReminderTimeFn(user.Username, request.Time, user)
+	if err != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_reminder_time", err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserReminderTimeResponse{
+		Username: user.Username,
+		Time:     reminderTime,
+		Source:   "user",
 	})
 }
 
@@ -1623,8 +1708,14 @@ func IntegrationGetUserPreviewPinSelectionHandler(w http.ResponseWriter, r *http
 		response.PinID = preference.PreviewPinID
 		if preference.PreviewPin != nil {
 			response.PinLabel = preference.PreviewPin.Label
+			response.PinImagePath = preference.PreviewPin.ImagePath
 		} else if label, labelErr := resolvePreviewPinLabelByID(*preference.PreviewPinID); labelErr == nil {
 			response.PinLabel = label
+		}
+		if response.PinImagePath == "" {
+			if imagePath, imagePathErr := resolvePreviewPinImagePathByID(*preference.PreviewPinID); imagePathErr == nil {
+				response.PinImagePath = imagePath
+			}
 		}
 	}
 
@@ -1667,9 +1758,132 @@ func IntegrationUpdateUserPreviewPinSelectionHandler(w http.ResponseWriter, r *h
 	}
 
 	respondJSON(w, http.StatusOK, integrationUserPreviewPinResponse{
+		Username:     username,
+		PinID:        preference.PreviewPinID,
+		PinLabel:     pin.Label,
+		PinImagePath: pin.ImagePath,
+	})
+}
+
+func IntegrationGetUserReminderTimeHandler(w http.ResponseWriter, r *http.Request) {
+	_, ok := integrationAuthenticateRequestFn(w, r, "integration.settings.reminder_time.get", constant.APIKeyScopeSettingsRead, "")
+	if !ok {
+		return
+	}
+
+	username := strings.TrimSpace(chi.URLParam(r, "username"))
+	if username == "" {
+		http.Error(w, "username is required", http.StatusBadRequest)
+		return
+	}
+
+	user, reminderTime, source, err := integrationGetUserReminderTimeFn(username)
+	if err != nil {
+		if err == ErrUnknownUsername {
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserReminderTimeResponse{
+		Username: user.Username,
+		Time:     reminderTime,
+		Source:   source,
+	})
+}
+
+func IntegrationUpdateUserReminderTimeHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.settings.reminder_time.update", constant.APIKeyScopeSettingsWrite, "")
+	if !ok {
+		return
+	}
+
+	username := strings.TrimSpace(chi.URLParam(r, "username"))
+	if username == "" {
+		http.Error(w, "username is required", http.StatusBadRequest)
+		return
+	}
+
+	request := integrationUpdateUserReminderTimeRequest{}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	_, reminderTime, err := integrationSetUserReminderTimeFn(username, request.Time, &apiKey.ActorUser)
+	if err != nil {
+		switch err {
+		case ErrUnknownUsername:
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+		default:
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_reminder_time", err.Error())
+		}
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationUserReminderTimeResponse{
 		Username: username,
-		PinID:    preference.PreviewPinID,
-		PinLabel: pin.Label,
+		Time:     reminderTime,
+		Source:   "user",
+	})
+}
+
+func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := integrationAuthenticateNearbyRequestFn(w, r, "integration.reminders.due", constant.APIKeyScopeSchedulesRead, "")
+	if !ok {
+		return
+	}
+
+	username := strings.TrimSpace(r.URL.Query().Get("username"))
+	if username == "" {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_username", "username is required")
+		return
+	}
+
+	items, err := integrationGetDueScheduleRemindersByUsernameFn(apiKey.Relation, username)
+	if err != nil {
+		switch err {
+		case ErrUnknownUsername:
+			writeIntegrationError(w, http.StatusNotFound, "unknown_username", "username does not exist")
+		case ErrUserNotInAPIKeyRelation:
+			writeIntegrationError(w, http.StatusForbidden, "username_not_in_relation", "username does not belong to api key relation")
+		default:
+			writeIntegrationError(w, http.StatusInternalServerError, "reminders_due_failed", "failed to retrieve due reminders")
+		}
+		return
+	}
+
+	responseItems := make([]integrationDueReminderResponse, 0, len(items))
+	for _, item := range items {
+		marker := item.Schedule.SelectedMarker
+		if marker == nil {
+			continue
+		}
+		responseItems = append(responseItems, integrationDueReminderResponse{
+			ScheduleID:       item.Schedule.ID,
+			ScheduleLabel:    item.Schedule.Label,
+			ScheduleStatus:   item.Schedule.Status,
+			ScheduleTime:     item.Schedule.SelectedDate.Format(time.RFC3339),
+			MarkerID:         marker.ID,
+			MarkerLabel:      marker.Label,
+			MarkerLatitude:   marker.Latitude,
+			MarkerLongitude:  marker.Longitude,
+			MarkerTimezone:   item.MarkerTimezone,
+			LocalDate:        item.LocalDate,
+			LocalNow:         item.LocalNow.Format(time.RFC3339),
+			ReminderTime:     item.ReminderTime,
+			ReminderAtLocal:  item.ReminderAt.Format(time.RFC3339),
+			RelationID:       item.Schedule.RelationId,
+			ReminderUsername: item.User.Username,
+		})
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"username": username,
+		"items":    responseItems,
+		"total":    len(responseItems),
 	})
 }
 
@@ -2025,6 +2239,18 @@ func resolvePreviewPinLabelByID(pinID uint) (string, error) {
 	return strings.TrimSpace(pin.Label), nil
 }
 
+func resolvePreviewPinImagePathByID(pinID uint) (string, error) {
+	if pinID == 0 {
+		return "", fmt.Errorf("pin_id is required")
+	}
+	var pin dbmodel.Pin
+	pin.ID = pinID
+	if err := pin.GetById(database.Connection); err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(pin.ImagePath), nil
+}
+
 func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {
 	respondJSON(w, statusCode, integrationErrorResponse{
 		Code:    strings.TrimSpace(code),
@@ -2261,16 +2487,62 @@ func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrati
 		integrationNearbyEarthRadiusMeters,
 	)
 
-	rows := make([]integrationNearbyMarkerRow, 0)
-	err := baseQuery.
-		Select("markers.*, "+distanceExpr+" AS distance_meters", params.Latitude, params.Longitude, params.Latitude).
+	// NOTE:
+	// We intentionally avoid running Preload on a result struct that embeds Marker plus
+	// computed columns (distance_meters). On gorm v1.21 this can panic with
+	// "reflect: Field index out of range" in preload callbacks.
+	type nearbyDistanceRow struct {
+		ID             uint    `gorm:"column:id"`
+		DistanceMeters float64 `gorm:"column:distance_meters"`
+	}
+
+	distanceRows := make([]nearbyDistanceRow, 0)
+	if err := baseQuery.
+		Select("markers.id AS id, "+distanceExpr+" AS distance_meters", params.Latitude, params.Longitude, params.Latitude).
 		Where(distanceExpr+" <= ?", params.Latitude, params.Longitude, params.Latitude, params.RadiusMeters).
-		Preload("RestaurantInfo").
 		Order("distance_meters asc").
 		Order("id asc").
 		Limit(params.Limit).
-		Find(&rows).Error
-	return rows, err
+		Scan(&distanceRows).Error; err != nil {
+		return nil, err
+	}
+	if len(distanceRows) == 0 {
+		return []integrationNearbyMarkerRow{}, nil
+	}
+
+	ids := make([]uint, 0, len(distanceRows))
+	distanceByID := make(map[uint]float64, len(distanceRows))
+	for _, item := range distanceRows {
+		ids = append(ids, item.ID)
+		distanceByID[item.ID] = item.DistanceMeters
+	}
+
+	markers := make([]dbmodel.Marker, 0, len(ids))
+	if err := database.Connection.
+		Model(&dbmodel.Marker{}).
+		Where("id IN (?)", ids).
+		Preload("RestaurantInfo").
+		Find(&markers).Error; err != nil {
+		return nil, err
+	}
+
+	markerByID := make(map[uint]dbmodel.Marker, len(markers))
+	for _, marker := range markers {
+		markerByID[marker.ID] = marker
+	}
+
+	rows := make([]integrationNearbyMarkerRow, 0, len(distanceRows))
+	for _, item := range distanceRows {
+		marker, ok := markerByID[item.ID]
+		if !ok {
+			continue
+		}
+		rows = append(rows, integrationNearbyMarkerRow{
+			Marker:         marker,
+			DistanceMeters: distanceByID[item.ID],
+		})
+	}
+	return rows, nil
 }
 
 func normalizeLongitude(value float64) float64 {

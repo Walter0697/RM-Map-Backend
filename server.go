@@ -151,10 +151,13 @@ func startServer() {
 	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
+		r.Get("/reminder-time", service.SettingsGetReminderTimeHandler)
 		r.Get("/pins", service.SettingsListPinsHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
+		r.Get("/telegram-bot-url", service.SettingsGetTelegramBotURLHandler)
 		r.Get("/release-notes", service.SettingsListReleaseNotesHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
+		r.Put("/reminder-time", service.SettingsUpdateReminderTimeHandler)
 	})
 	router.Route("/schedules", func(r chi.Router) {
 		r.Post("/travel-analysis", service.ScheduleTravelAnalysisHandler)
@@ -174,6 +177,7 @@ func startServer() {
 	router.Route("/integration", func(r chi.Router) {
 		r.Get("/markers", service.IntegrationListMarkersHandler)
 		r.Get("/markers/nearby", service.IntegrationNearbySearchMarkersHandler)
+		r.Get("/reminders/due", service.IntegrationListDueScheduleRemindersHandler)
 		r.Post("/markers", service.IntegrationCreateMarkerHandler)
 		r.Post("/markers/outcomes", service.IntegrationCreateMarkerOutcomeHandler)
 		r.Put("/markers/{id}", service.IntegrationUpdateMarkerHandler)
@@ -189,6 +193,7 @@ func startServer() {
 		r.Put("/settings/default-pins/{label}", service.IntegrationUpdateSettingsDefaultPinHandler)
 		r.Get("/settings/users/{username}/preview-pin", service.IntegrationGetUserPreviewPinSelectionHandler)
 		r.Put("/settings/users/{username}/preview-pin", service.IntegrationUpdateUserPreviewPinSelectionHandler)
+		r.Get("/settings/users/{username}/reminder-time", service.IntegrationGetUserReminderTimeHandler)
 		r.Post("/static-map-preview/geocode", service.IntegrationGeocodeStaticMapPreviewHandler)
 		r.Post("/static-map-preview", service.IntegrationGenerateStaticMapPreviewHandler)
 		r.Post("/exports", service.IntegrationCreateOfflineExportHandler)
@@ -202,6 +207,8 @@ func startServer() {
 	router.Route("/admin", func(r chi.Router) {
 		r.Get("/settings/ios-shortcut-install-url", service.AdminGetIOSShortcutInstallURLHandler)
 		r.Put("/settings/ios-shortcut-install-url", service.AdminUpdateIOSShortcutInstallURLHandler)
+		r.Get("/settings/telegram-bot-url", service.AdminGetTelegramBotURLHandler)
+		r.Put("/settings/telegram-bot-url", service.AdminUpdateTelegramBotURLHandler)
 		r.Get("/settings/schedule-travel-thresholds", service.AdminGetScheduleTravelThresholdsHandler)
 		r.Put("/settings/schedule-travel-thresholds", service.AdminUpdateScheduleTravelThresholdsHandler)
 		r.Get("/settings/calendar-sync-durations", service.AdminGetCalendarSyncDurationsHandler)

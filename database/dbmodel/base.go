@@ -44,6 +44,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&DefaultValue{})
 	database.Connection.AutoMigrate(&SystemSetting{})
 	database.Connection.AutoMigrate(&Schedule{})
+	database.Connection.AutoMigrate(&ScheduleReminderDispatchLog{})
 	database.Connection.AutoMigrate(&CalendarProviderConnection{})
 	database.Connection.AutoMigrate(&ScheduleCalendarSyncLink{})
 	database.Connection.AutoMigrate(&CalendarSyncJob{})
@@ -72,6 +73,8 @@ func AutoMigration() {
 	database.Connection.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_pin_group_assignments_unique_pin_group ON pin_group_assignments (pin_id, pin_group_id)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_pin_group_assignments_pin_id ON pin_group_assignments (pin_id)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_pin_group_assignments_group_id ON pin_group_assignments (pin_group_id)")
+	database.Connection.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_schedule_reminder_dispatch_logs_unique_user_schedule_date ON schedule_reminder_dispatch_logs (user_id, schedule_id, local_date)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_schedule_reminder_dispatch_logs_relation_date ON schedule_reminder_dispatch_logs (relation_id, local_date)")
 
 	log.Println("auto migration completed")
 }

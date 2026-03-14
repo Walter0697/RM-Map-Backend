@@ -47,6 +47,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 
 - `GET /integration/markers`
 - `GET /integration/markers/nearby`
+- `GET /integration/reminders/due?username=<username>`
 - `POST /integration/markers`
 - `POST /integration/markers/outcomes`
 - `PUT /integration/markers/{id}`
@@ -61,6 +62,7 @@ Provide API key in `X-API-Key` (or `Authorization: ApiKey <token>`):
 - `PUT /integration/settings/default-pins/{label}`
 - `GET /integration/settings/users/{username}/preview-pin`
 - `PUT /integration/settings/users/{username}/preview-pin`
+- `GET /integration/settings/users/{username}/reminder-time`
 - `POST /integration/static-map-preview/geocode`
 - `POST /integration/static-map-preview`
 
@@ -177,6 +179,16 @@ Common error codes for `GET /integration/markers/nearby`:
 - `invalid_api_key`
 - `api_key_scope_denied`
 - `nearby_search_failed`
+
+Common error codes for `GET /integration/reminders/due`:
+- `invalid_username`
+- `unknown_username`
+- `username_not_in_relation`
+- `missing_api_key`
+- `deprecated_jwt_auth`
+- `invalid_api_key`
+- `api_key_scope_denied`
+- `reminders_due_failed`
 
 Address-mode flow (street -> geocode -> preview):
 
