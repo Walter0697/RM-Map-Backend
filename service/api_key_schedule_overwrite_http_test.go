@@ -161,7 +161,7 @@ func TestIntegrationOverwriteSchedulesByDateHandlerSuccessRemovesStaleEntries(t 
 			RelationId: 99,
 		}, nil
 	}
-	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation) (*dbmodel.Schedule, error) {
+	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
 		selectedAt, err := time.Parse("2006-01-02 15:04:05+00", input.SelectedTime)
 		if err != nil {
 			return nil, err
@@ -170,6 +170,7 @@ func TestIntegrationOverwriteSchedulesByDateHandlerSuccessRemovesStaleEntries(t 
 			ObjectBase:     dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 501}},
 			Label:          input.Label,
 			Description:    input.Description,
+			Testing:        testing,
 			MarkerId:       &marker.ID,
 			SelectedDate:   selectedAt,
 			RelationId:     relation.ID,
@@ -219,5 +220,88 @@ func TestIntegrationOverwriteSchedulesByDateHandlerSuccessRemovesStaleEntries(t 
 	}
 	if payload.DeletedCount != 1 || payload.CreatedCount != 1 || len(payload.Items) != 1 {
 		t.Fatalf("unexpected overwrite payload: %+v", payload)
+	}
+}
+
+func TestIntegrationOverwriteSchedulesByDateHandlerForcesTestingScheduleLabel(t *testing.T) {
+	resetIntegrationScheduleOverwriteHooks()
+	defer resetIntegrationScheduleOverwriteHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Testing:  true,
+			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 99}},
+			ActorUser: dbmodel.User{
+				BaseModel: dbmodel.BaseModel{ID: 7},
+				Username:  "api-bot",
+				Role:      "admin",
+			},
+		}, true
+	}
+	integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
+		return &gorm.DB{}, nil
+	}
+	integrationListSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) ([]dbmodel.Schedule, error) {
+		return []dbmodel.Schedule{}, nil
+	}
+	integrationDeleteSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) (int64, error) {
+		return 0, nil
+	}
+	integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmodel.Marker, error) {
+		return &dbmodel.Marker{
+			ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: markerID}},
+			RelationId: 99,
+		}, nil
+	}
+	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
+		if input.Label != "testing schedule" {
+			t.Fatalf("expected label to be forced to 'testing schedule', got %q", input.Label)
+		}
+		if !testing {
+			t.Fatalf("expected testing schedule flag to be true for testing api key")
+		}
+		selectedAt, err := time.Parse("2006-01-02 15:04:05+00", input.SelectedTime)
+		if err != nil {
+			return nil, err
+		}
+		return &dbmodel.Schedule{
+			ObjectBase:   dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 777}},
+			Label:        input.Label,
+			Description:  input.Description,
+			Testing:      testing,
+			SelectedDate: selectedAt,
+			RelationId:   relation.ID,
+		}, nil
+	}
+	integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error { return nil }
+	integrationCommitScheduleOverwriteTxFn = func(tx *gorm.DB) error { return nil }
+	integrationRollbackScheduleOverwriteTxFn = func(tx *gorm.DB) {}
+
+	body := `{
+		"date":"2026-03-14",
+		"items":[
+			{"label":"normal-label","description":"replace","selected_time":"2026-03-14 12:30:00+00","marker_id":42}
+		]
+	}`
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/integration/schedules/overwrite-by-date", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	IntegrationOverwriteSchedulesByDateHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+	var payload integrationOverwriteScheduleByDateResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if len(payload.Items) != 1 {
+		t.Fatalf("expected one schedule in payload, got %d", len(payload.Items))
+	}
+	if payload.Items[0].Label != "testing schedule" {
+		t.Fatalf("expected output label testing schedule, got %q", payload.Items[0].Label)
+	}
+	if !payload.Items[0].Testing {
+		t.Fatalf("expected output testing flag true")
 	}
 }

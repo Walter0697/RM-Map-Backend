@@ -25,29 +25,29 @@ import (
 )
 
 type createAPIKeyRequest struct {
-	Name        string   `json:"name"`
-	Testing     *bool    `json:"testing,omitempty"`
-	Scopes      []string `json:"scopes"`
-	RelationID  uint     `json:"relation_id"`
-	ActorUserID *uint    `json:"actor_user_id,omitempty"`
-	ServiceAccountID *uint `json:"service_account_id,omitempty"`
-	ExpiresAt   *string  `json:"expires_at"`
+	Name             string   `json:"name"`
+	Testing          *bool    `json:"testing,omitempty"`
+	Scopes           []string `json:"scopes"`
+	RelationID       uint     `json:"relation_id"`
+	ActorUserID      *uint    `json:"actor_user_id,omitempty"`
+	ServiceAccountID *uint    `json:"service_account_id,omitempty"`
+	ExpiresAt        *string  `json:"expires_at"`
 }
 
 type apiKeyResponse struct {
-	ID          uint       `json:"id"`
-	Name        string     `json:"name"`
-	Testing     bool       `json:"testing"`
-	Prefix      string     `json:"prefix"`
-	Scopes      []string   `json:"scopes"`
-	Status      string     `json:"status"`
-	RelationID  uint       `json:"relation_id"`
-	ActorUserID *uint      `json:"actor_user_id"`
-	ServiceAccountID *uint `json:"service_account_id,omitempty"`
-	ServiceAccountName *string `json:"service_account_name,omitempty"`
-	LastUsedAt  *time.Time `json:"last_used_at"`
-	ExpiresAt   *time.Time `json:"expires_at"`
-	CreatedAt   time.Time  `json:"created_at"`
+	ID                 uint       `json:"id"`
+	Name               string     `json:"name"`
+	Testing            bool       `json:"testing"`
+	Prefix             string     `json:"prefix"`
+	Scopes             []string   `json:"scopes"`
+	Status             string     `json:"status"`
+	RelationID         uint       `json:"relation_id"`
+	ActorUserID        *uint      `json:"actor_user_id"`
+	ServiceAccountID   *uint      `json:"service_account_id,omitempty"`
+	ServiceAccountName *string    `json:"service_account_name,omitempty"`
+	LastUsedAt         *time.Time `json:"last_used_at"`
+	ExpiresAt          *time.Time `json:"expires_at"`
+	CreatedAt          time.Time  `json:"created_at"`
 }
 
 type createAPIKeyResponse struct {
@@ -483,13 +483,13 @@ func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	apiKey, token, err := CreateAPIKey(APIKeyCreateInput{
-		Name:        request.Name,
-		Testing:     request.Testing != nil && *request.Testing,
-		Scopes:      request.Scopes,
-		RelationID:  request.RelationID,
-		ActorUserID: request.ActorUserID,
+		Name:             request.Name,
+		Testing:          request.Testing != nil && *request.Testing,
+		Scopes:           request.Scopes,
+		RelationID:       request.RelationID,
+		ActorUserID:      request.ActorUserID,
 		ServiceAccountID: request.ServiceAccountID,
-		ExpiresAt:   expiresAt,
+		ExpiresAt:        expiresAt,
 	}, operator)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1383,6 +1383,7 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 	if !ok {
 		return
 	}
+	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
 
 	requestPayload, err := readJSONBody(r)
 	if err != nil {
@@ -1476,13 +1477,28 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusForbidden, "api_key_scope_denied", "api key cannot access marker outside assigned relation")
 			return
 		}
+		if marker.Testing && !canModifyTesting {
+			writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
+			return
+		}
+		requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, item.Testing, canModifyTesting)
+		if err != nil {
+			writeIntegrationError(w, http.StatusForbidden, "permission_denied", err.Error())
+			return
+		}
+
+		label := item.Label
+		if apiKey.Testing {
+			label = "testing schedule"
+		}
+		scheduleTesting := requestedTesting || marker.Testing
 
 		schedule, err := integrationCreateScheduleFn(tx, model.NewSchedule{
-			Label:        item.Label,
+			Label:        label,
 			Description:  item.Description,
 			SelectedTime: item.SelectedTime,
 			MarkerID:     item.MarkerID,
-		}, *marker, apiKey.ActorUser, apiKey.Relation)
+		}, *marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
 		if err != nil {
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", err.Error())
 			return
@@ -2673,19 +2689,19 @@ func formatAPIKey(apiKey *dbmodel.APIKey) apiKeyResponse {
 		}
 	}
 	return apiKeyResponse{
-		ID:          apiKey.ID,
-		Name:        apiKey.Name,
-		Testing:     apiKey.Testing,
-		Prefix:      apiKey.Prefix,
-		Scopes:      apiKey.ScopeList(),
-		Status:      apiKey.Status,
-		RelationID:  apiKey.RelationID,
-		ActorUserID: apiKey.ActorUserID,
-		ServiceAccountID: apiKey.ServiceAccountID,
+		ID:                 apiKey.ID,
+		Name:               apiKey.Name,
+		Testing:            apiKey.Testing,
+		Prefix:             apiKey.Prefix,
+		Scopes:             apiKey.ScopeList(),
+		Status:             apiKey.Status,
+		RelationID:         apiKey.RelationID,
+		ActorUserID:        apiKey.ActorUserID,
+		ServiceAccountID:   apiKey.ServiceAccountID,
 		ServiceAccountName: serviceAccountName,
-		LastUsedAt:  apiKey.LastUsedAt,
-		ExpiresAt:   apiKey.ExpiresAt,
-		CreatedAt:   apiKey.CreatedAt,
+		LastUsedAt:         apiKey.LastUsedAt,
+		ExpiresAt:          apiKey.ExpiresAt,
+		CreatedAt:          apiKey.CreatedAt,
 	}
 }
 
