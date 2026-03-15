@@ -2359,7 +2359,7 @@ func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	items, todayScheduleItemsCount, reminderTime, err := integrationGetDueScheduleRemindersByUsernameFn(apiKey.Relation, username)
+	items, todayScheduleItemsCount, reminderWindowIsActive, willRemindAt, markerLocationCurrentTime, err := integrationGetDueScheduleRemindersByUsernameFn(apiKey.Relation, username)
 	if err != nil {
 		switch err {
 		case ErrUnknownUsername:
@@ -2401,8 +2401,10 @@ func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.R
 		"username":                username,
 		"items":                   responseItems,
 		"total":                   len(responseItems),
-		"reminder_time":           reminderTime,
+		"reminder_time":           reminderWindowIsActive,
+		"will_remind_at":          willRemindAt,
 		"today_schedule_items_count": todayScheduleItemsCount,
+		"marker_location_current_time": markerLocationCurrentTime,
 	})
 }
 
