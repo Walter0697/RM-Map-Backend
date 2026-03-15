@@ -11,7 +11,7 @@ import (
 )
 
 const reminderScheduleQueryWindow = 48 * time.Hour
-const reminderDueWindow = time.Hour
+const reminderDueWindowMinutes = 60
 
 var ErrUserNotInAPIKeyRelation = errors.New("username does not belong to api key relation")
 
@@ -23,6 +23,17 @@ type integrationDueReminderItem struct {
 	LocalDate      string
 	LocalNow       time.Time
 	ReminderAt     time.Time
+}
+
+func isInReminderWindow(localNow time.Time, reminderHour, reminderMinute int) bool {
+	reminderWindowStart := reminderHour*60 + reminderMinute
+	currentMinute := localNow.Hour()*60 + localNow.Minute()
+	reminderWindowEnd := (reminderWindowStart + reminderDueWindowMinutes - 1) % (24 * 60)
+
+	if reminderWindowStart <= reminderWindowEnd {
+		return currentMinute >= reminderWindowStart && currentMinute <= reminderWindowEnd
+	}
+	return currentMinute >= reminderWindowStart || currentMinute <= reminderWindowEnd
 }
 
 var integrationReminderNowFn = func() time.Time { return time.Now().UTC() }
@@ -89,8 +100,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		todayScheduleItemsCount++
 
 		reminderAt := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), reminderHour, reminderMinute, 0, 0, location)
-		reminderWindowEnd := reminderAt.Add(reminderDueWindow)
-		if localNow.Before(reminderAt) || localNow.After(reminderWindowEnd) {
+		if !isInReminderWindow(localNow, reminderHour, reminderMinute) {
 			continue
 		}
 		reminderWindowIsActive = true
