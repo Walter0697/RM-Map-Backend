@@ -12,6 +12,7 @@ import (
 )
 
 const reminderScheduleQueryWindow = 48 * time.Hour
+const reminderDueWindow = time.Hour
 
 var ErrUserNotInAPIKeyRelation = errors.New("username does not belong to api key relation")
 
@@ -87,7 +88,8 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		}
 
 		reminderAt := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), reminderHour, reminderMinute, 0, 0, location)
-		if localNow.Before(reminderAt) {
+		reminderWindowEnd := reminderAt.Add(reminderDueWindow)
+		if localNow.Before(reminderAt) || localNow.After(reminderWindowEnd) {
 			continue
 		}
 
