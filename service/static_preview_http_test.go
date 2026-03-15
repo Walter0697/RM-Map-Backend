@@ -267,6 +267,38 @@ func TestIntegrationGeocodeStaticMapPreviewHandlerSuccess(t *testing.T) {
 	}
 }
 
+func TestIntegrationGeocodeStaticMapPreviewHandlerUnicodeAddress(t *testing.T) {
+	resetStaticPreviewHooks()
+	defer resetStaticPreviewHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 1}}, Name: "key"}, true
+	}
+	integrationGeocodeAddressFn = func(streetNumber string, streetName string, country string) (float64, float64, error) {
+		if streetNumber != "1-chōme-3-19" || streetName != "Dōjima" || country != "Kita Ward, Osaka, Japan" {
+			t.Fatalf("unexpected unicode geocode input: %s, %s, %s", streetNumber, streetName, country)
+		}
+		return 34.6937, 135.5023, nil
+	}
+	integrationCreateAuditLogFn = func(apiKeyID *uint, apiKeyName string, event APIKeyAuditEvent) error { return nil }
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/integration/static-map-preview/geocode", bytes.NewBufferString(`{"street_number":"1-chōme-3-19","street_name":"Dōjima","country":"Kita Ward, Osaka, Japan"}`))
+	IntegrationGeocodeStaticMapPreviewHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d", recorder.Code)
+	}
+
+	response := integrationStaticPreviewGeocodeResponse{}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("expected valid json response: %v", err)
+	}
+	if response.Lat != 34.6937 || response.Lon != 135.5023 {
+		t.Fatalf("unexpected geocode output: %f, %f", response.Lat, response.Lon)
+	}
+}
+
 func TestIntegrationStaticPreviewTwoStepFlow(t *testing.T) {
 	resetStaticPreviewHooks()
 	defer resetStaticPreviewHooks()

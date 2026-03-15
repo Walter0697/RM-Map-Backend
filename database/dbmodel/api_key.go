@@ -39,6 +39,14 @@ func (apiKey *APIKey) Update(db *gorm.DB) error {
 	return db.Save(apiKey).Error
 }
 
+func (apiKey *APIKey) TouchLastUsedAt(db *gorm.DB, usedAt time.Time) error {
+	return db.Model(&APIKey{}).
+		Where("id = ?", apiKey.ID).
+		Updates(map[string]interface{}{
+			"last_used_at": usedAt,
+		}).Error
+}
+
 func (apiKey *APIKey) GetByID(db *gorm.DB) error {
 	return db.Where("id = ?", apiKey.ID).First(apiKey).Error
 }

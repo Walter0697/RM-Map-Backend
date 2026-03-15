@@ -14,7 +14,10 @@ import (
 	"time"
 )
 
-const rawAPIKeyPrefix = "rmk_"
+const (
+	rawAPIKeyPrefix                   = "rmk_"
+	apiKeyLastUsedUpdateMinInterval   = time.Minute
+)
 
 type APIKeyCreateInput struct {
 	Name        string
@@ -318,8 +321,11 @@ func AuthenticateAPIKey(raw string, event APIKeyAuditEvent) (*dbmodel.APIKey, er
 	}
 
 	now := time.Now()
-	apiKey.LastUsedAt = &now
-	_ = apiKey.Update(database.Connection)
+	shouldTouchLastUsedAt := apiKey.LastUsedAt == nil || now.Sub(*apiKey.LastUsedAt) >= apiKeyLastUsedUpdateMinInterval
+	if shouldTouchLastUsedAt {
+		_ = apiKey.TouchLastUsedAt(database.Connection, now)
+		apiKey.LastUsedAt = &now
+	}
 
 	successEvent := event
 	successEvent.Success = true

@@ -46,6 +46,8 @@ const (
 	GeocodeURL        string = "/2/geocode"
 )
 
+var getTomTomMapRequestFn = GetRequest
+
 func reverseGeocodeRequest(lat, lon float64) string {
 	latstr := fmt.Sprintf("%f", lat)
 	lonstr := fmt.Sprintf("%f", lon)
@@ -101,34 +103,134 @@ func firstNonEmptyString(values ...string) string {
 }
 
 func GeocodeStreetAddress(streetNumber string, streetName string, country string) (float64, float64, error) {
-	queryParts := make([]string, 0, 3)
-	if strings.TrimSpace(streetNumber) != "" {
-		queryParts = append(queryParts, strings.TrimSpace(streetNumber))
-	}
-	if strings.TrimSpace(streetName) != "" {
-		queryParts = append(queryParts, strings.TrimSpace(streetName))
-	}
-	if strings.TrimSpace(country) != "" {
-		queryParts = append(queryParts, strings.TrimSpace(country))
-	}
-	if len(queryParts) == 0 {
+	queryCandidates := buildGeocodeQueryCandidates(streetNumber, streetName, country)
+	if len(queryCandidates) == 0 {
 		return 0, 0, fmt.Errorf("street_name and country are required")
 	}
+	countrySet := inferCountrySet(country)
 
-	encodedQuery := url.PathEscape(strings.Join(queryParts, ", "))
+	for _, query := range queryCandidates {
+		requestURL := buildGeocodeRequestURL(query, countrySet)
+		body, err := getTomTomMapRequestFn(requestURL)
+		if err != nil {
+			return 0, 0, err
+		}
+
+		response := TomTomGeocodeResponse{}
+		if err := json.Unmarshal(body, &response); err != nil {
+			return 0, 0, err
+		}
+		if len(response.Results) == 0 {
+			continue
+		}
+
+		return response.Results[0].Position.Lat, response.Results[0].Position.Lon, nil
+	}
+
+	return 0, 0, fmt.Errorf("no geocode results")
+}
+
+func buildGeocodeRequestURL(query string, countrySet string) string {
+	encodedQuery := url.PathEscape(strings.TrimSpace(query))
 	requestURL := constant.TomtomMapAPI + GeocodeURL + "/" + encodedQuery + ".json?key=" + config.Data.APIKEY.TomTomMap + "&limit=1"
-	body, err := GetRequest(requestURL)
-	if err != nil {
-		return 0, 0, err
+	countrySet = strings.TrimSpace(countrySet)
+	if countrySet != "" {
+		requestURL += "&countrySet=" + url.QueryEscape(countrySet)
+	}
+	return requestURL
+}
+
+func buildGeocodeQueryCandidates(streetNumber string, streetName string, country string) []string {
+	streetNumber = strings.TrimSpace(streetNumber)
+	streetName = strings.TrimSpace(streetName)
+	country = strings.TrimSpace(country)
+
+	base := make([]string, 0, 4)
+	if streetNumber != "" && streetName != "" && country != "" {
+		base = append(base, strings.Join([]string{streetNumber, streetName, country}, ", "))
+	}
+	if streetName != "" && country != "" {
+		base = append(base, strings.Join([]string{streetName, country}, ", "))
+	}
+	if streetNumber != "" && streetName != "" {
+		base = append(base, strings.TrimSpace(streetNumber+" "+streetName))
+	}
+	countryTail := countryLastPart(country)
+	if streetName != "" && countryTail != "" && countryTail != country {
+		base = append(base, strings.Join([]string{streetName, countryTail}, ", "))
 	}
 
-	response := TomTomGeocodeResponse{}
-	if err := json.Unmarshal(body, &response); err != nil {
-		return 0, 0, err
-	}
-	if len(response.Results) == 0 {
-		return 0, 0, fmt.Errorf("no geocode results")
+	candidates := make([]string, 0, len(base)*2)
+	seen := make(map[string]struct{}, len(base)*2)
+	for _, item := range base {
+		trimmed := strings.TrimSpace(item)
+		if trimmed == "" {
+			continue
+		}
+		if _, exists := seen[trimmed]; !exists {
+			seen[trimmed] = struct{}{}
+			candidates = append(candidates, trimmed)
+		}
+
+		normalized := normalizeGeocodeQuery(trimmed)
+		if normalized == "" || normalized == trimmed {
+			continue
+		}
+		if _, exists := seen[normalized]; exists {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		candidates = append(candidates, normalized)
 	}
 
-	return response.Results[0].Position.Lat, response.Results[0].Position.Lon, nil
+	return candidates
+}
+
+func normalizeGeocodeQuery(value string) string {
+	replacer := strings.NewReplacer(
+		"ā", "a",
+		"ē", "e",
+		"ī", "i",
+		"ō", "o",
+		"ū", "u",
+		"Ā", "A",
+		"Ē", "E",
+		"Ī", "I",
+		"Ō", "O",
+		"Ū", "U",
+		"’", "'",
+		"‐", "-",
+		"‑", "-",
+		"–", "-",
+		"—", "-",
+	)
+	return strings.TrimSpace(replacer.Replace(value))
+}
+
+func countryLastPart(country string) string {
+	parts := strings.Split(country, ",")
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.TrimSpace(parts[len(parts)-1])
+}
+
+func inferCountrySet(country string) string {
+	normalized := strings.ToLower(strings.TrimSpace(country))
+	if normalized == "" {
+		return ""
+	}
+
+	switch {
+	case strings.Contains(normalized, "japan"), strings.Contains(country, "日本"):
+		return "JP"
+	case strings.Contains(normalized, "hong kong"), strings.Contains(country, "香港"):
+		return "HK"
+	case strings.Contains(normalized, "canada"):
+		return "CA"
+	case strings.Contains(normalized, "united states"), strings.Contains(normalized, "usa"):
+		return "US"
+	}
+
+	return ""
 }
