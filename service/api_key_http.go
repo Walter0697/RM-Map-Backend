@@ -2509,9 +2509,25 @@ func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Re
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_address_input", "street_number, street_name, and country are required")
 		return
 	}
+	log.Printf(
+		"integration geocode request key_id=%d key_name=%s source_ip=%s street_number=%q street_name=%q country=%q",
+		apiKey.ID,
+		apiKey.Name,
+		requestSourceIP(r),
+		request.StreetNumber,
+		request.StreetName,
+		request.Country,
+	)
 
 	lat, lon, geocodeErr := integrationGeocodeAddressFn(request.StreetNumber, request.StreetName, request.Country)
 	if geocodeErr != nil {
+		log.Printf(
+			"integration geocode failure key_id=%d key_name=%s source_ip=%s error=%v",
+			apiKey.ID,
+			apiKey.Name,
+			requestSourceIP(r),
+			geocodeErr,
+		)
 		_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
 			Operation: "integration.static_preview.geocode.result",
 			SourceIP:  requestSourceIP(r),
@@ -2521,6 +2537,14 @@ func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Re
 		writeIntegrationError(w, http.StatusBadGateway, "geocode_dependency_failure", "failed to geocode address to coordinates")
 		return
 	}
+	log.Printf(
+		"integration geocode result key_id=%d key_name=%s source_ip=%s lat=%f lon=%f",
+		apiKey.ID,
+		apiKey.Name,
+		requestSourceIP(r),
+		lat,
+		lon,
+	)
 
 	_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
 		Operation: "integration.static_preview.geocode.result",

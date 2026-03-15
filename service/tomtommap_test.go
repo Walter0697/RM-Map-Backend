@@ -133,3 +133,27 @@ func TestInferCountrySet(t *testing.T) {
 		t.Fatalf("expected empty country set, got %q", got)
 	}
 }
+
+func TestGeocodeStreetAddressNoResultsIncludesDiagnostics(t *testing.T) {
+	original := getTomTomMapRequestFn
+	defer func() { getTomTomMapRequestFn = original }()
+
+	getTomTomMapRequestFn = func(requestURL string) ([]byte, error) {
+		return []byte(`{"results":[]}`), nil
+	}
+
+	_, _, err := GeocodeStreetAddress("1-chōme-3-19", "Dōjima", "Kita Ward, Osaka, Japan")
+	if err == nil {
+		t.Fatalf("expected no-results error")
+	}
+	errText := err.Error()
+	if !strings.Contains(errText, "no geocode results after") {
+		t.Fatalf("expected attempt count in error, got: %s", errText)
+	}
+	if !strings.Contains(errText, `country_set="JP"`) {
+		t.Fatalf("expected country_set diagnostic, got: %s", errText)
+	}
+	if !strings.Contains(errText, "Dojima") {
+		t.Fatalf("expected normalized query diagnostic, got: %s", errText)
+	}
+}

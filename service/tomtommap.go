@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"net/url"
@@ -109,25 +110,55 @@ func GeocodeStreetAddress(streetNumber string, streetName string, country string
 	}
 	countrySet := inferCountrySet(country)
 
-	for _, query := range queryCandidates {
+	for idx, query := range queryCandidates {
+		log.Printf("integration geocode attempt=%d/%d query=%q country_set=%q", idx+1, len(queryCandidates), query, countrySet)
 		requestURL := buildGeocodeRequestURL(query, countrySet)
 		body, err := getTomTomMapRequestFn(requestURL)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, fmt.Errorf(
+				"tomtom geocode request failed (attempt %d/%d, query=%q, country_set=%q): %w",
+				idx+1,
+				len(queryCandidates),
+				query,
+				countrySet,
+				err,
+			)
 		}
 
 		response := TomTomGeocodeResponse{}
 		if err := json.Unmarshal(body, &response); err != nil {
-			return 0, 0, err
+			return 0, 0, fmt.Errorf(
+				"tomtom geocode response decode failed (attempt %d/%d, query=%q, country_set=%q): %w",
+				idx+1,
+				len(queryCandidates),
+				query,
+				countrySet,
+				err,
+			)
 		}
 		if len(response.Results) == 0 {
+			log.Printf("integration geocode no_results attempt=%d/%d query=%q country_set=%q", idx+1, len(queryCandidates), query, countrySet)
 			continue
 		}
 
+		log.Printf(
+			"integration geocode success attempt=%d/%d query=%q country_set=%q lat=%f lon=%f",
+			idx+1,
+			len(queryCandidates),
+			query,
+			countrySet,
+			response.Results[0].Position.Lat,
+			response.Results[0].Position.Lon,
+		)
 		return response.Results[0].Position.Lat, response.Results[0].Position.Lon, nil
 	}
 
-	return 0, 0, fmt.Errorf("no geocode results")
+	return 0, 0, fmt.Errorf(
+		"no geocode results after %d attempt(s); country_set=%q; queries=%q",
+		len(queryCandidates),
+		countrySet,
+		strings.Join(queryCandidates, " || "),
+	)
 }
 
 func buildGeocodeRequestURL(query string, countrySet string) string {
