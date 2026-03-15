@@ -194,6 +194,10 @@ Common error codes for `GET /integration/reminders/due`:
 - `api_key_scope_denied`
 - `reminders_due_failed`
 
+Reminder behavior for `GET /integration/reminders/due`:
+- Reminders are evaluated against each marker’s local timezone.
+- A reminder is returned only when local time is in the one-hour window from the configured user reminder time on that local date (example: `21:00` -> `21:00:00` through `21:59:59`).
+
 Address-mode flow (street -> geocode -> preview):
 
 1. Call `POST /integration/static-map-preview/geocode`.
