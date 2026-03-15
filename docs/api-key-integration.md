@@ -199,7 +199,7 @@ Reminder behavior for `GET /integration/reminders/due`:
 - A reminder is returned only when local time is in the one-hour window from the configured user reminder time on that local date (example: `21:00` -> `21:00:00` through `21:59:59`).
 - Response includes:
   - `reminder_time`: `true` when at least one schedule for the day is in the reminder window right now, otherwise `false`.
-  - `today_schedule_items_count`: number of schedules for the current local date (filtered by selected date window and non-cancelled/non-arrived state), before reminder-window filtering.
+  - `today_schedule_items_count`: number of schedules for the current local date (filtered by selected-date range and marker timezone), before reminder-window filtering.
 
 Address-mode flow (street -> geocode -> preview):
 

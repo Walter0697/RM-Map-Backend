@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"strings"
@@ -61,11 +60,10 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		Preload("SelectedMarker").
 		Where("relation_id = ?", relation.ID).
 		Where("marker_id IS NOT NULL").
-		Where("status != ? AND status != ?", constant.Cancelled, constant.Arrived).
 		Where("selected_date >= ? AND selected_date <= ?", fromUTC, toUTC).
 		Order("selected_date asc").
 		Find(&schedules).Error; err != nil {
-		return nil, err
+		return nil, 0, false, err
 	}
 
 	candidates := make([]integrationDueReminderItem, 0, len(schedules))
