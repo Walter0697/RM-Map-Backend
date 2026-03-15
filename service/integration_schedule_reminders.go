@@ -42,13 +42,13 @@ func relationContainsUser(relation dbmodel.UserRelation, userID uint) bool {
 	return relation.UserOneUID == userID || relation.UserTwoUID == userID
 }
 
-func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username string) ([]integrationDueReminderItem, int, bool, error) {
+func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username string) ([]integrationDueReminderItem, int, bool, string, string, error) {
 	user, reminderTime, _, err := GetUserReminderTime(username)
 	if err != nil {
-		return nil, 0, false, err
+		return nil, 0, false, "", "", err
 	}
 	if !relationContainsUser(relation, user.ID) {
-		return nil, 0, false, ErrUserNotInAPIKeyRelation
+		return nil, 0, false, reminderTime, "", ErrUserNotInAPIKeyRelation
 	}
 
 	parts := strings.Split(reminderTime, ":")
@@ -74,12 +74,13 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		Where("selected_date >= ? AND selected_date <= ?", fromUTC, toUTC).
 		Order("selected_date asc").
 		Find(&schedules).Error; err != nil {
-		return nil, 0, false, err
+		return nil, 0, false, reminderTime, "", err
 	}
 
 	candidates := make([]integrationDueReminderItem, 0, len(schedules))
 	todayScheduleItemsCount := 0
 	reminderWindowIsActive := false
+	markerLocationCurrentTime := ""
 	for _, schedule := range schedules {
 		if schedule.SelectedMarker == nil {
 			continue
@@ -98,6 +99,9 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 			continue
 		}
 		todayScheduleItemsCount++
+		if markerLocationCurrentTime == "" {
+			markerLocationCurrentTime = localNow.Format(time.RFC3339)
+		}
 
 		reminderAt := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), reminderHour, reminderMinute, 0, 0, location)
 		if !isInReminderWindow(localNow, reminderHour, reminderMinute) {
@@ -117,7 +121,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 	}
 
 	if len(candidates) == 0 {
-		return []integrationDueReminderItem{}, todayScheduleItemsCount, reminderWindowIsActive, nil
+		return []integrationDueReminderItem{}, todayScheduleItemsCount, reminderWindowIsActive, reminderTime, markerLocationCurrentTime, nil
 	}
 
 	due := make([]integrationDueReminderItem, 0, len(candidates))
@@ -142,7 +146,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 			}).
 			Create(&log)
 		if result.Error != nil {
-			return nil, 0, false, result.Error
+			return nil, 0, false, reminderTime, markerLocationCurrentTime, result.Error
 		}
 		if result.RowsAffected == 0 {
 			continue
@@ -150,5 +154,5 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		due = append(due, item)
 	}
 
-	return due, todayScheduleItemsCount, reminderWindowIsActive, nil
+	return due, todayScheduleItemsCount, reminderWindowIsActive, reminderTime, markerLocationCurrentTime, nil
 }
