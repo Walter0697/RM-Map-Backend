@@ -72,6 +72,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		Where("relation_id = ?", relation.ID).
 		Where("marker_id IS NOT NULL").
 		Where("selected_date >= ? AND selected_date <= ?", fromUTC, toUTC).
+		Where("EXISTS (SELECT 1 FROM marker_types WHERE marker_types.value = markers.type AND marker_types.hidden = FALSE)").
 		Order("selected_date asc").
 		Find(&schedules).Error; err != nil {
 		return nil, 0, false, reminderTime, "", "", err
