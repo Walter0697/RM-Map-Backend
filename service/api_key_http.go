@@ -1504,15 +1504,6 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id must be a positive integer for each schedule item")
 			return
 		}
-		selectedAt, parseErr := time.Parse(utils.StandardTime, strings.TrimSpace(item.SelectedTime))
-		if parseErr != nil {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
-			return
-		}
-		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
-			return
-		}
 	}
 
 	tx, err := integrationBeginScheduleOverwriteTxFn()
@@ -1562,6 +1553,15 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		}
 		if marker.Testing && !canModifyTesting {
 			writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
+			return
+		}
+		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), marker)
+		if parseErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
+			return
+		}
+		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
 			return
 		}
 		requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, item.Testing, canModifyTesting)

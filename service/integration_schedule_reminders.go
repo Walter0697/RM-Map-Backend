@@ -88,7 +88,6 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		}
 
 		timezone := resolveScheduleTimezone(schedule)
-		rawTimezone := timezone
 		location, locationErr := time.LoadLocation(timezone)
 		if locationErr != nil {
 			location = time.UTC
@@ -102,7 +101,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		}
 		todayScheduleItemsCount++
 		if markerLocationCurrentTime == "" {
-			markerLocationTimezone = rawTimezone
+			markerLocationTimezone = timezone
 			markerLocationCurrentTime = localNow.Format(time.RFC3339)
 		}
 

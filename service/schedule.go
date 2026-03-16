@@ -8,10 +8,37 @@ import (
 	"mapmarker/backend/graph/model"
 	"mapmarker/backend/helper"
 	"mapmarker/backend/utils"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
 )
+
+func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, error) {
+	selectedTime, err := time.Parse(utils.StandardTime, strings.TrimSpace(raw))
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	location := time.UTC
+	if marker != nil {
+		timezone := resolveScheduleTimezone(dbmodel.Schedule{SelectedMarker: marker})
+		if scheduleLocation, err := time.LoadLocation(timezone); err == nil {
+			location = scheduleLocation
+		}
+	}
+
+	return time.Date(
+		selectedTime.Year(),
+		selectedTime.Month(),
+		selectedTime.Day(),
+		selectedTime.Hour(),
+		selectedTime.Minute(),
+		selectedTime.Second(),
+		selectedTime.Nanosecond(),
+		location,
+	), nil
+}
 
 func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
 	var schedule dbmodel.Schedule
@@ -29,7 +56,7 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 
 	schedule.SelectedMarker = &marker
 
-	selectedTime, err := time.Parse(utils.StandardTime, input.SelectedTime)
+	selectedTime, err := parseScheduleSelectedTime(input.SelectedTime, &marker)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +93,7 @@ func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmode
 		schedule.SelectedMarker = marker
 	}
 
-	selectedTime, err := time.Parse(utils.StandardTime, input.SelectedTime)
+	selectedTime, err := parseScheduleSelectedTime(input.SelectedTime, marker)
 	if err != nil {
 		return nil, err
 	}
@@ -120,7 +147,7 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 	}
 
 	if input.SelectedTime != nil {
-		selectedTime, err := time.Parse(utils.StandardTime, *input.SelectedTime)
+		selectedTime, err := parseScheduleSelectedTime(*input.SelectedTime, schedule.SelectedMarker)
 		if err != nil {
 			return nil, err
 		}
