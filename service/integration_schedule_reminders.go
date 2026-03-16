@@ -144,14 +144,15 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 					{Name: "schedule_id"},
 					{Name: "local_date"},
 				},
-				DoNothing: true,
+				DoUpdates: clause.AssignmentColumns([]string{
+					"dispatched_at",
+					"reminder_time",
+					"marker_timezone",
+				}),
 			}).
 			Create(&log)
 		if result.Error != nil {
 			return nil, 0, false, reminderTime, markerLocationCurrentTime, markerLocationTimezone, result.Error
-		}
-		if result.RowsAffected == 0 {
-			continue
 		}
 		due = append(due, item)
 	}
