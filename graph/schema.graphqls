@@ -112,6 +112,7 @@ type Marker {
   address: String!
   image_link: String
   link: String
+  social_media_link: String
   type: String!
   description: String
   estimate_time: String
@@ -332,6 +333,7 @@ input NewMarker {
   image_link: String
   image_upload: Upload
   link: String
+  social_media_link: String
   type: String!
   description: String
   permanent: Boolean
@@ -351,6 +353,7 @@ input UpdateMarker {
   image_upload: Upload
   no_image: Boolean!
   link: String
+  social_media_link: String
   type: String
   description: String
   permanent: Boolean

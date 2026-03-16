@@ -84,6 +84,7 @@ type Marker struct {
 	Address      string      `json:"address"`
 	ImageLink    *string     `json:"image_link"`
 	Link         *string     `json:"link"`
+	SocialMediaLink *string  `json:"social_media_link"`
 	Type         string      `json:"type"`
 	Description  *string     `json:"description"`
 	EstimateTime *string     `json:"estimate_time"`
@@ -192,6 +193,7 @@ type NewMarker struct {
 	ImageLink    *string         `json:"image_link"`
 	ImageUpload  *graphql.Upload `json:"image_upload"`
 	Link         *string         `json:"link"`
+	SocialMediaLink *string      `json:"social_media_link"`
 	Type         string          `json:"type"`
 	Description  *string         `json:"description"`
 	Permanent    *bool           `json:"permanent"`
@@ -367,6 +369,7 @@ type UpdateMarker struct {
 	ImageUpload      *graphql.Upload `json:"image_upload"`
 	NoImage          bool            `json:"no_image"`
 	Link             *string         `json:"link"`
+	SocialMediaLink  *string         `json:"social_media_link"`
 	Type             *string         `json:"type"`
 	Description      *string         `json:"description"`
 	Permanent        *bool           `json:"permanent"`

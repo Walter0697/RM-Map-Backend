@@ -27,6 +27,7 @@ func ConvertMarker(marker dbmodel.Marker) model.Marker {
 	item.Address = marker.Address
 	item.ImageLink = &marker.ImageLink
 	item.Link = &marker.Link
+	item.SocialMediaLink = &marker.SocialMediaLink
 	item.Type = marker.Type
 	item.Description = &marker.Description
 	item.EstimateTime = &marker.EstimateTime

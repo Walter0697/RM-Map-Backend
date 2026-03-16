@@ -138,6 +138,9 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 	if input.Link != nil {
 		marker.Link = *input.Link
 	}
+	if input.SocialMediaLink != nil {
+		marker.SocialMediaLink = *input.SocialMediaLink
+	}
 	marker.Type = input.Type
 	if input.Description != nil {
 		marker.Description = *input.Description
@@ -271,6 +274,9 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 
 	if input.Link != nil {
 		marker.Link = *input.Link
+	}
+	if input.SocialMediaLink != nil {
+		marker.SocialMediaLink = *input.SocialMediaLink
 	}
 
 	if input.EstimateTime != nil {
