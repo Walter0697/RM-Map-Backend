@@ -139,15 +139,8 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 		marker.Link = *input.Link
 	}
 	if input.SocialMediaLink != nil {
-		marker.SocialMediaLink = strings.TrimSpace(*input.SocialMediaLink)
+		marker.SocialMediaLink = *input.SocialMediaLink
 	}
-	log.Printf(
-		"marker create payload label=%q link=%q social_media_link=%q actor=%s",
-		strings.TrimSpace(marker.Label),
-		strings.TrimSpace(marker.Link),
-		strings.TrimSpace(marker.SocialMediaLink),
-		strings.TrimSpace(user.Username),
-	)
 	marker.Type = input.Type
 	if input.Description != nil {
 		marker.Description = *input.Description
@@ -283,15 +276,8 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 		marker.Link = *input.Link
 	}
 	if input.SocialMediaLink != nil {
-		marker.SocialMediaLink = strings.TrimSpace(*input.SocialMediaLink)
+		marker.SocialMediaLink = *input.SocialMediaLink
 	}
-	log.Printf(
-		"marker edit payload id=%d link=%q social_media_link=%q actor=%s",
-		marker.ID,
-		strings.TrimSpace(marker.Link),
-		strings.TrimSpace(marker.SocialMediaLink),
-		strings.TrimSpace(user.Username),
-	)
 
 	if input.EstimateTime != nil {
 		marker.EstimateTime = *input.EstimateTime

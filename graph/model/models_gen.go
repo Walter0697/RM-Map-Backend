@@ -14,11 +14,11 @@ type CountryCodeMap struct {
 type CountryLocation struct {
 	ID             int     `json:"id"`
 	Label          string  `json:"label"`
-	VisitTime      *string `json:"visit_time,omitempty"`
+	VisitTime      *string `json:"visit_time"`
 	CountryPointID int     `json:"country_point_id"`
-	MarkerID       *int    `json:"marker_id,omitempty"`
-	ImageLink      *string `json:"image_link,omitempty"`
-	Marker         *Marker `json:"marker,omitempty"`
+	MarkerID       *int    `json:"marker_id"`
+	ImageLink      *string `json:"image_link"`
+	Marker         *Marker `json:"marker"`
 }
 
 type CountryPoint struct {
@@ -27,8 +27,8 @@ type CountryPoint struct {
 	MapName string   `json:"map_name"`
 	PhotoX  float64  `json:"photo_x"`
 	PhotoY  float64  `json:"photo_y"`
-	MapX    *float64 `json:"map_x,omitempty"`
-	MapY    *float64 `json:"map_y,omitempty"`
+	MapX    *float64 `json:"map_x"`
+	MapY    *float64 `json:"map_y"`
 }
 
 type CurrentTime struct {
@@ -37,11 +37,11 @@ type CurrentTime struct {
 
 type DefaultPin struct {
 	Label     string  `json:"label"`
-	Pin       *Pin    `json:"pin,omitempty"`
-	CreatedAt *string `json:"created_at,omitempty"`
-	CreatedBy *User   `json:"created_by,omitempty"`
-	UpdatedAt *string `json:"updated_at,omitempty"`
-	UpdatedBy *User   `json:"updated_by,omitempty"`
+	Pin       *Pin    `json:"pin"`
+	CreatedAt *string `json:"created_at"`
+	CreatedBy *User   `json:"created_by"`
+	UpdatedAt *string `json:"updated_at"`
+	UpdatedBy *User   `json:"updated_by"`
 }
 
 type EventType struct {
@@ -77,36 +77,36 @@ type MapPin struct {
 }
 
 type Marker struct {
-	ID              int         `json:"id"`
-	Label           string      `json:"label"`
-	Latitude        float64     `json:"latitude"`
-	Longitude       float64     `json:"longitude"`
-	Address         string      `json:"address"`
-	ImageLink       *string     `json:"image_link,omitempty"`
-	Link            *string     `json:"link,omitempty"`
-	SocialMediaLink *string     `json:"social_media_link,omitempty"`
-	Type            string      `json:"type"`
-	Description     *string     `json:"description,omitempty"`
-	EstimateTime    *string     `json:"estimate_time,omitempty"`
-	Price           *string     `json:"price,omitempty"`
-	Permanent       bool        `json:"permanent"`
-	NeedBooking     bool        `json:"need_booking"`
-	Status          *string     `json:"status,omitempty"`
-	ToTime          *string     `json:"to_time,omitempty"`
-	FromTime        *string     `json:"from_time,omitempty"`
-	Restaurant      *Restaurant `json:"restaurant,omitempty"`
-	IsFav           bool        `json:"is_fav"`
-	CountryCode     string      `json:"country_code"`
-	CountryPart     string      `json:"country_part"`
-	CreatedAt       string      `json:"created_at"`
-	CreatedBy       *User       `json:"created_by"`
-	UpdatedAt       string      `json:"updated_at"`
-	UpdatedBy       *User       `json:"updated_by"`
+	ID           int         `json:"id"`
+	Label        string      `json:"label"`
+	Latitude     float64     `json:"latitude"`
+	Longitude    float64     `json:"longitude"`
+	Address      string      `json:"address"`
+	ImageLink    *string     `json:"image_link"`
+	Link         *string     `json:"link"`
+	SocialMediaLink *string  `json:"social_media_link"`
+	Type         string      `json:"type"`
+	Description  *string     `json:"description"`
+	EstimateTime *string     `json:"estimate_time"`
+	Price        *string     `json:"price"`
+	Permanent    bool        `json:"permanent"`
+	NeedBooking  bool        `json:"need_booking"`
+	Status       *string     `json:"status"`
+	ToTime       *string     `json:"to_time"`
+	FromTime     *string     `json:"from_time"`
+	Restaurant   *Restaurant `json:"restaurant"`
+	IsFav        bool        `json:"is_fav"`
+	CountryCode  string      `json:"country_code"`
+	CountryPart  string      `json:"country_part"`
+	CreatedAt    string      `json:"created_at"`
+	CreatedBy    *User       `json:"created_by"`
+	UpdatedAt    string      `json:"updated_at"`
+	UpdatedBy    *User       `json:"updated_by"`
 }
 
 type MarkerPage struct {
 	Items      []*Marker `json:"items"`
-	NextCursor *string   `json:"next_cursor,omitempty"`
+	NextCursor *string   `json:"next_cursor"`
 }
 
 type MarkerType struct {
@@ -127,9 +127,9 @@ type MarkerViewportQuery struct {
 	South  float64 `json:"south"`
 	East   float64 `json:"east"`
 	North  float64 `json:"north"`
-	Zoom   *int    `json:"zoom,omitempty"`
-	Cursor *string `json:"cursor,omitempty"`
-	Limit  *int    `json:"limit,omitempty"`
+	Zoom   *int    `json:"zoom"`
+	Cursor *string `json:"cursor"`
+	Limit  *int    `json:"limit"`
 }
 
 type MetaDataOutput struct {
@@ -141,8 +141,8 @@ type Movie struct {
 	ID          int     `json:"id"`
 	ReferenceID int     `json:"reference_id"`
 	Label       string  `json:"label"`
-	ReleaseDate *string `json:"release_date,omitempty"`
-	ImagePath   *string `json:"image_path,omitempty"`
+	ReleaseDate *string `json:"release_date"`
+	ImagePath   *string `json:"image_path"`
 	IsFav       bool    `json:"is_fav"`
 	CreatedAt   string  `json:"created_at"`
 	CreatedBy   *User   `json:"created_by"`
@@ -152,8 +152,8 @@ type Movie struct {
 
 type MovieFilter struct {
 	Type     string  `json:"type"`
-	Location *string `json:"location,omitempty"`
-	Query    *string `json:"query,omitempty"`
+	Location *string `json:"location"`
+	Query    *string `json:"query"`
 }
 
 type MovieOutput struct {
@@ -163,16 +163,13 @@ type MovieOutput struct {
 	ReleaseDate string `json:"release_date"`
 }
 
-type Mutation struct {
-}
-
 type NewCountryLocation struct {
 	Label          string          `json:"label"`
 	CountryPointID int             `json:"country_point_id"`
-	MarkerID       *int            `json:"marker_id,omitempty"`
-	ImageLink      *string         `json:"image_link,omitempty"`
-	ImageUpload    *graphql.Upload `json:"image_upload,omitempty"`
-	VisitTime      *string         `json:"visit_time,omitempty"`
+	MarkerID       *int            `json:"marker_id"`
+	ImageLink      *string         `json:"image_link"`
+	ImageUpload    *graphql.Upload `json:"image_upload"`
+	VisitTime      *string         `json:"visit_time"`
 }
 
 type NewCountryPoint struct {
@@ -180,8 +177,8 @@ type NewCountryPoint struct {
 	MapName string   `json:"map_name"`
 	PhotoX  float64  `json:"photo_x"`
 	PhotoY  float64  `json:"photo_y"`
-	MapX    *float64 `json:"map_x,omitempty"`
-	MapY    *float64 `json:"map_y,omitempty"`
+	MapX    *float64 `json:"map_x"`
+	MapY    *float64 `json:"map_y"`
 }
 
 type NewFavouriteMovie struct {
@@ -189,30 +186,30 @@ type NewFavouriteMovie struct {
 }
 
 type NewMarker struct {
-	Label           string          `json:"label"`
-	Latitude        float64         `json:"latitude"`
-	Longitude       float64         `json:"longitude"`
-	Address         string          `json:"address"`
-	ImageLink       *string         `json:"image_link,omitempty"`
-	ImageUpload     *graphql.Upload `json:"image_upload,omitempty"`
-	Link            *string         `json:"link,omitempty"`
-	SocialMediaLink *string         `json:"social_media_link,omitempty"`
-	Type            string          `json:"type"`
-	Description     *string         `json:"description,omitempty"`
-	Permanent       *bool           `json:"permanent,omitempty"`
-	NeedBooking     *bool           `json:"need_booking,omitempty"`
-	ToTime          *string         `json:"to_time,omitempty"`
-	FromTime        *string         `json:"from_time,omitempty"`
-	EstimateTime    *string         `json:"estimate_time,omitempty"`
-	RestaurantID    *int            `json:"restaurant_id,omitempty"`
-	Price           *string         `json:"price,omitempty"`
+	Label        string          `json:"label"`
+	Latitude     float64         `json:"latitude"`
+	Longitude    float64         `json:"longitude"`
+	Address      string          `json:"address"`
+	ImageLink    *string         `json:"image_link"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
+	Link         *string         `json:"link"`
+	SocialMediaLink *string      `json:"social_media_link"`
+	Type         string          `json:"type"`
+	Description  *string         `json:"description"`
+	Permanent    *bool           `json:"permanent"`
+	NeedBooking  *bool           `json:"need_booking"`
+	ToTime       *string         `json:"to_time"`
+	FromTime     *string         `json:"from_time"`
+	EstimateTime *string         `json:"estimate_time"`
+	RestaurantID *int            `json:"restaurant_id"`
+	Price        *string         `json:"price"`
 }
 
 type NewMarkerType struct {
 	Label      string          `json:"label"`
 	Value      string          `json:"value"`
 	Priority   int             `json:"priority"`
-	IconUpload *graphql.Upload `json:"icon_upload,omitempty"`
+	IconUpload *graphql.Upload `json:"icon_upload"`
 	Hidden     bool            `json:"hidden"`
 }
 
@@ -221,7 +218,7 @@ type NewMovieSchedule struct {
 	Description  string `json:"description"`
 	SelectedTime string `json:"selected_time"`
 	MovieRid     int    `json:"movie_rid"`
-	MarkerID     *int   `json:"marker_id,omitempty"`
+	MarkerID     *int   `json:"marker_id"`
 }
 
 type NewPin struct {
@@ -230,8 +227,8 @@ type NewPin struct {
 	TopLeftY     int             `json:"top_left_y"`
 	BottomRightX int             `json:"bottom_right_x"`
 	BottomRightY int             `json:"bottom_right_y"`
-	GroupIds     []int           `json:"group_ids,omitempty"`
-	ImageUpload  *graphql.Upload `json:"image_upload,omitempty"`
+	GroupIds     []int           `json:"group_ids"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 
 type NewSchedule struct {
@@ -249,14 +246,14 @@ type NewUser struct {
 
 type PagedScheduleQuery struct {
 	Time     string  `json:"time"`
-	Status   *string `json:"status,omitempty"`
-	MarkerID *int    `json:"marker_id,omitempty"`
-	Label    *string `json:"label,omitempty"`
-	Search   *string `json:"search,omitempty"`
-	From     *string `json:"from,omitempty"`
-	To       *string `json:"to,omitempty"`
-	Cursor   *string `json:"cursor,omitempty"`
-	Limit    *int    `json:"limit,omitempty"`
+	Status   *string `json:"status"`
+	MarkerID *int    `json:"marker_id"`
+	Label    *string `json:"label"`
+	Search   *string `json:"search"`
+	From     *string `json:"from"`
+	To       *string `json:"to"`
+	Cursor   *string `json:"cursor"`
+	Limit    *int    `json:"limit"`
 }
 
 type Pin struct {
@@ -281,18 +278,15 @@ type PreviewPinInput struct {
 	TopLeftY     int             `json:"top_left_y"`
 	BottomRightX int             `json:"bottom_right_x"`
 	BottomRightY int             `json:"bottom_right_y"`
-	ImageUpload  *graphql.Upload `json:"image_upload,omitempty"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
 	TypeID       int             `json:"type_id"`
-}
-
-type Query struct {
 }
 
 type ReleaseNote struct {
 	Version string  `json:"version"`
-	Notes   *string `json:"notes,omitempty"`
-	Date    *string `json:"date,omitempty"`
-	Icon    *string `json:"icon,omitempty"`
+	Notes   *string `json:"notes"`
+	Date    *string `json:"date"`
+	Icon    *string `json:"icon"`
 }
 
 type ReleaseNoteFilter struct {
@@ -308,18 +302,18 @@ type Restaurant struct {
 	Name           string  `json:"name"`
 	Source         string  `json:"source"`
 	SourceID       string  `json:"source_id"`
-	PriceRange     *string `json:"price_range,omitempty"`
-	RestaurantType *string `json:"restaurant_type,omitempty"`
-	Address        *string `json:"address,omitempty"`
-	Rating         *string `json:"rating,omitempty"`
-	Direction      *string `json:"direction,omitempty"`
-	Telephone      *string `json:"telephone,omitempty"`
-	Introduction   *string `json:"introduction,omitempty"`
-	OpeningHours   *string `json:"opening_hours,omitempty"`
-	PaymentMethod  *string `json:"payment_method,omitempty"`
-	SeatNumber     *string `json:"seat_number,omitempty"`
-	Website        *string `json:"website,omitempty"`
-	OtherInfo      *string `json:"other_info,omitempty"`
+	PriceRange     *string `json:"price_range"`
+	RestaurantType *string `json:"restaurant_type"`
+	Address        *string `json:"address"`
+	Rating         *string `json:"rating"`
+	Direction      *string `json:"direction"`
+	Telephone      *string `json:"telephone"`
+	Introduction   *string `json:"introduction"`
+	OpeningHours   *string `json:"opening_hours"`
+	PaymentMethod  *string `json:"payment_method"`
+	SeatNumber     *string `json:"seat_number"`
+	Website        *string `json:"website"`
+	OtherInfo      *string `json:"other_info"`
 }
 
 type Schedule struct {
@@ -328,8 +322,8 @@ type Schedule struct {
 	Description  string  `json:"description"`
 	Status       string  `json:"status"`
 	SelectedDate string  `json:"selected_date"`
-	Marker       *Marker `json:"marker,omitempty"`
-	Movie        *Movie  `json:"movie,omitempty"`
+	Marker       *Marker `json:"marker"`
+	Movie        *Movie  `json:"movie"`
 	CreatedAt    string  `json:"created_at"`
 	CreatedBy    *User   `json:"created_by"`
 	UpdatedAt    string  `json:"updated_at"`
@@ -338,7 +332,7 @@ type Schedule struct {
 
 type SchedulePage struct {
 	Items      []*Schedule `json:"items"`
-	NextCursor *string     `json:"next_cursor,omitempty"`
+	NextCursor *string     `json:"next_cursor"`
 }
 
 type ScheduleStatus struct {
@@ -369,23 +363,23 @@ type TodayEvent struct {
 
 type UpdateMarker struct {
 	ID               int             `json:"id"`
-	Label            *string         `json:"label,omitempty"`
-	Address          *string         `json:"address,omitempty"`
-	ImageLink        *string         `json:"image_link,omitempty"`
-	ImageUpload      *graphql.Upload `json:"image_upload,omitempty"`
+	Label            *string         `json:"label"`
+	Address          *string         `json:"address"`
+	ImageLink        *string         `json:"image_link"`
+	ImageUpload      *graphql.Upload `json:"image_upload"`
 	NoImage          bool            `json:"no_image"`
-	Link             *string         `json:"link,omitempty"`
-	SocialMediaLink  *string         `json:"social_media_link,omitempty"`
-	Type             *string         `json:"type,omitempty"`
-	Description      *string         `json:"description,omitempty"`
-	Permanent        *bool           `json:"permanent,omitempty"`
-	NeedBooking      *bool           `json:"need_booking,omitempty"`
-	ToTime           *string         `json:"to_time,omitempty"`
-	FromTime         *string         `json:"from_time,omitempty"`
-	EstimateTime     *string         `json:"estimate_time,omitempty"`
-	RestaurantID     *int            `json:"restaurant_id,omitempty"`
-	RemoveRestaurant *bool           `json:"remove_restaurant,omitempty"`
-	Price            *string         `json:"price,omitempty"`
+	Link             *string         `json:"link"`
+	SocialMediaLink  *string         `json:"social_media_link"`
+	Type             *string         `json:"type"`
+	Description      *string         `json:"description"`
+	Permanent        *bool           `json:"permanent"`
+	NeedBooking      *bool           `json:"need_booking"`
+	ToTime           *string         `json:"to_time"`
+	FromTime         *string         `json:"from_time"`
+	EstimateTime     *string         `json:"estimate_time"`
+	RestaurantID     *int            `json:"restaurant_id"`
+	RemoveRestaurant *bool           `json:"remove_restaurant"`
+	Price            *string         `json:"price"`
 }
 
 type UpdateMarkerFavourite struct {
@@ -399,7 +393,7 @@ type UpdateModel struct {
 
 type UpdatePreferredPin struct {
 	Label string `json:"label"`
-	PinID *int   `json:"pin_id,omitempty"`
+	PinID *int   `json:"pin_id"`
 }
 
 type UpdateRelation struct {
@@ -408,9 +402,9 @@ type UpdateRelation struct {
 
 type UpdateSchedule struct {
 	ID           int     `json:"id"`
-	Label        *string `json:"label,omitempty"`
-	Description  *string `json:"description,omitempty"`
-	SelectedTime *string `json:"selected_time,omitempty"`
+	Label        *string `json:"label"`
+	Description  *string `json:"description"`
+	SelectedTime *string `json:"selected_time"`
 }
 
 type UpdateStation struct {
@@ -422,28 +416,28 @@ type UpdateStation struct {
 type UpdatedDefault struct {
 	Label       string  `json:"label"`
 	UpdatedType string  `json:"updated_type"`
-	IntValue    *int    `json:"int_value,omitempty"`
-	StringValue *string `json:"string_value,omitempty"`
+	IntValue    *int    `json:"int_value"`
+	StringValue *string `json:"string_value"`
 }
 
 type UpdatedMarkerType struct {
 	ID         int             `json:"id"`
-	Label      *string         `json:"label,omitempty"`
-	Value      *string         `json:"value,omitempty"`
-	Priority   *int            `json:"priority,omitempty"`
-	IconUpload *graphql.Upload `json:"icon_upload,omitempty"`
-	Hidden     *bool           `json:"hidden,omitempty"`
+	Label      *string         `json:"label"`
+	Value      *string         `json:"value"`
+	Priority   *int            `json:"priority"`
+	IconUpload *graphql.Upload `json:"icon_upload"`
+	Hidden     *bool           `json:"hidden"`
 }
 
 type UpdatedPin struct {
 	ID           int             `json:"id"`
-	Label        *string         `json:"label,omitempty"`
-	TopLeftX     *int            `json:"top_left_x,omitempty"`
-	TopLeftY     *int            `json:"top_left_y,omitempty"`
-	BottomRightX *int            `json:"bottom_right_x,omitempty"`
-	BottomRightY *int            `json:"bottom_right_y,omitempty"`
-	GroupIds     []int           `json:"group_ids,omitempty"`
-	ImageUpload  *graphql.Upload `json:"image_upload,omitempty"`
+	Label        *string         `json:"label"`
+	TopLeftX     *int            `json:"top_left_x"`
+	TopLeftY     *int            `json:"top_left_y"`
+	BottomRightX *int            `json:"bottom_right_x"`
+	BottomRightY *int            `json:"bottom_right_y"`
+	GroupIds     []int           `json:"group_ids"`
+	ImageUpload  *graphql.Upload `json:"image_upload"`
 }
 
 type User struct {
@@ -454,18 +448,18 @@ type User struct {
 }
 
 type UserFilter struct {
-	Username *string `json:"username,omitempty"`
-	Role     *string `json:"role,omitempty"`
+	Username *string `json:"username"`
+	Role     *string `json:"role"`
 }
 
 type UserPreference struct {
 	ID           int   `json:"id"`
-	User         *User `json:"user,omitempty"`
-	Relation     *User `json:"relation,omitempty"`
-	RegularPin   *Pin  `json:"regular_pin,omitempty"`
-	FavouritePin *Pin  `json:"favourite_pin,omitempty"`
-	SelectedPin  *Pin  `json:"selected_pin,omitempty"`
-	HurryPin     *Pin  `json:"hurry_pin,omitempty"`
+	User         *User `json:"user"`
+	Relation     *User `json:"relation"`
+	RegularPin   *Pin  `json:"regular_pin"`
+	FavouritePin *Pin  `json:"favourite_pin"`
+	SelectedPin  *Pin  `json:"selected_pin"`
+	HurryPin     *Pin  `json:"hurry_pin"`
 }
 
 type UserSearch struct {
@@ -482,5 +476,5 @@ type WebsiteScrapInput struct {
 }
 
 type WebsiteScrapResult struct {
-	Restaurant *Restaurant `json:"restaurant,omitempty"`
+	Restaurant *Restaurant `json:"restaurant"`
 }

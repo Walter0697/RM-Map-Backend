@@ -90,6 +90,7 @@ type integrationCreateMarkerRequest struct {
 	Type              string  `json:"type"`
 	ImageLink         *string `json:"image_link"`
 	Link              *string `json:"link"`
+	SocialMediaLink   *string `json:"social_media_link"`
 	Description       *string `json:"description"`
 	Permanent         *bool   `json:"permanent"`
 	NeedBooking       *bool   `json:"need_booking"`
@@ -109,6 +110,7 @@ type integrationUpdateMarkerRequest struct {
 	ImageLink         *string `json:"image_link"`
 	NoImage           bool    `json:"no_image"`
 	Link              *string `json:"link"`
+	SocialMediaLink   *string `json:"social_media_link"`
 	Type              *string `json:"type"`
 	Description       *string `json:"description"`
 	Permanent         *bool   `json:"permanent"`
@@ -973,6 +975,7 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		Type:         request.Type,
 		ImageLink:    request.ImageLink,
 		Link:         request.Link,
+		SocialMediaLink: request.SocialMediaLink,
 		Description:  request.Description,
 		Permanent:    request.Permanent,
 		NeedBooking:  request.NeedBooking,
@@ -1103,6 +1106,7 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		ImageLink:        request.ImageLink,
 		NoImage:          request.NoImage,
 		Link:             request.Link,
+		SocialMediaLink:  request.SocialMediaLink,
 		Type:             request.Type,
 		Description:      request.Description,
 		Permanent:        request.Permanent,
@@ -1504,15 +1508,6 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id must be a positive integer for each schedule item")
 			return
 		}
-		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), nil)
-		if parseErr != nil {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
-			return
-		}
-		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
-			return
-		}
 	}
 
 	tx, err := integrationBeginScheduleOverwriteTxFn()
@@ -1562,6 +1557,15 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		}
 		if marker.Testing && !canModifyTesting {
 			writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
+			return
+		}
+		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), marker)
+		if parseErr != nil {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
+			return
+		}
+		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
 			return
 		}
 		requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, item.Testing, canModifyTesting)
