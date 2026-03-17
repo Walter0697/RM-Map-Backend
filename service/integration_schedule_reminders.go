@@ -42,6 +42,20 @@ func relationContainsUser(relation dbmodel.UserRelation, userID uint) bool {
 	return relation.UserOneUID == userID || relation.UserTwoUID == userID
 }
 
+func normalizeReminderLocalDate(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	if idx := strings.Index(value, "T"); idx > 0 {
+		return value[:idx]
+	}
+	if len(value) >= 10 {
+		return value[:10]
+	}
+	return value
+}
+
 func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username string) ([]integrationDueReminderItem, int, bool, string, string, string, error) {
 	user, reminderTime, _, err := GetUserReminderTime(username)
 	if err != nil {
@@ -99,7 +113,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		}
 
 		localNow := nowUTC.In(location)
-		scheduleLocalDate := strings.TrimSpace(schedule.SelectedLocalDate)
+		scheduleLocalDate := normalizeReminderLocalDate(schedule.SelectedLocalDate)
 		if scheduleLocalDate == "" {
 			scheduleLocalDate = schedule.SelectedDate.In(location).Format("2006-01-02")
 		}
