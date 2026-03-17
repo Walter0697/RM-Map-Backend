@@ -148,6 +148,20 @@ func TestScheduleGapSecondsSupportsLegacyTimestampFormat(t *testing.T) {
 	}
 }
 
+func TestScheduleGapSecondsSupportsLocalDateTimeFormat(t *testing.T) {
+	origin := "2026-03-16T23:00:00"
+	destination := "2026-03-17T01:30:00"
+	gap, ok := scheduleGapSeconds(&origin, &destination)
+	if !ok {
+		t.Fatalf("expected local datetime timestamps to be parsed")
+	}
+	expected := 2 * 60 * 60
+	expected += 30 * 60
+	if gap != expected {
+		t.Fatalf("expected gap %d, got %d", expected, gap)
+	}
+}
+
 func floatPtr(value float64) *float64 {
 	return &value
 }
