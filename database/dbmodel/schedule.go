@@ -13,6 +13,8 @@ type Schedule struct {
 	Description                  string    `json:"description"`
 	Status                       string    `json:"status"`
 	SelectedDate                 time.Time `json:"selectedDate"`
+	SelectedLocalDate            string    `json:"selected_local_date" gorm:"type:date"`
+	SelectedLocalTime            string    `json:"selected_local_time" gorm:"type:varchar(5)"`
 	WeatherCondition             *string   `json:"weather_condition,omitempty" gorm:"type:varchar(64)"`
 	WeatherForecastAt            *time.Time
 	WeatherTemperature           *float64 `json:"weather_temperature,omitempty"`

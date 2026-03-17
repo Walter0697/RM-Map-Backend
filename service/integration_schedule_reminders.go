@@ -11,7 +11,6 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-const reminderScheduleQueryWindow = 48 * time.Hour
 const reminderDueWindowMinutes = 60
 
 var ErrUserNotInAPIKeyRelation = errors.New("username does not belong to api key relation")
@@ -63,16 +62,12 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 	}
 
 	nowUTC := integrationReminderNowFn().UTC()
-	fromUTC := nowUTC.Add(-reminderScheduleQueryWindow)
-	toUTC := nowUTC.Add(reminderScheduleQueryWindow)
-
 	schedules := make([]dbmodel.Schedule, 0)
 	if err := database.Connection.
 		Model(&dbmodel.Schedule{}).
 		Preload("SelectedMarker").
 		Where("relation_id = ?", relation.ID).
 		Where("marker_id IS NOT NULL").
-		Where("selected_date >= ? AND selected_date <= ?", fromUTC, toUTC).
 		// Keep hidden marker types excluded without requiring an outer JOIN.
 		Where(`EXISTS (
 			SELECT 1
@@ -80,7 +75,7 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 			JOIN marker_types mt ON mt.value = m.type
 			WHERE m.id = marker_id AND mt.hidden = FALSE
 		)`).
-		Order("selected_date asc").
+		Order("selected_local_date asc, selected_local_time asc, selected_date asc").
 		Find(&schedules).Error; err != nil {
 		log.Printf("integration reminders due query failed relation_id=%d username=%s err=%v", relation.ID, username, err)
 		return nil, 0, false, reminderTime, "", "", err
@@ -104,8 +99,11 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		}
 
 		localNow := nowUTC.In(location)
-		localSchedule := schedule.SelectedDate.In(location)
-		if localNow.Format("2006-01-02") != localSchedule.Format("2006-01-02") {
+		scheduleLocalDate := strings.TrimSpace(schedule.SelectedLocalDate)
+		if scheduleLocalDate == "" {
+			scheduleLocalDate = schedule.SelectedDate.In(location).Format("2006-01-02")
+		}
+		if localNow.Format("2006-01-02") != scheduleLocalDate {
 			continue
 		}
 		todayScheduleItemsCount++
