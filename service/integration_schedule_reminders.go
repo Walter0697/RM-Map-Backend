@@ -2,6 +2,7 @@ package service
 
 import (
 	"errors"
+	"log"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"strings"
@@ -72,8 +73,16 @@ func getDueScheduleRemindersByUsername(relation dbmodel.UserRelation, username s
 		Where("relation_id = ?", relation.ID).
 		Where("marker_id IS NOT NULL").
 		Where("selected_date >= ? AND selected_date <= ?", fromUTC, toUTC).
+		// Keep hidden marker types excluded without requiring an outer JOIN.
+		Where(`EXISTS (
+			SELECT 1
+			FROM markers m
+			JOIN marker_types mt ON mt.value = m.type
+			WHERE m.id = marker_id AND mt.hidden = FALSE
+		)`).
 		Order("selected_date asc").
 		Find(&schedules).Error; err != nil {
+		log.Printf("integration reminders due query failed relation_id=%d username=%s err=%v", relation.ID, username, err)
 		return nil, 0, false, reminderTime, "", "", err
 	}
 
