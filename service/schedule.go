@@ -26,10 +26,19 @@ func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, s
 	switch {
 	case strings.Contains(trimmed, "T"):
 		selectedTime, err = time.Parse(time.RFC3339, trimmed)
+		if err != nil {
+			selectedTime, err = time.Parse("2006-01-02T15:04:05", trimmed)
+		}
+		if err != nil {
+			selectedTime, err = time.Parse("2006-01-02T15:04", trimmed)
+		}
 	default:
 		selectedTime, err = time.Parse("2006-01-02 15:04:05", trimmed)
 		if err != nil {
 			selectedTime, err = time.Parse(utils.StandardTime, trimmed)
+		}
+		if err != nil {
+			selectedTime, err = time.Parse("2006-01-02 15:04", trimmed)
 		}
 	}
 	if err != nil {
