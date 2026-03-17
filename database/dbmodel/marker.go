@@ -16,7 +16,7 @@ type Marker struct {
 	Address        string      `json:"address"`
 	ImageLink      string      `json:"imageLink"` // preview or link
 	Link           string      `json:"link"`
-	SocialMediaLink string      `json:"social_media_link"`
+	SocialMediaLink string     `json:"social_media_link" gorm:"column:social_media_link"`
 	Description    string      `json:"description"` // optional fields
 	EstimateTime   string      `json:"estimate"`
 	Price          string      `json:"price"`
