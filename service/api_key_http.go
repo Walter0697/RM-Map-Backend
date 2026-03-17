@@ -90,6 +90,7 @@ type integrationCreateMarkerRequest struct {
 	Type              string  `json:"type"`
 	ImageLink         *string `json:"image_link"`
 	Link              *string `json:"link"`
+	SocialMediaLink   *string `json:"social_media_link"`
 	Description       *string `json:"description"`
 	Permanent         *bool   `json:"permanent"`
 	NeedBooking       *bool   `json:"need_booking"`
@@ -109,6 +110,7 @@ type integrationUpdateMarkerRequest struct {
 	ImageLink         *string `json:"image_link"`
 	NoImage           bool    `json:"no_image"`
 	Link              *string `json:"link"`
+	SocialMediaLink   *string `json:"social_media_link"`
 	Type              *string `json:"type"`
 	Description       *string `json:"description"`
 	Permanent         *bool   `json:"permanent"`
@@ -977,6 +979,7 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		Type:         request.Type,
 		ImageLink:    request.ImageLink,
 		Link:         request.Link,
+		SocialMediaLink: request.SocialMediaLink,
 		Description:  request.Description,
 		Permanent:    request.Permanent,
 		NeedBooking:  request.NeedBooking,
@@ -1107,6 +1110,7 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		ImageLink:        request.ImageLink,
 		NoImage:          request.NoImage,
 		Link:             request.Link,
+		SocialMediaLink:  request.SocialMediaLink,
 		Type:             request.Type,
 		Description:      request.Description,
 		Permanent:        request.Permanent,
