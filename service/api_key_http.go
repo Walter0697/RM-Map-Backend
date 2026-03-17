@@ -1435,12 +1435,14 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		schedule.Description = strings.TrimSpace(*request.Description)
 	}
 	if request.SelectedTime != nil {
-		parsedTime, parseErr := time.Parse(time.RFC3339, strings.TrimSpace(*request.SelectedTime))
+		parsedTime, selectedLocalDate, selectedLocalTime, parseErr := parseScheduleSelectedTime(strings.TrimSpace(*request.SelectedTime), schedule.SelectedMarker)
 		if parseErr != nil {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_selected_time", "selected_time must be RFC3339")
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_selected_time", "selected_time must be RFC3339 or 2006-01-02 15:04:05")
 			return
 		}
 		schedule.SelectedDate = parsedTime
+		schedule.SelectedLocalDate = selectedLocalDate
+		schedule.SelectedLocalTime = selectedLocalTime
 	}
 
 	warnings := []string{}
@@ -1563,12 +1565,16 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
 			return
 		}
-		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), marker)
+		normalizedSelectedTime := strings.TrimSpace(item.SelectedTime)
+		if _, parseClockErr := time.Parse("15:04", normalizedSelectedTime); parseClockErr == nil {
+			normalizedSelectedTime = fmt.Sprintf("%s %s:00", dayStart.Format(utils.DayOnlyTime), normalizedSelectedTime)
+		}
+		_, selectedLocalDate, _, parseErr := parseScheduleSelectedTime(normalizedSelectedTime, marker)
 		if parseErr != nil {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be HH:MM or 2006-01-02 15:04:05")
 			return
 		}
-		if selectedAt.Format(utils.DayOnlyTime) != dayStart.Format(utils.DayOnlyTime) {
+		if selectedLocalDate != dayStart.Format(utils.DayOnlyTime) {
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
 			return
 		}
@@ -1587,7 +1593,7 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		schedule, err := integrationCreateScheduleFn(tx, model.NewSchedule{
 			Label:        label,
 			Description:  item.Description,
-			SelectedTime: item.SelectedTime,
+			SelectedTime: normalizedSelectedTime,
 			MarkerID:     item.MarkerID,
 		}, *marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
 		if err != nil {
@@ -2390,7 +2396,7 @@ func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.R
 			ScheduleID:       item.Schedule.ID,
 			ScheduleLabel:    item.Schedule.Label,
 			ScheduleStatus:   item.Schedule.Status,
-			ScheduleTime:     item.Schedule.SelectedDate.Format(time.RFC3339),
+			ScheduleTime:     helper.ConvertSchedule(item.Schedule).SelectedDate,
 			MarkerID:         marker.ID,
 			MarkerLabel:      marker.Label,
 			MarkerLatitude:   marker.Latitude,

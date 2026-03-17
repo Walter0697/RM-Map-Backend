@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -14,21 +15,29 @@ import (
 	"gorm.io/gorm"
 )
 
-func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, error) {
-	selectedTime, err := time.Parse(utils.StandardTime, strings.TrimSpace(raw))
-	if err != nil {
-		return time.Time{}, err
+func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, string, string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return time.Time{}, "", "", errors.New("selected_time is required")
 	}
 
-	location := time.UTC
-	if marker != nil {
-		timezone := resolveScheduleTimezone(dbmodel.Schedule{SelectedMarker: marker})
-		if scheduleLocation, err := time.LoadLocation(timezone); err == nil {
-			location = scheduleLocation
+	var selectedTime time.Time
+	var err error
+	switch {
+	case strings.Contains(trimmed, "T"):
+		selectedTime, err = time.Parse(time.RFC3339, trimmed)
+	default:
+		selectedTime, err = time.Parse("2006-01-02 15:04:05", trimmed)
+		if err != nil {
+			selectedTime, err = time.Parse(utils.StandardTime, trimmed)
 		}
 	}
+	if err != nil {
+		return time.Time{}, "", "", err
+	}
 
-	return time.Date(
+	_ = marker
+	selectedAt := time.Date(
 		selectedTime.Year(),
 		selectedTime.Month(),
 		selectedTime.Day(),
@@ -36,8 +45,9 @@ func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, e
 		selectedTime.Minute(),
 		selectedTime.Second(),
 		selectedTime.Nanosecond(),
-		location,
-	), nil
+		time.UTC,
+	)
+	return selectedAt, selectedAt.Format("2006-01-02"), selectedAt.Format("15:04"), nil
 }
 
 func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
@@ -56,11 +66,13 @@ func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker,
 
 	schedule.SelectedMarker = &marker
 
-	selectedTime, err := parseScheduleSelectedTime(input.SelectedTime, &marker)
+	selectedTime, selectedLocalDate, selectedLocalTime, err := parseScheduleSelectedTime(input.SelectedTime, &marker)
 	if err != nil {
 		return nil, err
 	}
 	schedule.SelectedDate = selectedTime
+	schedule.SelectedLocalDate = selectedLocalDate
+	schedule.SelectedLocalTime = selectedLocalTime
 	applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(&marker, selectedTime))
 
 	schedule.Relation = relation
@@ -93,11 +105,13 @@ func CreateMovieSchedule(tx *gorm.DB, input model.NewMovieSchedule, movie dbmode
 		schedule.SelectedMarker = marker
 	}
 
-	selectedTime, err := parseScheduleSelectedTime(input.SelectedTime, marker)
+	selectedTime, selectedLocalDate, selectedLocalTime, err := parseScheduleSelectedTime(input.SelectedTime, marker)
 	if err != nil {
 		return nil, err
 	}
 	schedule.SelectedDate = selectedTime
+	schedule.SelectedLocalDate = selectedLocalDate
+	schedule.SelectedLocalTime = selectedLocalTime
 
 	schedule.SelectedMovie = &movie
 	if marker != nil {
@@ -147,10 +161,12 @@ func EditSchedule(input model.UpdateSchedule, relation dbmodel.UserRelation, use
 	}
 
 	if input.SelectedTime != nil {
-		selectedTime, err := parseScheduleSelectedTime(*input.SelectedTime, schedule.SelectedMarker)
+		selectedTime, selectedLocalDate, selectedLocalTime, err := parseScheduleSelectedTime(*input.SelectedTime, schedule.SelectedMarker)
 		if err != nil {
 			return nil, err
 		}
+		schedule.SelectedLocalDate = selectedLocalDate
+		schedule.SelectedLocalTime = selectedLocalTime
 		if !selectedTime.Equal(schedule.SelectedDate) {
 			schedule.SelectedDate = selectedTime
 			applyScheduleWeatherSnapshot(&schedule, resolveScheduleWeatherSnapshot(schedule.SelectedMarker, selectedTime))

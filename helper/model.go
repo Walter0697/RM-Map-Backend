@@ -2,6 +2,7 @@ package helper
 
 import (
 	"encoding/json"
+	"fmt"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
@@ -97,6 +98,9 @@ func ConvertSchedule(schedule dbmodel.Schedule) model.Schedule {
 	item.Description = schedule.Description
 	item.Status = schedule.Status
 	item.SelectedDate = utils.ConvertToOutputTime(schedule.SelectedDate)
+	if strings.TrimSpace(schedule.SelectedLocalDate) != "" && strings.TrimSpace(schedule.SelectedLocalTime) != "" {
+		item.SelectedDate = fmt.Sprintf("%sT%s:00", schedule.SelectedLocalDate, schedule.SelectedLocalTime)
+	}
 	if schedule.SelectedMarker != nil {
 		marker := ConvertMarker(*schedule.SelectedMarker)
 		item.Marker = &marker
