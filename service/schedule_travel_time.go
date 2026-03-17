@@ -347,6 +347,8 @@ func scheduleGapSeconds(originSelectedAt *string, destinationSelectedAt *string)
 func parseScheduleSelectedAt(raw string) (time.Time, error) {
 	layouts := []string{
 		time.RFC3339,
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
 		"2006-01-02 15:04:05-07",
 		"2006-01-02 15:04:05-0700",
 		"2006-01-02 15:04:05+00",
