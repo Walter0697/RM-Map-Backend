@@ -1504,7 +1504,7 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "marker_id must be a positive integer for each schedule item")
 			return
 		}
-		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), marker)
+		selectedAt, parseErr := parseScheduleSelectedTime(strings.TrimSpace(item.SelectedTime), nil)
 		if parseErr != nil {
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must match format 2006-01-02 15:04:05+00")
 			return
