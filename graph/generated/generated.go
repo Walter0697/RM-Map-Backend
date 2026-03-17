@@ -111,6 +111,7 @@ type ComplexityRoot struct {
 		Label        func(childComplexity int) int
 		Latitude     func(childComplexity int) int
 		Link         func(childComplexity int) int
+		SocialMediaLink func(childComplexity int) int
 		Longitude    func(childComplexity int) int
 		NeedBooking  func(childComplexity int) int
 		Permanent    func(childComplexity int) int
@@ -732,6 +733,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Marker.Link(childComplexity), true
+
+	case "Marker.social_media_link":
+		if e.complexity.Marker.SocialMediaLink == nil {
+			break
+		}
+
+		return e.complexity.Marker.SocialMediaLink(childComplexity), true
 
 	case "Marker.longitude":
 		if e.complexity.Marker.Longitude == nil {
@@ -2285,6 +2293,7 @@ type Marker {
   address: String!
   image_link: String
   link: String
+  social_media_link: String
   type: String!
   description: String
   estimate_time: String
@@ -2505,6 +2514,7 @@ input NewMarker {
   image_link: String
   image_upload: Upload
   link: String
+  social_media_link: String
   type: String!
   description: String
   permanent: Boolean
@@ -2524,6 +2534,7 @@ input UpdateMarker {
   image_upload: Upload
   no_image: Boolean!
   link: String
+  social_media_link: String
   type: String
   description: String
   permanent: Boolean
@@ -4701,6 +4712,38 @@ func (ec *executionContext) _Marker_link(ctx context.Context, field graphql.Coll
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return obj.Link, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*string)
+	fc.Result = res
+	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Marker_social_media_link(ctx context.Context, field graphql.CollectedField, obj *model.Marker) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Marker",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SocialMediaLink, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -12529,6 +12572,14 @@ func (ec *executionContext) unmarshalInputNewMarker(ctx context.Context, obj int
 			if err != nil {
 				return it, err
 			}
+		case "social_media_link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("social_media_link"))
+			it.SocialMediaLink, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "type":
 			var err error
 
@@ -13178,6 +13229,14 @@ func (ec *executionContext) unmarshalInputUpdateMarker(ctx context.Context, obj 
 
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("link"))
 			it.Link, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "social_media_link":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("social_media_link"))
+			it.SocialMediaLink, err = ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -14048,6 +14107,8 @@ func (ec *executionContext) _Marker(ctx context.Context, sel ast.SelectionSet, o
 			out.Values[i] = ec._Marker_image_link(ctx, field, obj)
 		case "link":
 			out.Values[i] = ec._Marker_link(ctx, field, obj)
+		case "social_media_link":
+			out.Values[i] = ec._Marker_social_media_link(ctx, field, obj)
 		case "type":
 			out.Values[i] = ec._Marker_type(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
