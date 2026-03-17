@@ -305,3 +305,135 @@ func TestIntegrationOverwriteSchedulesByDateHandlerForcesTestingScheduleLabel(t 
 		t.Fatalf("expected output testing flag true")
 	}
 }
+
+func TestIntegrationOverwriteSchedulesByDateHandlerAcceptsClockOnlyTime(t *testing.T) {
+	resetIntegrationScheduleOverwriteHooks()
+	defer resetIntegrationScheduleOverwriteHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 99}},
+			ActorUser: dbmodel.User{
+				BaseModel: dbmodel.BaseModel{ID: 7},
+				Username:  "api-bot",
+			},
+		}, true
+	}
+	integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
+		return &gorm.DB{}, nil
+	}
+	integrationListSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) ([]dbmodel.Schedule, error) {
+		return []dbmodel.Schedule{}, nil
+	}
+	integrationDeleteSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) (int64, error) {
+		return 0, nil
+	}
+	integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmodel.Marker, error) {
+		return &dbmodel.Marker{
+			ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: markerID}},
+			RelationId: 99,
+		}, nil
+	}
+	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
+		if input.SelectedTime != "2026-03-14 08:00:00" {
+			t.Fatalf("expected selected_time normalized with target date, got %q", input.SelectedTime)
+		}
+		selectedAt, err := time.Parse("2006-01-02 15:04:05", input.SelectedTime)
+		if err != nil {
+			return nil, err
+		}
+		return &dbmodel.Schedule{
+			ObjectBase:   dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 778}},
+			Label:        input.Label,
+			Description:  input.Description,
+			Testing:      testing,
+			SelectedDate: selectedAt,
+			RelationId:   relation.ID,
+			SelectedMarker: &marker,
+		}, nil
+	}
+	integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error { return nil }
+	integrationCommitScheduleOverwriteTxFn = func(tx *gorm.DB) error { return nil }
+	integrationRollbackScheduleOverwriteTxFn = func(tx *gorm.DB) {}
+
+	body := `{
+		"date":"2026-03-14",
+		"items":[
+			{"label":"clock-only","description":"replace","selected_time":"08:00","marker_id":42}
+		]
+	}`
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/integration/schedules/overwrite-by-date", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	IntegrationOverwriteSchedulesByDateHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestIntegrationOverwriteSchedulesByDateHandlerAcceptsLocalDateTimeWithoutSeconds(t *testing.T) {
+	resetIntegrationScheduleOverwriteHooks()
+	defer resetIntegrationScheduleOverwriteHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		return &dbmodel.APIKey{
+			Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 99}},
+			ActorUser: dbmodel.User{
+				BaseModel: dbmodel.BaseModel{ID: 7},
+				Username:  "api-bot",
+			},
+		}, true
+	}
+	integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) {
+		return &gorm.DB{}, nil
+	}
+	integrationListSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) ([]dbmodel.Schedule, error) {
+		return []dbmodel.Schedule{}, nil
+	}
+	integrationDeleteSchedulesByDateFn = func(tx *gorm.DB, relationID uint, start time.Time, end time.Time) (int64, error) {
+		return 0, nil
+	}
+	integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmodel.Marker, error) {
+		return &dbmodel.Marker{
+			ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: markerID}},
+			RelationId: 99,
+		}, nil
+	}
+	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
+		if input.SelectedTime != "2026-03-14 08:00" {
+			t.Fatalf("expected local datetime to pass through, got %q", input.SelectedTime)
+		}
+		selectedAt, err := time.Parse("2006-01-02 15:04", input.SelectedTime)
+		if err != nil {
+			return nil, err
+		}
+		return &dbmodel.Schedule{
+			ObjectBase:   dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 779}},
+			Label:        input.Label,
+			Description:  input.Description,
+			Testing:      testing,
+			SelectedDate: selectedAt,
+			RelationId:   relation.ID,
+			SelectedMarker: &marker,
+		}, nil
+	}
+	integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error { return nil }
+	integrationCommitScheduleOverwriteTxFn = func(tx *gorm.DB) error { return nil }
+	integrationRollbackScheduleOverwriteTxFn = func(tx *gorm.DB) {}
+
+	body := `{
+		"date":"2026-03-14",
+		"items":[
+			{"label":"local-datetime","description":"replace","selected_time":"2026-03-14 08:00","marker_id":42}
+		]
+	}`
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPut, "/integration/schedules/overwrite-by-date", strings.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	IntegrationOverwriteSchedulesByDateHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+}

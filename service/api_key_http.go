@@ -1569,10 +1569,12 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		normalizedSelectedTime := strings.TrimSpace(item.SelectedTime)
 		if _, parseClockErr := time.Parse("15:04", normalizedSelectedTime); parseClockErr == nil {
 			normalizedSelectedTime = fmt.Sprintf("%s %s:00", dayStart.Format(utils.DayOnlyTime), normalizedSelectedTime)
+		} else if _, parseClockSecondErr := time.Parse("15:04:05", normalizedSelectedTime); parseClockSecondErr == nil {
+			normalizedSelectedTime = fmt.Sprintf("%s %s", dayStart.Format(utils.DayOnlyTime), normalizedSelectedTime)
 		}
 		_, selectedLocalDate, _, parseErr := parseScheduleSelectedTime(normalizedSelectedTime, marker)
 		if parseErr != nil {
-			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be HH:MM or 2006-01-02 15:04:05")
+			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be HH:MM, HH:MM:SS, or local datetime (2006-01-02 15:04[:05] / 2006-01-02T15:04[:05])")
 			return
 		}
 		if selectedLocalDate != dayStart.Format(utils.DayOnlyTime) {
