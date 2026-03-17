@@ -36,8 +36,15 @@ func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, s
 		return time.Time{}, "", "", err
 	}
 
-	_ = marker
-	selectedAt := time.Date(
+	location := time.UTC
+	if marker != nil {
+		timezone := resolveScheduleTimezone(dbmodel.Schedule{SelectedMarker: marker})
+		if scheduleLocation, tzErr := time.LoadLocation(timezone); tzErr == nil {
+			location = scheduleLocation
+		}
+	}
+
+	selectedLocal := time.Date(
 		selectedTime.Year(),
 		selectedTime.Month(),
 		selectedTime.Day(),
@@ -45,9 +52,10 @@ func parseScheduleSelectedTime(raw string, marker *dbmodel.Marker) (time.Time, s
 		selectedTime.Minute(),
 		selectedTime.Second(),
 		selectedTime.Nanosecond(),
-		time.UTC,
+		location,
 	)
-	return selectedAt, selectedAt.Format("2006-01-02"), selectedAt.Format("15:04"), nil
+	selectedAtUTC := selectedLocal.UTC()
+	return selectedAtUTC, selectedLocal.Format("2006-01-02"), selectedLocal.Format("15:04"), nil
 }
 
 func CreateSchedule(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {

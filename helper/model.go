@@ -10,6 +10,20 @@ import (
 	"strings"
 )
 
+func normalizeScheduleLocalDate(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return ""
+	}
+	if idx := strings.Index(value, "T"); idx > 0 {
+		return value[:idx]
+	}
+	if len(value) >= 10 {
+		return value[:10]
+	}
+	return value
+}
+
 func ConvertUser(user dbmodel.User) model.User {
 	var item model.User
 	item.ID = int(user.ID)
@@ -98,8 +112,9 @@ func ConvertSchedule(schedule dbmodel.Schedule) model.Schedule {
 	item.Description = schedule.Description
 	item.Status = schedule.Status
 	item.SelectedDate = utils.ConvertToOutputTime(schedule.SelectedDate)
-	if strings.TrimSpace(schedule.SelectedLocalDate) != "" && strings.TrimSpace(schedule.SelectedLocalTime) != "" {
-		item.SelectedDate = fmt.Sprintf("%sT%s:00", schedule.SelectedLocalDate, schedule.SelectedLocalTime)
+	localDate := normalizeScheduleLocalDate(schedule.SelectedLocalDate)
+	if localDate != "" && strings.TrimSpace(schedule.SelectedLocalTime) != "" {
+		item.SelectedDate = fmt.Sprintf("%sT%s:00", localDate, schedule.SelectedLocalTime)
 	}
 	if schedule.SelectedMarker != nil {
 		marker := ConvertMarker(*schedule.SelectedMarker)
