@@ -275,6 +275,7 @@ type integrationDueReminderResponse struct {
 	ScheduleLabel    string  `json:"schedule_label"`
 	ScheduleStatus   string  `json:"schedule_status"`
 	ScheduleTime     string  `json:"schedule_time"`
+	Marker           model.Marker `json:"marker"`
 	MarkerID         uint    `json:"marker_id"`
 	MarkerLabel      string  `json:"marker_label"`
 	MarkerLatitude   float64 `json:"marker_latitude"`
@@ -2397,6 +2398,7 @@ func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.R
 			ScheduleLabel:    item.Schedule.Label,
 			ScheduleStatus:   item.Schedule.Status,
 			ScheduleTime:     helper.ConvertSchedule(item.Schedule).SelectedDate,
+			Marker:           helper.ConvertMarker(*marker),
 			MarkerID:         marker.ID,
 			MarkerLabel:      marker.Label,
 			MarkerLatitude:   marker.Latitude,
