@@ -175,6 +175,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 	if err := marker.Create(database.Connection); err != nil {
 		return nil, err
 	}
+	invalidateIntegrationHashtagCacheForRelation(relation.ID)
 
 	return &marker, nil
 }
@@ -300,6 +301,7 @@ func EditMarker(input model.UpdateMarker, restaurant *dbmodel.Restaurant, relati
 	if err := marker.Update(database.Connection); err != nil {
 		return nil, err
 	}
+	invalidateIntegrationHashtagCacheForRelation(marker.RelationId)
 
 	return &marker, nil
 }
@@ -322,6 +324,7 @@ func RemoveMarker(input model.RemoveModel) error {
 	if err := marker.Update(database.Connection); err != nil {
 		return err
 	}
+	invalidateIntegrationHashtagCacheForRelation(marker.RelationId)
 
 	return nil
 }
@@ -340,6 +343,7 @@ func UpdateMarkerFavourite(input model.UpdateMarkerFavourite, user dbmodel.User)
 	if err := marker.Update(database.Connection); err != nil {
 		return nil, err
 	}
+	invalidateIntegrationHashtagCacheForRelation(marker.RelationId)
 
 	return &marker, nil
 }

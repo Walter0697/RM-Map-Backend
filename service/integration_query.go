@@ -97,6 +97,16 @@ func parseIntegrationListQuery(values url.Values, allowedSort map[string]string,
 			continue
 		}
 		value := strings.TrimSpace(rawValues[0])
+		if key == "search" && len(rawValues) > 1 {
+			searchValues := make([]string, 0, len(rawValues))
+			for _, rawValue := range rawValues {
+				trimmed := strings.TrimSpace(rawValue)
+				if trimmed != "" {
+					searchValues = append(searchValues, trimmed)
+				}
+			}
+			value = strings.Join(searchValues, ",")
+		}
 		if value == "" {
 			continue
 		}

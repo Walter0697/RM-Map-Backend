@@ -177,6 +177,9 @@ func startServer() {
 	})
 	router.Route("/integration", func(r chi.Router) {
 		r.Get("/markers", service.IntegrationListMarkersHandler)
+		r.Get("/markers/countries", service.IntegrationListMarkerCountriesHandler)
+		r.Get("/markers/country-parts", service.IntegrationListMarkerCountryPartsHandler)
+		r.Get("/markers/hashtags", service.IntegrationListMarkerHashtagsHandler)
 		r.Get("/markers/nearby", service.IntegrationNearbySearchMarkersHandler)
 		r.Get("/reminders/due", service.IntegrationListDueScheduleRemindersHandler)
 		r.Post("/markers", service.IntegrationCreateMarkerHandler)
