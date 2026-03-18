@@ -146,6 +146,20 @@ func TestParseIntegrationListQueryRejectsUnsupportedFilter(t *testing.T) {
 	}
 }
 
+func TestParseIntegrationListQuerySupportsMultiSearchValues(t *testing.T) {
+	values := url.Values{}
+	values.Add("search", "food")
+	values.Add("search", "museum")
+
+	query, err := parseIntegrationListQuery(values, map[string]string{"label": "label"}, "label", []string{"search"})
+	if err != nil {
+		t.Fatalf("parseIntegrationListQuery returned error: %v", err)
+	}
+	if query.Filters["search"] != "food,museum" {
+		t.Fatalf("expected combined search terms, got %q", query.Filters["search"])
+	}
+}
+
 func TestNormalizeSettingsPinLabelFallsBackToValue(t *testing.T) {
 	value := "canonical-value"
 	if got := normalizeSettingsPinLabel(value, nil); got != value {

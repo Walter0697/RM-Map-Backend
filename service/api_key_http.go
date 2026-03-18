@@ -401,6 +401,24 @@ var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
+var integrationListDistinctMarkerCountriesFn = func(query *gorm.DB) ([]string, error) {
+	items := make([]string, 0)
+	err := query.
+		Where("country IS NOT NULL AND TRIM(country) <> ''").
+		Distinct("country").
+		Order("country asc").
+		Pluck("country", &items).Error
+	return items, err
+}
+var integrationListDistinctMarkerCountryPartsFn = func(query *gorm.DB) ([]string, error) {
+	items := make([]string, 0)
+	err := query.
+		Where("country_part IS NOT NULL AND TRIM(country_part) <> ''").
+		Distinct("country_part").
+		Order("country_part asc").
+		Pluck("country_part", &items).Error
+	return items, err
+}
 var integrationExecuteManualCalendarSyncFn = executeManualCalendarSync
 var integrationListRelationSchedulesByDateFn = func(relationID uint, dayStart time.Time, dayEnd time.Time, includeTesting bool) ([]dbmodel.Schedule, error) {
 	query := database.Connection.Model(&dbmodel.Schedule{}).Where("relation_id = ?", relationID)
@@ -780,7 +798,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		"type":       "type",
 		"to_time":    "to_time",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "label", "search", "west", "south", "east", "north", "zoom", "testing"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "country_part", "label", "search", "west", "south", "east", "north", "zoom", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -825,12 +843,27 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	if value, ok := queryOption.Filters["country_code"]; ok {
 		query = query.Where("country_code = ?", value)
 	}
+	if value, ok := queryOption.Filters["country_part"]; ok {
+		query = query.Where("country_part = ?", value)
+	}
 	if value, ok := queryOption.Filters["label"]; ok {
 		query = query.Where("label ILIKE ?", "%"+value+"%")
 	}
 	if value, ok := queryOption.Filters["search"]; ok {
-		keyword := "%" + value + "%"
-		query = query.Where("label ILIKE ? OR address ILIKE ? OR description ILIKE ?", keyword, keyword, keyword)
+		searchTerms := parseIntegrationSearchTerms(value)
+		if len(searchTerms) > 0 {
+			searchQuery := database.Connection.Where("1 = 0")
+			for _, term := range searchTerms {
+				keyword := "%" + term + "%"
+				searchQuery = searchQuery.Or(
+					"label ILIKE ? OR address ILIKE ? OR description ILIKE ?",
+					keyword,
+					keyword,
+					keyword,
+				)
+			}
+			query = query.Where(searchQuery)
+		}
 	}
 
 	westRaw, hasWest := queryOption.Filters["west"]
@@ -915,6 +948,128 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption, nextCursor))
 }
 
+func parseIntegrationSearchTerms(raw string) []string {
+	segments := strings.Split(raw, ",")
+	items := make([]string, 0, len(segments))
+	for _, segment := range segments {
+		trimmed := strings.TrimSpace(segment)
+		if trimmed != "" {
+			items = append(items, trimmed)
+		}
+	}
+	return items
+}
+
+func IntegrationListMarkerCountriesHandler(w http.ResponseWriter, r *http.Request) {
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	apiKey, ok := authenticateIntegrationRequest(
+		w,
+		r,
+		"integration.markers.countries.list",
+		constant.APIKeyScopeMarkersRead,
+		fmt.Sprintf("search=%s", search),
+	)
+	if !ok {
+		return
+	}
+
+	current := time.Now().AddDate(0, 0, -1)
+	query := database.Connection.Model(&dbmodel.Marker{})
+	query = query.Where("relation_id = ?", apiKey.Relation.ID)
+	query = query.Where("status != ?", constant.Arrived)
+	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+
+	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
+		query = query.Where("testing = ?", false)
+	}
+	if search != "" {
+		query = query.Where("country ILIKE ?", "%"+search+"%")
+	}
+
+	items, err := integrationListDistinctMarkerCountriesFn(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"items": items,
+		"total": len(items),
+	})
+}
+
+func IntegrationListMarkerCountryPartsHandler(w http.ResponseWriter, r *http.Request) {
+	country := strings.TrimSpace(r.URL.Query().Get("country"))
+	if country == "" {
+		http.Error(w, "country is required", http.StatusBadRequest)
+		return
+	}
+	search := strings.TrimSpace(r.URL.Query().Get("search"))
+	apiKey, ok := authenticateIntegrationRequest(
+		w,
+		r,
+		"integration.markers.country_parts.list",
+		constant.APIKeyScopeMarkersRead,
+		fmt.Sprintf("country=%s;search=%s", country, search),
+	)
+	if !ok {
+		return
+	}
+
+	current := time.Now().AddDate(0, 0, -1)
+	query := database.Connection.Model(&dbmodel.Marker{})
+	query = query.Where("relation_id = ?", apiKey.Relation.ID)
+	query = query.Where("status != ?", constant.Arrived)
+	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+	query = query.Where("country = ?", country)
+
+	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
+		query = query.Where("testing = ?", false)
+	}
+	if search != "" {
+		query = query.Where("country_part ILIKE ?", "%"+search+"%")
+	}
+
+	items, err := integrationListDistinctMarkerCountryPartsFn(query)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"country": country,
+		"items":   items,
+		"total":   len(items),
+	})
+}
+
+func IntegrationListMarkerHashtagsHandler(w http.ResponseWriter, r *http.Request) {
+	apiKey, ok := authenticateIntegrationRequest(
+		w,
+		r,
+		"integration.markers.hashtags.list",
+		constant.APIKeyScopeMarkersRead,
+		"",
+	)
+	if !ok {
+		return
+	}
+
+	includeTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	items, err := getIntegrationHashtagItems(apiKey.Relation.ID, includeTesting)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"items": items,
+		"total": len(items),
+	})
+}
+
 func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	searchQuery, err := parseIntegrationNearbySearchQuery(r)
 	if err != nil {
@@ -973,22 +1128,22 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	input := model.NewMarker{
-		Label:        request.Label,
-		Latitude:     request.Latitude,
-		Longitude:    request.Longitude,
-		Address:      request.Address,
-		Type:         request.Type,
-		ImageLink:    request.ImageLink,
-		Link:         request.Link,
+		Label:           request.Label,
+		Latitude:        request.Latitude,
+		Longitude:       request.Longitude,
+		Address:         request.Address,
+		Type:            request.Type,
+		ImageLink:       request.ImageLink,
+		Link:            request.Link,
 		SocialMediaLink: request.SocialMediaLink,
-		Description:  request.Description,
-		Permanent:    request.Permanent,
-		NeedBooking:  request.NeedBooking,
-		ToTime:       request.ToTime,
-		FromTime:     request.FromTime,
-		EstimateTime: request.EstimateTime,
-		RestaurantID: request.RestaurantID,
-		Price:        request.Price,
+		Description:     request.Description,
+		Permanent:       request.Permanent,
+		NeedBooking:     request.NeedBooking,
+		ToTime:          request.ToTime,
+		FromTime:        request.FromTime,
+		EstimateTime:    request.EstimateTime,
+		RestaurantID:    request.RestaurantID,
+		Price:           request.Price,
 	}
 	if err := validateCoordinates(input.Latitude, input.Longitude); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -1024,6 +1179,7 @@ func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	invalidateIntegrationHashtagCacheForRelation(apiKey.Relation.ID)
 
 	respondJSON(w, http.StatusCreated, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker), marker.Testing))
 }
@@ -1158,6 +1314,7 @@ func IntegrationUpdateMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	invalidateIntegrationHashtagCacheForRelation(apiKey.Relation.ID)
 
 	respondJSON(w, http.StatusOK, buildIntegrationMarkerResponse(helper.ConvertMarker(*marker), marker.Testing))
 }
@@ -1194,6 +1351,7 @@ func IntegrationDeleteMarkerHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	invalidateIntegrationHashtagCacheForRelation(apiKey.Relation.ID)
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
 		"id":     markerID,
@@ -2416,13 +2574,13 @@ func IntegrationListDueScheduleRemindersHandler(w http.ResponseWriter, r *http.R
 	}
 
 	respondJSON(w, http.StatusOK, map[string]interface{}{
-		"username":                username,
-		"items":                   responseItems,
-		"total":                   len(responseItems),
-		"reminder_time":           reminderWindowIsActive,
-		"will_remind_at":          willRemindAt,
-		"today_schedule_items_count": todayScheduleItemsCount,
-		"marker_location_timezone": markerLocationTimezone,
+		"username":                     username,
+		"items":                        responseItems,
+		"total":                        len(responseItems),
+		"reminder_time":                reminderWindowIsActive,
+		"will_remind_at":               willRemindAt,
+		"today_schedule_items_count":   todayScheduleItemsCount,
+		"marker_location_timezone":     markerLocationTimezone,
 		"marker_location_current_time": markerLocationCurrentTime,
 	})
 }
