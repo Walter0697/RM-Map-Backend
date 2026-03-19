@@ -63,6 +63,7 @@ func TestPlanningWeatherHandlerRainSnowScenario(t *testing.T) {
 	weatherFetchProviderFn = func(input WeatherPlanningInput) (weatherProviderResult, error) {
 		return weatherProviderResult{
 			ProviderTimestamp: now,
+			TemperatureUnit:   "°C",
 			Points: []weatherProviderPoint{
 				{
 					Lat:               22.30,
@@ -72,6 +73,7 @@ func TestPlanningWeatherHandlerRainSnowScenario(t *testing.T) {
 					RainMM:            2.0,
 					SnowMM:            0,
 					ProviderTimestamp: now,
+					Temperature:       ptrFloat(21.5),
 				},
 				{
 					Lat:               22.31,
@@ -81,6 +83,7 @@ func TestPlanningWeatherHandlerRainSnowScenario(t *testing.T) {
 					RainMM:            0,
 					SnowMM:            1.2,
 					ProviderTimestamp: now,
+					Temperature:       ptrFloat(19.0),
 				},
 			},
 		}, nil

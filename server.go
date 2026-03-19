@@ -209,6 +209,7 @@ func startServer() {
 		r.Post("/calendar/google/sync-by-date", service.IntegrationCalendarGoogleSyncByDateHandler)
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
+	router.Get("/weather/chatbot", service.ChatbotWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
 	router.Route("/admin", func(r chi.Router) {
 		r.Get("/settings/ios-shortcut-install-url", service.AdminGetIOSShortcutInstallURLHandler)

@@ -38,13 +38,14 @@ type WeatherPlanningInput struct {
 }
 
 type WeatherPlanningResponse struct {
-	Viewport     WeatherViewportBounds `json:"viewport"`
-	Items        []WeatherOverlayPoint `json:"items"`
-	Freshness    WeatherFreshnessMeta  `json:"freshness"`
-	Provider     string                `json:"provider"`
-	GeneratedAt  time.Time             `json:"generated_at"`
-	ErrorCode    string                `json:"error_code,omitempty"`
-	ErrorMessage string                `json:"error_message,omitempty"`
+	Viewport        WeatherViewportBounds `json:"viewport"`
+	Items           []WeatherOverlayPoint `json:"items"`
+	Freshness       WeatherFreshnessMeta  `json:"freshness"`
+	Provider        string                `json:"provider"`
+	GeneratedAt     time.Time             `json:"generated_at"`
+	ErrorCode       string                `json:"error_code,omitempty"`
+	ErrorMessage    string                `json:"error_message,omitempty"`
+	TemperatureUnit string                `json:"temperature_unit,omitempty"`
 }
 
 type WeatherViewportBounds struct {
@@ -67,6 +68,7 @@ type WeatherOverlayPoint struct {
 	ProviderTimestamp time.Time `json:"provider_timestamp"`
 	RetrievedAt       time.Time `json:"retrieved_at"`
 	Freshness         string    `json:"freshness"`
+	Temperature       *float64  `json:"temperature,omitempty"`
 }
 
 type WeatherFreshnessMeta struct {
@@ -88,11 +90,13 @@ type weatherProviderPoint struct {
 	RainMM            float64
 	SnowMM            float64
 	ProviderTimestamp time.Time
+	Temperature       *float64
 }
 
 type weatherProviderResult struct {
 	Points            []weatherProviderPoint
 	ProviderTimestamp time.Time
+	TemperatureUnit   string
 }
 
 type weatherCacheEntry struct {
@@ -104,6 +108,11 @@ type weatherRateLimiter struct {
 	mu           sync.Mutex
 	windowStart  time.Time
 	requestCount int
+}
+
+type rateLimitSnapshot struct {
+	remaining    int
+	resetSeconds int
 }
 
 func (l *weatherRateLimiter) allow(now time.Time, limit int) bool {
@@ -121,6 +130,36 @@ func (l *weatherRateLimiter) allow(now time.Time, limit int) bool {
 	}
 	l.requestCount++
 	return true
+}
+
+func (l *weatherRateLimiter) snapshot(limit int, now time.Time) rateLimitSnapshot {
+	if limit <= 0 {
+		return rateLimitSnapshot{remaining: 0, resetSeconds: 0}
+	}
+
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
+	if l.windowStart.IsZero() || now.Sub(l.windowStart) >= time.Minute {
+		return rateLimitSnapshot{
+			remaining: limit - l.requestCount,
+		}
+	}
+
+	remaining := limit - l.requestCount
+	if remaining < 0 {
+		remaining = 0
+	}
+
+	reset := int((time.Minute - now.Sub(l.windowStart)).Seconds())
+	if reset < 0 {
+		reset = 0
+	}
+
+	return rateLimitSnapshot{
+		remaining:    remaining,
+		resetSeconds: reset,
+	}
 }
 
 var (
@@ -206,6 +245,7 @@ func GetPlanningWeather(input WeatherPlanningInput) WeatherPlanningResponse {
 			Source:            weatherSourceProvider,
 			CacheHit:          false,
 		},
+		TemperatureUnit: strings.TrimSpace(result.TemperatureUnit),
 	}
 
 	for _, item := range result.Points {
@@ -222,6 +262,7 @@ func GetPlanningWeather(input WeatherPlanningInput) WeatherPlanningResponse {
 			ProviderTimestamp: item.ProviderTimestamp,
 			RetrievedAt:       now,
 			Freshness:         weatherFreshnessFresh,
+			Temperature:       item.Temperature,
 		})
 	}
 
@@ -426,12 +467,14 @@ type openMeteoForecastResponse struct {
 		Precipitation string `json:"precipitation"`
 		Rain          string `json:"rain"`
 		Snowfall      string `json:"snowfall"`
+		Temperature   string `json:"temperature_2m"`
 	} `json:"hourly_units"`
 	Hourly struct {
 		Time          []string  `json:"time"`
 		Precipitation []float64 `json:"precipitation"`
 		Rain          []float64 `json:"rain"`
 		Snowfall      []float64 `json:"snowfall"`
+		Temperature   []float64 `json:"temperature_2m"`
 	} `json:"hourly"`
 }
 
@@ -442,7 +485,7 @@ func fetchOpenMeteoPlanningForecast(input WeatherPlanningInput) (weatherProvider
 	if baseURL == "" {
 		baseURL = "https://api.open-meteo.com"
 	}
-	providerURL := fmt.Sprintf("%s/v1/forecast?latitude=%f&longitude=%f&hourly=precipitation,rain,snowfall&forecast_hours=%d&timezone=UTC",
+	providerURL := fmt.Sprintf("%s/v1/forecast?latitude=%f&longitude=%f&hourly=precipitation,rain,snowfall,temperature_2m&forecast_hours=%d&timezone=UTC",
 		strings.TrimRight(baseURL, "/"),
 		centerLat,
 		centerLon,
@@ -475,7 +518,7 @@ func fetchOpenMeteoPlanningForecast(input WeatherPlanningInput) (weatherProvider
 	}
 
 	if len(output.Hourly.Time) == 0 {
-		return weatherProviderResult{Points: []weatherProviderPoint{}, ProviderTimestamp: weatherNowFn()}, nil
+		return weatherProviderResult{Points: []weatherProviderPoint{}, ProviderTimestamp: weatherNowFn(), TemperatureUnit: strings.TrimSpace(output.HourlyUnits.Temperature)}, nil
 	}
 	now := weatherNowFn()
 	targetTime := now.Add(time.Duration(input.ForecastDayOffset) * 24 * time.Hour)
@@ -499,6 +542,7 @@ func fetchOpenMeteoPlanningForecast(input WeatherPlanningInput) (weatherProvider
 				RainMM:            rain,
 				SnowMM:            snow,
 				ProviderTimestamp: weatherNowFn(),
+				Temperature:       safeWeatherSeriesFloatPtr(output.Hourly.Temperature, selectedIndex),
 			})
 		}
 	}
@@ -506,6 +550,7 @@ func fetchOpenMeteoPlanningForecast(input WeatherPlanningInput) (weatherProvider
 	return weatherProviderResult{
 		Points:            points,
 		ProviderTimestamp: weatherNowFn(),
+		TemperatureUnit:   strings.TrimSpace(output.HourlyUnits.Temperature),
 	}, nil
 }
 
@@ -514,6 +559,13 @@ func safeWeatherSeriesValue(values []float64, idx int) float64 {
 		return 0
 	}
 	return values[idx]
+}
+
+func safeWeatherSeriesFloatPtr(values []float64, idx int) *float64 {
+	if idx < 0 || idx >= len(values) {
+		return nil
+	}
+	return ptrFloat(values[idx])
 }
 
 func selectNearestForecastIndex(timestamps []string, now time.Time) int {

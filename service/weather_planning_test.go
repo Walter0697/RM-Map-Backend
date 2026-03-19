@@ -38,6 +38,7 @@ func TestGetPlanningWeatherSuccessAndCacheHit(t *testing.T) {
 		callCount++
 		return weatherProviderResult{
 			ProviderTimestamp: now,
+			TemperatureUnit:   "°C",
 			Points: []weatherProviderPoint{
 				{
 					Lat:               input.CenterLat,
@@ -47,6 +48,7 @@ func TestGetPlanningWeatherSuccessAndCacheHit(t *testing.T) {
 					RainMM:            3.2,
 					SnowMM:            0,
 					ProviderTimestamp: now,
+					Temperature:       ptrFloat(20.5),
 				},
 			},
 		}, nil
@@ -109,6 +111,7 @@ func TestGetPlanningWeatherDegradedWithStaleCache(t *testing.T) {
 		}
 		return weatherProviderResult{
 			ProviderTimestamp: now,
+			TemperatureUnit:   "°C",
 			Points: []weatherProviderPoint{
 				{
 					Lat:               0,
@@ -117,6 +120,7 @@ func TestGetPlanningWeatherDegradedWithStaleCache(t *testing.T) {
 					PrecipitationMM:   1,
 					RainMM:            1,
 					ProviderTimestamp: now,
+					Temperature:       ptrFloat(18.0),
 				},
 			},
 		}, nil
