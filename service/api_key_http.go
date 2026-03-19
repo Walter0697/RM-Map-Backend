@@ -973,12 +973,9 @@ func IntegrationListMarkerCountriesHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	current := time.Now().AddDate(0, 0, -1)
 	query := database.Connection.Model(&dbmodel.Marker{})
 	query = query.Where("relation_id = ?", apiKey.Relation.ID)
-	query = query.Where("status != ?", constant.Arrived)
-	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
-	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+	// Country discovery should reflect all marker data for the relation instead of only active/visible subsets.
 
 	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
 		query = query.Where("testing = ?", false)
@@ -1017,12 +1014,9 @@ func IntegrationListMarkerCountryPartsHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	current := time.Now().AddDate(0, 0, -1)
 	query := database.Connection.Model(&dbmodel.Marker{})
 	query = query.Where("relation_id = ?", apiKey.Relation.ID)
-	query = query.Where("status != ?", constant.Arrived)
-	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
-	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+	// Country-part discovery should reflect all marker data for the relation instead of only active/visible subsets.
 	query = query.Where("country = ?", country)
 
 	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
