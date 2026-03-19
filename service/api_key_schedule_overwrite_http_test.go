@@ -223,7 +223,7 @@ func TestIntegrationOverwriteSchedulesByDateHandlerSuccessRemovesStaleEntries(t 
 	}
 }
 
-func TestIntegrationOverwriteSchedulesByDateHandlerForcesTestingScheduleLabel(t *testing.T) {
+func TestIntegrationOverwriteSchedulesByDateHandlerPreservesProvidedLabelForTestingAPIKey(t *testing.T) {
 	resetIntegrationScheduleOverwriteHooks()
 	defer resetIntegrationScheduleOverwriteHooks()
 
@@ -254,8 +254,8 @@ func TestIntegrationOverwriteSchedulesByDateHandlerForcesTestingScheduleLabel(t 
 		}, nil
 	}
 	integrationCreateScheduleFn = func(tx *gorm.DB, input model.NewSchedule, marker dbmodel.Marker, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Schedule, error) {
-		if input.Label != "testing schedule" {
-			t.Fatalf("expected label to be forced to 'testing schedule', got %q", input.Label)
+		if input.Label != "normal-label" {
+			t.Fatalf("expected label to preserve provided value, got %q", input.Label)
 		}
 		if !testing {
 			t.Fatalf("expected testing schedule flag to be true for testing api key")
@@ -298,8 +298,8 @@ func TestIntegrationOverwriteSchedulesByDateHandlerForcesTestingScheduleLabel(t 
 	if len(payload.Items) != 1 {
 		t.Fatalf("expected one schedule in payload, got %d", len(payload.Items))
 	}
-	if payload.Items[0].Label != "testing schedule" {
-		t.Fatalf("expected output label testing schedule, got %q", payload.Items[0].Label)
+	if payload.Items[0].Label != "normal-label" {
+		t.Fatalf("expected output label to preserve provided value, got %q", payload.Items[0].Label)
 	}
 	if !payload.Items[0].Testing {
 		t.Fatalf("expected output testing flag true")
