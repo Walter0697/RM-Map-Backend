@@ -207,6 +207,12 @@ func startServer() {
 		r.Post("/routes/plan", service.IntegrationPlanRouteHandler)
 		r.Post("/routes/static-image", service.IntegrationGenerateRouteStaticImageHandler)
 		r.Post("/calendar/google/sync-by-date", service.IntegrationCalendarGoogleSyncByDateHandler)
+		r.Route("/travel-plans", func(r chi.Router) {
+			r.Post("/", service.IntegrationCreateTravelPlanHandler)
+			r.Get("/", service.IntegrationListTravelPlansHandler)
+			r.Get("/{id}", service.IntegrationGetTravelPlanHandler)
+			r.Put("/{id}", service.IntegrationUpdateTravelPlanHandler)
+		})
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
