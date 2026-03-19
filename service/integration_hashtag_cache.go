@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"mapmarker/backend/config"
-	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"regexp"
@@ -16,7 +15,7 @@ import (
 
 const (
 	integrationHashtagCacheTTL      = 10 * time.Minute
-	integrationHashtagCacheVersion  = "v1"
+	integrationHashtagCacheVersion  = "v2"
 	integrationHashtagCacheTypeFlag = "testing"
 )
 
@@ -60,12 +59,9 @@ func getIntegrationHashtagItems(relationID uint, includeTesting bool) ([]integra
 		return cached, nil
 	}
 
-	current := time.Now().AddDate(0, 0, -1)
 	query := database.Connection.Model(&dbmodel.Marker{}).Select("description")
 	query = query.Where("relation_id = ?", relationID)
-	query = query.Where("status != ?", constant.Arrived)
-	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
-	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+	// Hashtag discovery should cover all relation markers, not only active/visible subsets.
 	if !includeTesting {
 		query = query.Where("testing = ?", false)
 	}
