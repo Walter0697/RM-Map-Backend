@@ -44,7 +44,7 @@ type integrationUpdateTravelPlanRequest struct {
 	DailyPlans  *[]integrationTravelPlanDailyInput `json:"daily_plans"`
 }
 
-type integrationTravelPlanDailyResponse struct {
+type TravelPlanDailyResponse struct {
 	ID        uint    `json:"id"`
 	DayIndex  int     `json:"day_index"`
 	LocalDate *string `json:"local_date"`
@@ -52,7 +52,7 @@ type integrationTravelPlanDailyResponse struct {
 	Details   string  `json:"details"`
 }
 
-type integrationTravelPlanSummaryResponse struct {
+type TravelPlanSummaryResponse struct {
 	ID             uint    `json:"id"`
 	UserID         uint    `json:"user_id"`
 	Title          string  `json:"title"`
@@ -64,10 +64,10 @@ type integrationTravelPlanSummaryResponse struct {
 	UpdatedAt      string  `json:"updated_at"`
 }
 
-type integrationTravelPlanDetailResponse struct {
-	integrationTravelPlanSummaryResponse
-	Description string                               `json:"description"`
-	DailyPlans  []integrationTravelPlanDailyResponse `json:"daily_plans"`
+type TravelPlanDetailResponse struct {
+	TravelPlanSummaryResponse
+	Description string                    `json:"description"`
+	DailyPlans  []TravelPlanDailyResponse `json:"daily_plans"`
 }
 
 const defaultTravelPlanStatus = "draft"
@@ -149,9 +149,9 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := make([]integrationTravelPlanSummaryResponse, 0, len(plans))
+	response := make([]TravelPlanSummaryResponse, 0, len(plans))
 	for _, plan := range plans {
-		response = append(response, buildTravelPlanSummaryResponse(plan))
+		response = append(response, BuildTravelPlanSummaryResponse(plan))
 	}
 	nextCursor := ""
 	if len(plans) == queryOption.Limit {
@@ -178,7 +178,7 @@ func IntegrationCreateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, buildTravelPlanDetailResponse(*plan))
+	respondJSON(w, http.StatusCreated, BuildTravelPlanDetailResponse(*plan))
 }
 
 func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
@@ -208,7 +208,7 @@ func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, buildTravelPlanDetailResponse(plan))
+	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(plan))
 }
 
 func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
@@ -249,7 +249,7 @@ func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	respondJSON(w, http.StatusOK, buildTravelPlanDetailResponse(plan))
+	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(plan))
 }
 
 func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanRequest) (*dbmodel.TravelPlan, error) {
@@ -403,8 +403,8 @@ func persistTravelPlanDailyEntries(tx *gorm.DB, travelPlanID uint, inputs []inte
 	return nil
 }
 
-func buildTravelPlanSummaryResponse(plan dbmodel.TravelPlan) integrationTravelPlanSummaryResponse {
-	return integrationTravelPlanSummaryResponse{
+func BuildTravelPlanSummaryResponse(plan dbmodel.TravelPlan) TravelPlanSummaryResponse {
+	return TravelPlanSummaryResponse{
 		ID:             plan.ID,
 		UserID:         plan.UserID,
 		Title:          plan.Title,
@@ -417,11 +417,11 @@ func buildTravelPlanSummaryResponse(plan dbmodel.TravelPlan) integrationTravelPl
 	}
 }
 
-func buildTravelPlanDetailResponse(plan dbmodel.TravelPlan) integrationTravelPlanDetailResponse {
-	detail := integrationTravelPlanDetailResponse{
-		integrationTravelPlanSummaryResponse: buildTravelPlanSummaryResponse(plan),
-		Description:                          plan.Description,
-		DailyPlans:                           make([]integrationTravelPlanDailyResponse, 0, len(plan.DailyPlans)),
+func BuildTravelPlanDetailResponse(plan dbmodel.TravelPlan) TravelPlanDetailResponse {
+	detail := TravelPlanDetailResponse{
+		TravelPlanSummaryResponse: BuildTravelPlanSummaryResponse(plan),
+		Description:               plan.Description,
+		DailyPlans:                make([]TravelPlanDailyResponse, 0, len(plan.DailyPlans)),
 	}
 	for _, daily := range plan.DailyPlans {
 		detail.DailyPlans = append(detail.DailyPlans, buildTravelPlanDailyResponse(daily))
@@ -429,8 +429,8 @@ func buildTravelPlanDetailResponse(plan dbmodel.TravelPlan) integrationTravelPla
 	return detail
 }
 
-func buildTravelPlanDailyResponse(row dbmodel.TravelPlanDailyPlan) integrationTravelPlanDailyResponse {
-	return integrationTravelPlanDailyResponse{
+func buildTravelPlanDailyResponse(row dbmodel.TravelPlanDailyPlan) TravelPlanDailyResponse {
+	return TravelPlanDailyResponse{
 		ID:        row.ID,
 		DayIndex:  row.DayIndex,
 		LocalDate: formatDateForResponse(row.LocalDate),
