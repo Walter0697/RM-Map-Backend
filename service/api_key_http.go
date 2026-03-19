@@ -816,7 +816,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
 	// Enforce hidden-marker filtering via marker type visibility.
 	query = query.Where(
-		`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`,
+		`type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)`,
 	)
 
 	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
@@ -3178,7 +3178,7 @@ func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrati
 		Where("relation_id = ?", relation.ID).
 		Where("status != ?", constant.Arrived).
 		Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339)).
-		Where("type IN (SELECT value FROM marker_types WHERE hidden = FALSE)")
+		Where("type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)")
 	if !includeTesting {
 		baseQuery = baseQuery.Where("testing = ?", false)
 	}
