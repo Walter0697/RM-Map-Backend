@@ -65,7 +65,7 @@ func getIntegrationHashtagItems(relationID uint, includeTesting bool) ([]integra
 	query = query.Where("relation_id = ?", relationID)
 	query = query.Where("status != ?", constant.Arrived)
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
-	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden = FALSE)`)
+	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)`)
 	if !includeTesting {
 		query = query.Where("testing = ?", false)
 	}
