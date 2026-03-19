@@ -1739,14 +1739,10 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			return
 		}
 
-		label := item.Label
-		if apiKey.Testing {
-			label = "testing schedule"
-		}
 		scheduleTesting := requestedTesting || marker.Testing
 
 		schedule, err := integrationCreateScheduleFn(tx, model.NewSchedule{
-			Label:        label,
+			Label:        item.Label,
 			Description:  item.Description,
 			SelectedTime: normalizedSelectedTime,
 			MarkerID:     item.MarkerID,
