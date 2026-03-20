@@ -18,21 +18,21 @@ import (
 )
 
 type integrationTravelPlanDailyInput struct {
-	DayIndex  *int    `json:"day_index"`
-	LocalDate *string `json:"local_date"`
-	Summary   string  `json:"summary"`
-	Details   *string `json:"details"`
+	ScheduleID *uint   `json:"schedule_id"`
+	DayIndex   *int    `json:"day_index"`
+	LocalDate  *string `json:"local_date"`
+	Summary    string  `json:"summary"`
+	Details    *string `json:"details"`
 }
 
 type integrationCreateTravelPlanRequest struct {
-	RelationID     uint                              `json:"relation_id"`
-	UserID         uint                              `json:"user_id"`
-	PlanRelationID string                            `json:"plan_relation_id"`
-	Title          string                            `json:"title"`
-	Description    string                            `json:"description"`
-	StartDate      *string                           `json:"start_date"`
-	EndDate        *string                           `json:"end_date"`
-	DailyPlans     []integrationTravelPlanDailyInput `json:"daily_plans"`
+	RelationID  uint                              `json:"relation_id"`
+	UserID      uint                              `json:"user_id"`
+	Title       string                            `json:"title"`
+	Description string                            `json:"description"`
+	StartDate   *string                           `json:"start_date"`
+	EndDate     *string                           `json:"end_date"`
+	DailyPlans  []integrationTravelPlanDailyInput `json:"daily_plans"`
 }
 
 type integrationUpdateTravelPlanRequest struct {
@@ -45,23 +45,23 @@ type integrationUpdateTravelPlanRequest struct {
 }
 
 type TravelPlanDailyResponse struct {
-	ID        uint    `json:"id"`
-	DayIndex  int     `json:"day_index"`
-	LocalDate *string `json:"local_date"`
-	Summary   string  `json:"summary"`
-	Details   string  `json:"details"`
+	ID         uint    `json:"id"`
+	ScheduleID *uint   `json:"schedule_id"`
+	DayIndex   int     `json:"day_index"`
+	LocalDate  *string `json:"local_date"`
+	Summary    string  `json:"summary"`
+	Details    string  `json:"details"`
 }
 
 type TravelPlanSummaryResponse struct {
-	ID             uint    `json:"id"`
-	UserID         uint    `json:"user_id"`
-	Title          string  `json:"title"`
-	PlanRelationID string  `json:"plan_relation_id"`
-	StartDate      *string `json:"start_date"`
-	EndDate        *string `json:"end_date"`
-	Status         string  `json:"status"`
-	CreatedAt      string  `json:"created_at"`
-	UpdatedAt      string  `json:"updated_at"`
+	ID        uint    `json:"id"`
+	UserID    uint    `json:"user_id"`
+	Title     string  `json:"title"`
+	StartDate *string `json:"start_date"`
+	EndDate   *string `json:"end_date"`
+	Status    string  `json:"status"`
+	CreatedAt string  `json:"created_at"`
+	UpdatedAt string  `json:"updated_at"`
 }
 
 type TravelPlanDetailResponse struct {
@@ -80,7 +80,7 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		"end_date":   "end_date",
 		"title":      "title",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "created_at", []string{"title", "plan_relation_id", "status", "from", "to"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "created_at", []string{"title", "status", "from", "to"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -95,12 +95,6 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		Select("travel_plans.*").
 		Where("relation_id = ?", apiKey.Relation.ID)
 
-	if value, ok := queryOption.Filters["plan_relation_id"]; ok {
-		trimmed := strings.TrimSpace(value)
-		if trimmed != "" {
-			query = query.Where("plan_relation_id = ?", trimmed)
-		}
-	}
 	if value, ok := queryOption.Filters["title"]; ok {
 		trimmed := strings.TrimSpace(value)
 		if trimmed != "" {
@@ -279,14 +273,13 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 	}
 
 	plan := &dbmodel.TravelPlan{
-		RelationID:     relationID,
-		UserID:         req.UserID,
-		PlanRelationID: strings.TrimSpace(req.PlanRelationID),
-		Title:          trimmedTitle,
-		Description:    strings.TrimSpace(req.Description),
-		StartDate:      startDate,
-		EndDate:        endDate,
-		Status:         defaultTravelPlanStatus,
+		RelationID:  relationID,
+		UserID:      req.UserID,
+		Title:       trimmedTitle,
+		Description: strings.TrimSpace(req.Description),
+		StartDate:   startDate,
+		EndDate:     endDate,
+		Status:      defaultTravelPlanStatus,
 	}
 	if operator := actorUserFromAPIKey(apiKey); operator != nil {
 		plan.CreatedBy = operator
@@ -297,7 +290,7 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 		if err := plan.Create(tx); err != nil {
 			return err
 		}
-		if err := persistTravelPlanDailyEntries(tx, plan.ID, req.DailyPlans); err != nil {
+		if err := persistTravelPlanDailyEntries(tx, plan.ID, relationID, req.DailyPlans); err != nil {
 			return err
 		}
 		return nil
@@ -349,7 +342,7 @@ func applyTravelPlanUpdates(plan *dbmodel.TravelPlan, req integrationUpdateTrave
 			return err
 		}
 		if req.DailyPlans != nil {
-			if err := persistTravelPlanDailyEntries(tx, plan.ID, *req.DailyPlans); err != nil {
+			if err := persistTravelPlanDailyEntries(tx, plan.ID, plan.RelationID, *req.DailyPlans); err != nil {
 				return err
 			}
 		}
@@ -365,7 +358,7 @@ func applyTravelPlanUpdates(plan *dbmodel.TravelPlan, req integrationUpdateTrave
 	return nil
 }
 
-func persistTravelPlanDailyEntries(tx *gorm.DB, travelPlanID uint, inputs []integrationTravelPlanDailyInput) error {
+func persistTravelPlanDailyEntries(tx *gorm.DB, travelPlanID uint, relationID uint, inputs []integrationTravelPlanDailyInput) error {
 	if err := tx.Where("travel_plan_id = ?", travelPlanID).Delete(&dbmodel.TravelPlanDailyPlan{}).Error; err != nil {
 		return err
 	}
@@ -386,6 +379,11 @@ func persistTravelPlanDailyEntries(tx *gorm.DB, travelPlanID uint, inputs []inte
 			DayIndex:     dayIndex,
 			Summary:      summary,
 		}
+		if scheduleID, err := validateOptionalScheduleID(tx, relationID, input.ScheduleID); err != nil {
+			return err
+		} else {
+			daily.ScheduleID = scheduleID
+		}
 		if input.Details != nil {
 			daily.Details = strings.TrimSpace(*input.Details)
 		}
@@ -405,15 +403,14 @@ func persistTravelPlanDailyEntries(tx *gorm.DB, travelPlanID uint, inputs []inte
 
 func BuildTravelPlanSummaryResponse(plan dbmodel.TravelPlan) TravelPlanSummaryResponse {
 	return TravelPlanSummaryResponse{
-		ID:             plan.ID,
-		UserID:         plan.UserID,
-		Title:          plan.Title,
-		PlanRelationID: plan.PlanRelationID,
-		StartDate:      formatDateForResponse(plan.StartDate),
-		EndDate:        formatDateForResponse(plan.EndDate),
-		Status:         plan.Status,
-		CreatedAt:      plan.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:      plan.UpdatedAt.Format(time.RFC3339),
+		ID:        plan.ID,
+		UserID:    plan.UserID,
+		Title:     plan.Title,
+		StartDate: formatDateForResponse(plan.StartDate),
+		EndDate:   formatDateForResponse(plan.EndDate),
+		Status:    plan.Status,
+		CreatedAt: plan.CreatedAt.Format(time.RFC3339),
+		UpdatedAt: plan.UpdatedAt.Format(time.RFC3339),
 	}
 }
 
@@ -431,12 +428,33 @@ func BuildTravelPlanDetailResponse(plan dbmodel.TravelPlan) TravelPlanDetailResp
 
 func buildTravelPlanDailyResponse(row dbmodel.TravelPlanDailyPlan) TravelPlanDailyResponse {
 	return TravelPlanDailyResponse{
-		ID:        row.ID,
-		DayIndex:  row.DayIndex,
-		LocalDate: formatDateForResponse(row.LocalDate),
-		Summary:   row.Summary,
-		Details:   row.Details,
+		ID:         row.ID,
+		ScheduleID: row.ScheduleID,
+		DayIndex:   row.DayIndex,
+		LocalDate:  formatDateForResponse(row.LocalDate),
+		Summary:    row.Summary,
+		Details:    row.Details,
 	}
+}
+
+func validateOptionalScheduleID(tx *gorm.DB, relationID uint, scheduleID *uint) (*uint, error) {
+	if scheduleID == nil {
+		return nil, nil
+	}
+	if *scheduleID == 0 {
+		return nil, nil
+	}
+
+	var schedule dbmodel.Schedule
+	if err := tx.Where("id = ? AND relation_id = ?", *scheduleID, relationID).First(&schedule).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, validationError{message: fmt.Sprintf("schedule_id %d does not exist for the relation", *scheduleID)}
+		}
+		return nil, err
+	}
+
+	resolved := schedule.ID
+	return &resolved, nil
 }
 
 func formatDateForResponse(value *time.Time) *string {
