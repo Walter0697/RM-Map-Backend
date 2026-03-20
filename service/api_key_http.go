@@ -702,6 +702,7 @@ func ListAPIKeyOptionsHandler(w http.ResponseWriter, r *http.Request) {
 		"users":            userResponse,
 		"relations":        relationResponse,
 		"service_accounts": serviceAccountResponse,
+		"available_scopes": constant.AllAPIKeyScopes(),
 	})
 }
 
