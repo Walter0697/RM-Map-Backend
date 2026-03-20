@@ -12,6 +12,7 @@ import (
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
+	"mapmarker/backend/utils"
 
 	"github.com/go-chi/chi"
 	"gorm.io/gorm"
@@ -28,6 +29,7 @@ type integrationTravelPlanDailyInput struct {
 type integrationCreateTravelPlanRequest struct {
 	RelationID  uint                              `json:"relation_id"`
 	UserID      uint                              `json:"user_id"`
+	Username    string                            `json:"username"`
 	Title       string                            `json:"title"`
 	Description string                            `json:"description"`
 	StartDate   *string                           `json:"start_date"`
@@ -80,7 +82,7 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		"end_date":   "end_date",
 		"title":      "title",
 	}
-	queryOption, err := parseListQueryFromRequest(r, allowedSort, "created_at", []string{"title", "status", "from", "to"})
+	queryOption, err := parseListQueryFromRequest(r, allowedSort, "created_at", []string{"title", "status", "from", "to", "username"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -105,6 +107,17 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		trimmed := strings.TrimSpace(value)
 		if trimmed != "" {
 			query = query.Where("status = ?", trimmed)
+		}
+	}
+	if value, ok := queryOption.Filters["username"]; ok {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			resolvedUserID, resolveErr := resolveTravelPlanUsernameInRelation(apiKey.Relation, trimmed)
+			if resolveErr != nil {
+				http.Error(w, resolveErr.Error(), http.StatusBadRequest)
+				return
+			}
+			query = query.Where("user_id = ?", resolvedUserID)
 		}
 	}
 	if value, ok := queryOption.Filters["from"]; ok {
@@ -251,15 +264,13 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 	if trimmedTitle == "" {
 		return nil, validationError{message: "title is required"}
 	}
-	if req.UserID == 0 {
-		return nil, validationError{message: "user_id is required"}
-	}
 
 	relationID := apiKey.Relation.ID
 	if req.RelationID != 0 && req.RelationID != relationID {
 		return nil, validationError{message: "relation_id mismatch"}
 	}
-	if err := ensureUserInRelation(apiKey.Relation, req.UserID); err != nil {
+	resolvedUserID, err := resolveTravelPlanCreateUserID(apiKey.Relation, req.UserID, req.Username)
+	if err != nil {
 		return nil, err
 	}
 
@@ -274,7 +285,7 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 
 	plan := &dbmodel.TravelPlan{
 		RelationID:  relationID,
-		UserID:      req.UserID,
+		UserID:      resolvedUserID,
 		Title:       trimmedTitle,
 		Description: strings.TrimSpace(req.Description),
 		StartDate:   startDate,
@@ -513,6 +524,55 @@ func ensureUserInRelation(relation dbmodel.UserRelation, userID uint) error {
 		return validationError{message: "user_id does not belong to the relation"}
 	}
 	return nil
+}
+
+func resolveTravelPlanCreateUserID(relation dbmodel.UserRelation, userID uint, username string) (uint, error) {
+	if userID != 0 {
+		if err := ensureUserInRelation(relation, userID); err != nil {
+			return 0, err
+		}
+		if strings.TrimSpace(username) == "" {
+			return userID, nil
+		}
+		var user dbmodel.User
+		user.Username = strings.TrimSpace(username)
+		if err := user.GetUserByUsername(database.Connection); err != nil {
+			if utils.RecordNotFound(err) {
+				return 0, validationError{message: "username does not exist"}
+			}
+			return 0, err
+		}
+		if user.ID != userID {
+			return 0, validationError{message: "username does not match user_id"}
+		}
+		return userID, nil
+	}
+
+	trimmedUsername := strings.TrimSpace(username)
+	if trimmedUsername == "" {
+		return 0, validationError{message: "username is required"}
+	}
+	return resolveTravelPlanUsernameInRelation(relation, trimmedUsername)
+}
+
+func resolveTravelPlanUsernameInRelation(relation dbmodel.UserRelation, username string) (uint, error) {
+	trimmedUsername := strings.TrimSpace(username)
+	if trimmedUsername == "" {
+		return 0, validationError{message: "username is required"}
+	}
+
+	var user dbmodel.User
+	user.Username = trimmedUsername
+	if err := user.GetUserByUsername(database.Connection); err != nil {
+		if utils.RecordNotFound(err) {
+			return 0, validationError{message: "username does not exist"}
+		}
+		return 0, err
+	}
+	if err := ensureUserInRelation(relation, user.ID); err != nil {
+		return 0, err
+	}
+	return user.ID, nil
 }
 
 func actorUserFromAPIKey(apiKey *dbmodel.APIKey) *dbmodel.User {
