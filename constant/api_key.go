@@ -1,16 +1,18 @@
 package constant
 
 const (
-	APIKeyScopeMarkersRead    = "markers:read"
-	APIKeyScopeMarkersWrite   = "markers:write"
-	APIKeyScopeSchedulesRead  = "schedules:read"
-	APIKeyScopeSchedulesWrite = "schedules:write"
-	APIKeyScopeStationsRead   = "stations:read"
-	APIKeyScopeStationsWrite  = "stations:write"
-	APIKeyScopeSettingsRead   = "settings:read"
-	APIKeyScopeSettingsWrite  = "settings:write"
-	APIKeyScopeStaticPreview  = "static-preview:generate"
-	APIKeyScopeCalendarSync   = "calendar:sync"
+	APIKeyScopeMarkersRead      = "markers:read"
+	APIKeyScopeMarkersWrite     = "markers:write"
+	APIKeyScopeSchedulesRead    = "schedules:read"
+	APIKeyScopeSchedulesWrite   = "schedules:write"
+	APIKeyScopeStationsRead     = "stations:read"
+	APIKeyScopeStationsWrite    = "stations:write"
+	APIKeyScopeSettingsRead     = "settings:read"
+	APIKeyScopeSettingsWrite    = "settings:write"
+	APIKeyScopeStaticPreview    = "static-preview:generate"
+	APIKeyScopeCalendarSync     = "calendar:sync"
+	APIKeyScopeTravelPlansRead  = "travel-plans:read"
+	APIKeyScopeTravelPlansWrite = "travel-plans:write"
 )
 
 func AllAPIKeyScopes() []string {
@@ -25,5 +27,7 @@ func AllAPIKeyScopes() []string {
 		APIKeyScopeSettingsWrite,
 		APIKeyScopeStaticPreview,
 		APIKeyScopeCalendarSync,
+		APIKeyScopeTravelPlansRead,
+		APIKeyScopeTravelPlansWrite,
 	}
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"errors"
 	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
@@ -15,12 +17,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/cors"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -207,6 +211,16 @@ func startServer() {
 		r.Post("/routes/plan", service.IntegrationPlanRouteHandler)
 		r.Post("/routes/static-image", service.IntegrationGenerateRouteStaticImageHandler)
 		r.Post("/calendar/google/sync-by-date", service.IntegrationCalendarGoogleSyncByDateHandler)
+		r.Route("/travel-plans", func(r chi.Router) {
+			r.Post("/", service.IntegrationCreateTravelPlanHandler)
+			r.Get("/", service.IntegrationListTravelPlansHandler)
+			r.Get("/{id}", service.IntegrationGetTravelPlanHandler)
+			r.Put("/{id}", service.IntegrationUpdateTravelPlanHandler)
+		})
+	})
+	router.Route("/travel-plans", func(r chi.Router) {
+		r.Get("/", listUserTravelPlansHandler)
+		r.Get("/{id}", getUserTravelPlanHandler)
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
@@ -270,6 +284,83 @@ func startServer() {
 	}
 
 	log.Fatal(http.ListenAndServe(":"+port, router))
+}
+
+func listUserTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
+	user := middleware.ForContext(r.Context())
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	limit := 20
+	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil {
+			limit = parsed
+		}
+	}
+	if limit <= 0 {
+		limit = 1
+	}
+	if limit > 100 {
+		limit = 100
+	}
+
+	plans := make([]dbmodel.TravelPlan, 0)
+	if err := database.Connection.Where("user_id = ?", user.ID).Order("updated_at desc").Limit(limit).Find(&plans).Error; err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]service.TravelPlanSummaryResponse, 0, len(plans))
+	for _, plan := range plans {
+		items = append(items, service.BuildTravelPlanSummaryResponse(plan))
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"items": items,
+	})
+}
+
+func getUserTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
+	user := middleware.ForContext(r.Context())
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	idParam := strings.TrimSpace(chi.URLParam(r, "id"))
+	planID, err := strconv.Atoi(idParam)
+	if err != nil || planID <= 0 {
+		http.Error(w, "invalid plan id", http.StatusBadRequest)
+		return
+	}
+
+	var plan dbmodel.TravelPlan
+	plan.ID = uint(planID)
+	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if plan.UserID != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, service.BuildTravelPlanDetailResponse(plan))
+}
+
+func writeJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Printf("failed to write json response: %v", err)
+	}
 }
 
 // start seeding the database
