@@ -59,7 +59,7 @@ func TestBuildIntegrationScheduleResponseIncludesTestingFlag(t *testing.T) {
 		SelectedDate: now,
 	}
 
-	response := buildIntegrationScheduleResponse(schedule, nil)
+	response := buildIntegrationScheduleResponse(schedule, nil, nil)
 	if !response.Testing {
 		t.Fatalf("expected testing=true in integration schedule response")
 	}

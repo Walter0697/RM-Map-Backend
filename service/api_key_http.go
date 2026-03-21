@@ -140,6 +140,9 @@ type integrationCreateScheduleRequest struct {
 	Description  string                                  `json:"description"`
 	SelectedTime string                                  `json:"selected_time"`
 	MarkerID     int                                     `json:"marker_id"`
+	TravelPlanID *uint                                   `json:"travel_plan_id,omitempty"`
+	ItemID       *uint                                   `json:"item_id,omitempty"`
+	Item         *integrationScheduleItemInput           `json:"item,omitempty"`
 	RoutePreview *integrationScheduleRoutePreviewRequest `json:"route_preview,omitempty"`
 }
 
@@ -209,9 +212,25 @@ type integrationScheduleRoutePreviewResponse struct {
 
 type integrationScheduleResponse struct {
 	model.Schedule
-	Testing      bool                                     `json:"testing"`
-	RoutePreview *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
-	Warnings     []string                                 `json:"warnings,omitempty"`
+	Testing            bool                                    `json:"testing"`
+	RoutePreview       *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
+	Warnings           []string                                `json:"warnings,omitempty"`
+	TravelPlanItemLink *integrationTravelPlanItemLinkResponse  `json:"travel_plan_item_link,omitempty"`
+}
+
+type integrationScheduleItemInput struct {
+	ScheduleID *uint `json:"schedule_id,omitempty"`
+}
+
+type integrationTravelPlanItemLinkContext struct {
+	TravelPlanID uint
+	ItemID       uint
+}
+
+type integrationTravelPlanItemLinkResponse struct {
+	TravelPlanID uint `json:"travel_plan_id"`
+	ItemID       uint `json:"item_id"`
+	ScheduleID   uint `json:"schedule_id"`
 }
 
 type integrationUpdateStationRequest struct {
@@ -480,6 +499,31 @@ var integrationGetScheduleMarkerByIDFn = func(tx *gorm.DB, markerID uint) (*dbmo
 	return marker, nil
 }
 var integrationCreateScheduleFn = CreateSchedule
+var integrationBeginCreateScheduleTxFn = func() (*gorm.DB, error) {
+	tx := database.Connection.Begin()
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return tx, nil
+}
+var integrationCommitCreateScheduleTxFn = func(tx *gorm.DB) error {
+	return tx.Commit().Error
+}
+var integrationRollbackCreateScheduleTxFn = func(tx *gorm.DB) {
+	if tx == nil {
+		return
+	}
+	tx.Rollback()
+}
+var integrationGetScheduleMarkerForCreateFn = func(markerID uint) (*dbmodel.Marker, error) {
+	marker := &dbmodel.Marker{}
+	marker.ID = markerID
+	if err := marker.GetById(database.Connection); err != nil {
+		return nil, err
+	}
+	return marker, nil
+}
+var integrationLinkScheduleToTravelPlanItemFn = linkScheduleToTravelPlanItem
 var integrationUpdateScheduleModelFn = func(tx *gorm.DB, schedule *dbmodel.Schedule) error {
 	return schedule.Update(tx)
 }
@@ -1457,7 +1501,7 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 
 	response := make([]integrationScheduleResponse, 0, len(schedules))
 	for _, item := range schedules {
-		response = append(response, buildIntegrationScheduleResponse(item, nil))
+		response = append(response, buildIntegrationScheduleResponse(item, nil, nil))
 	}
 	nextCursor := ""
 	if len(schedules) == queryOption.Limit {
@@ -1469,7 +1513,7 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.schedules.create", constant.APIKeyScopeSchedulesWrite, "")
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.schedules.create", constant.APIKeyScopeSchedulesWrite, "")
 	if !ok {
 		return
 	}
@@ -1487,9 +1531,13 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var marker dbmodel.Marker
-	marker.ID = uint(request.MarkerID)
-	if err := marker.GetById(database.Connection); err != nil {
+	if request.MarkerID <= 0 {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_marker_id", "marker_id must be a positive integer")
+		return
+	}
+
+	marker, err := integrationGetScheduleMarkerForCreateFn(uint(request.MarkerID))
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1509,11 +1557,21 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		MarkerID:     request.MarkerID,
 	}
 
-	tx := database.Connection.Begin()
+	linkContext, linkCtxErr := resolveTravelPlanItemLinkContext(request)
+	if linkCtxErr != nil {
+		writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_link_context", linkCtxErr.Error())
+		return
+	}
+
+	tx, txErr := integrationBeginCreateScheduleTxFn()
+	if txErr != nil {
+		writeIntegrationError(w, http.StatusInternalServerError, "schedule_create_failed", txErr.Error())
+		return
+	}
 	scheduleTesting := requestedTesting || marker.Testing
-	schedule, err := CreateSchedule(tx, input, marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
+	schedule, err := integrationCreateScheduleFn(tx, input, *marker, apiKey.ActorUser, apiKey.Relation, scheduleTesting)
 	if err != nil {
-		tx.Rollback()
+		integrationRollbackCreateScheduleTxFn(tx)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -1528,18 +1586,33 @@ func IntegrationCreateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		warnings = append(warnings, applyWarnings...)
 	}
 
-	if err := schedule.Update(tx); err != nil {
-		tx.Rollback()
+	if err := integrationUpdateScheduleModelFn(tx, schedule); err != nil {
+		integrationRollbackCreateScheduleTxFn(tx)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := tx.Commit().Error; err != nil {
+	var itemLink *integrationTravelPlanItemLinkResponse
+	if linkContext != nil {
+		itemLink, err = integrationLinkScheduleToTravelPlanItemFn(tx, apiKey.Relation.ID, *linkContext, request.Item, schedule.ID)
+		if err != nil {
+			integrationRollbackCreateScheduleTxFn(tx)
+			var linkErr *integrationScheduleLinkError
+			if errors.As(err, &linkErr) {
+				writeIntegrationError(w, linkErr.StatusCode, linkErr.Code, linkErr.Message)
+				return
+			}
+			writeIntegrationError(w, http.StatusInternalServerError, "travel_plan_item_link_failed", "failed to persist travel plan item schedule link")
+			return
+		}
+	}
+
+	if err := integrationCommitCreateScheduleTxFn(tx); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	respondJSON(w, http.StatusCreated, buildIntegrationScheduleResponse(*schedule, warnings))
+	respondJSON(w, http.StatusCreated, buildIntegrationScheduleResponse(*schedule, warnings, itemLink))
 }
 
 func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
@@ -1622,7 +1695,7 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, buildIntegrationScheduleResponse(schedule, warnings))
+	respondJSON(w, http.StatusOK, buildIntegrationScheduleResponse(schedule, warnings, nil))
 }
 
 func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.Request) {
@@ -1767,7 +1840,7 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			return
 		}
 
-		createdItems = append(createdItems, buildIntegrationScheduleResponse(*schedule, warnings))
+		createdItems = append(createdItems, buildIntegrationScheduleResponse(*schedule, warnings, nil))
 	}
 
 	if err := integrationCommitScheduleOverwriteTxFn(tx); err != nil {
@@ -2856,11 +2929,12 @@ func humanizeRFC3339Duration(timestamp string, now time.Time) string {
 	return fmt.Sprintf("%d days ago", days)
 }
 
-func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []string) integrationScheduleResponse {
+func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []string, link *integrationTravelPlanItemLinkResponse) integrationScheduleResponse {
 	modelSchedule := helper.ConvertSchedule(schedule)
 	response := integrationScheduleResponse{
-		Schedule: modelSchedule,
-		Testing:  schedule.Testing,
+		Schedule:            modelSchedule,
+		Testing:             schedule.Testing,
+		TravelPlanItemLink: link,
 	}
 	if len(warnings) > 0 {
 		response.Warnings = warnings
@@ -2964,6 +3038,106 @@ func resolvePreviewPinImagePathByID(pinID uint) (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(pin.ImagePath), nil
+}
+
+type integrationScheduleLinkError struct {
+	StatusCode int
+	Code       string
+	Message    string
+}
+
+func (e *integrationScheduleLinkError) Error() string {
+	if e == nil {
+		return ""
+	}
+	return e.Message
+}
+
+func resolveTravelPlanItemLinkContext(request integrationCreateScheduleRequest) (*integrationTravelPlanItemLinkContext, error) {
+	hasTravelPlan := request.TravelPlanID != nil && *request.TravelPlanID > 0
+	hasItem := request.ItemID != nil && *request.ItemID > 0
+	if !hasTravelPlan && !hasItem {
+		return nil, nil
+	}
+	if !hasTravelPlan || !hasItem {
+		return nil, fmt.Errorf("travel_plan_id and item_id must both be provided for schedule linkage")
+	}
+	return &integrationTravelPlanItemLinkContext{
+		TravelPlanID: *request.TravelPlanID,
+		ItemID:       *request.ItemID,
+	}, nil
+}
+
+func linkScheduleToTravelPlanItem(tx *gorm.DB, relationID uint, context integrationTravelPlanItemLinkContext, requestItem *integrationScheduleItemInput, scheduleID uint) (*integrationTravelPlanItemLinkResponse, error) {
+	if tx == nil {
+		return nil, &integrationScheduleLinkError{
+			StatusCode: http.StatusInternalServerError,
+			Code:       "travel_plan_item_link_failed",
+			Message:    "transaction is required for travel plan item linkage",
+		}
+	}
+	if scheduleID == 0 {
+		return nil, &integrationScheduleLinkError{
+			StatusCode: http.StatusInternalServerError,
+			Code:       "travel_plan_item_link_failed",
+			Message:    "created schedule id is missing",
+		}
+	}
+
+	var plan dbmodel.TravelPlan
+	plan.ID = context.TravelPlanID
+	if err := tx.Where("id = ?", context.TravelPlanID).First(&plan).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &integrationScheduleLinkError{
+				StatusCode: http.StatusBadRequest,
+				Code:       "invalid_schedule_link_context",
+				Message:    "travel_plan_id does not exist",
+			}
+		}
+		return nil, err
+	}
+	if plan.RelationID != relationID {
+		return nil, &integrationScheduleLinkError{
+			StatusCode: http.StatusForbidden,
+			Code:       "api_key_scope_denied",
+			Message:    "api key cannot access travel plan outside assigned relation",
+		}
+	}
+
+	var daily dbmodel.TravelPlanDailyPlan
+	daily.ID = context.ItemID
+	if err := tx.Where("id = ? AND travel_plan_id = ?", context.ItemID, context.TravelPlanID).First(&daily).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, &integrationScheduleLinkError{
+				StatusCode: http.StatusBadRequest,
+				Code:       "invalid_schedule_link_context",
+				Message:    "item_id does not exist for travel_plan_id",
+			}
+		}
+		return nil, err
+	}
+
+	if requestItem != nil && requestItem.ScheduleID != nil && *requestItem.ScheduleID != 0 && *requestItem.ScheduleID != scheduleID {
+		return nil, &integrationScheduleLinkError{
+			StatusCode: http.StatusBadRequest,
+			Code:       "invalid_schedule_link_context",
+			Message:    "item.schedule_id does not match created schedule",
+		}
+	}
+
+	if daily.ScheduleID == nil || *daily.ScheduleID != scheduleID {
+		resolved := scheduleID
+		daily.ScheduleID = &resolved
+		if err := tx.Model(&daily).Update("schedule_id", scheduleID).Error; err != nil {
+			return nil, err
+		}
+	}
+
+	return &integrationTravelPlanItemLinkResponse{
+		TravelPlanID: context.TravelPlanID,
+		ItemID:       context.ItemID,
+		ScheduleID:   scheduleID,
+	}, nil
 }
 
 func writeIntegrationError(w http.ResponseWriter, statusCode int, code string, message string) {
