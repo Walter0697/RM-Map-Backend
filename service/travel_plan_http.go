@@ -94,7 +94,6 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := database.Connection.Model(&dbmodel.TravelPlan{}).
-		Select("travel_plans.*").
 		Where("relation_id = ?", apiKey.Relation.ID)
 
 	if value, ok := queryOption.Filters["title"]; ok {
