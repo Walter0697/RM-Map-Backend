@@ -216,11 +216,15 @@ func startServer() {
 			r.Get("/", service.IntegrationListTravelPlansHandler)
 			r.Get("/{id}", service.IntegrationGetTravelPlanHandler)
 			r.Put("/{id}", service.IntegrationUpdateTravelPlanHandler)
+			r.Delete("/{id}", service.IntegrationDeleteTravelPlanHandler)
+			r.Delete("/{id}/daily-plans/{daily_id}", service.IntegrationDeleteTravelPlanDailyPlanHandler)
 		})
 	})
 	router.Route("/travel-plans", func(r chi.Router) {
 		r.Get("/", listUserTravelPlansHandler)
 		r.Get("/{id}", getUserTravelPlanHandler)
+		r.Delete("/{id}", deleteUserTravelPlanHandler)
+		r.Delete("/{id}/daily-plans/{daily_id}", deleteUserTravelPlanDailyPlanHandler)
 	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
@@ -371,6 +375,111 @@ func getUserTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, service.BuildTravelPlanDetailResponse(plan))
+}
+
+func deleteUserTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
+	user := middleware.ForContext(r.Context())
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	idParam := strings.TrimSpace(chi.URLParam(r, "id"))
+	planID, err := strconv.Atoi(idParam)
+	if err != nil || planID <= 0 {
+		http.Error(w, "invalid plan id", http.StatusBadRequest)
+		return
+	}
+
+	var plan dbmodel.TravelPlan
+	plan.ID = uint(planID)
+	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if plan.UserID != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	if err := database.Connection.Transaction(func(tx *gorm.DB) error {
+		plan.UpdatedBy = user
+		if err := plan.Update(tx); err != nil {
+			return err
+		}
+		if err := tx.Where("travel_plan_id = ?", plan.ID).Delete(&dbmodel.TravelPlanDailyPlan{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&dbmodel.TravelPlan{}, plan.ID).Error
+	}); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"deleted": true,
+		"entity":  "travel_plan",
+		"id":      plan.ID,
+	})
+}
+
+func deleteUserTravelPlanDailyPlanHandler(w http.ResponseWriter, r *http.Request) {
+	user := middleware.ForContext(r.Context())
+	if user == nil {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	planID, err := strconv.Atoi(strings.TrimSpace(chi.URLParam(r, "id")))
+	if err != nil || planID <= 0 {
+		http.Error(w, "invalid plan id", http.StatusBadRequest)
+		return
+	}
+	dailyID, err := strconv.Atoi(strings.TrimSpace(chi.URLParam(r, "daily_id")))
+	if err != nil || dailyID <= 0 {
+		http.Error(w, "invalid daily plan id", http.StatusBadRequest)
+		return
+	}
+
+	var plan dbmodel.TravelPlan
+	plan.ID = uint(planID)
+	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if plan.UserID != user.ID {
+		http.Error(w, "forbidden", http.StatusForbidden)
+		return
+	}
+
+	var daily dbmodel.TravelPlanDailyPlan
+	if err := database.Connection.Where("id = ? AND travel_plan_id = ?", dailyID, plan.ID).First(&daily).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "daily plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := daily.DeleteByID(database.Connection); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"deleted":        true,
+		"entity":         "travel_plan_daily",
+		"id":             daily.ID,
+		"travel_plan_id": plan.ID,
+	})
 }
 
 func writeJSON(w http.ResponseWriter, statusCode int, payload interface{}) {

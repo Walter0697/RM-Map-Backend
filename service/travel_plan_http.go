@@ -74,6 +74,45 @@ type TravelPlanDetailResponse struct {
 
 const defaultTravelPlanStatus = "draft"
 
+var integrationAuthenticateTravelPlanRequestFn = authenticateIntegrationRequest
+var integrationAuthenticateTravelPlanRequestJSONFn = authenticateIntegrationRequestJSON
+
+var integrationGetTravelPlanByIDFn = func(planID uint) (*dbmodel.TravelPlan, error) {
+	plan := &dbmodel.TravelPlan{}
+	plan.ID = planID
+	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+var integrationDeleteTravelPlanFn = func(plan *dbmodel.TravelPlan, actor *dbmodel.User) error {
+	return database.Connection.Transaction(func(tx *gorm.DB) error {
+		if actor != nil {
+			plan.UpdatedBy = actor
+			if err := plan.Update(tx); err != nil {
+				return err
+			}
+		}
+		if err := tx.Where("travel_plan_id = ?", plan.ID).Delete(&dbmodel.TravelPlanDailyPlan{}).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&dbmodel.TravelPlan{}, plan.ID).Error
+	})
+}
+
+var integrationGetTravelPlanDailyByIDFn = func(planID uint, dailyID uint) (*dbmodel.TravelPlanDailyPlan, error) {
+	daily := &dbmodel.TravelPlanDailyPlan{}
+	if err := database.Connection.Where("id = ? AND travel_plan_id = ?", dailyID, planID).First(daily).Error; err != nil {
+		return nil, err
+	}
+	return daily, nil
+}
+
+var integrationDeleteTravelPlanDailyByIDFn = func(planID uint, dailyID uint) error {
+	return database.Connection.Where("id = ? AND travel_plan_id = ?", dailyID, planID).Delete(&dbmodel.TravelPlanDailyPlan{}).Error
+}
+
 func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 	allowedSort := map[string]string{
 		"created_at": "created_at",
@@ -88,7 +127,7 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.travel-plans.list", constant.APIKeyScopeTravelPlansRead, queryContextString(queryOption))
+	apiKey, ok := integrationAuthenticateTravelPlanRequestFn(w, r, "integration.travel-plans.list", constant.APIKeyScopeTravelPlansRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -173,7 +212,7 @@ func IntegrationCreateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequestJSON(w, r, "integration.travel-plans.create", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.create", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -188,7 +227,7 @@ func IntegrationCreateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.travel-plans.get", constant.APIKeyScopeTravelPlansRead, "")
+	apiKey, ok := integrationAuthenticateTravelPlanRequestFn(w, r, "integration.travel-plans.get", constant.APIKeyScopeTravelPlansRead, "")
 	if !ok {
 		return
 	}
@@ -199,9 +238,8 @@ func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var plan dbmodel.TravelPlan
-	plan.ID = uint(planID)
-	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+	plan, err := integrationGetTravelPlanByIDFn(uint(planID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "plan not found", http.StatusNotFound)
 			return
@@ -214,7 +252,7 @@ func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(plan))
+	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(*plan))
 }
 
 func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
@@ -224,7 +262,7 @@ func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequestJSON(w, r, "integration.travel-plans.update", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.update", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -235,9 +273,8 @@ func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var plan dbmodel.TravelPlan
-	plan.ID = uint(planID)
-	if err := plan.GetWithDailyPlans(database.Connection); err != nil {
+	plan, err := integrationGetTravelPlanByIDFn(uint(planID))
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			http.Error(w, "plan not found", http.StatusNotFound)
 			return
@@ -250,12 +287,103 @@ func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := applyTravelPlanUpdates(&plan, req, apiKey); err != nil {
+	if err := applyTravelPlanUpdates(plan, req, apiKey); err != nil {
 		writeTravelPlanError(w, err)
 		return
 	}
 
-	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(plan))
+	respondJSON(w, http.StatusOK, BuildTravelPlanDetailResponse(*plan))
+}
+
+func IntegrationDeleteTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
+	planID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || planID <= 0 {
+		http.Error(w, "invalid plan id", http.StatusBadRequest)
+		return
+	}
+
+	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.delete", constant.APIKeyScopeTravelPlansWrite, "")
+	if !ok {
+		return
+	}
+
+	plan, err := integrationGetTravelPlanByIDFn(uint(planID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if plan.RelationID != apiKey.Relation.ID {
+		http.Error(w, "plan does not belong to the api key relation", http.StatusForbidden)
+		return
+	}
+
+	if err := integrationDeleteTravelPlanFn(plan, actorUserFromAPIKey(apiKey)); err != nil {
+		writeTravelPlanError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"deleted": true,
+		"entity":  "travel_plan",
+		"id":      plan.ID,
+	})
+}
+
+func IntegrationDeleteTravelPlanDailyPlanHandler(w http.ResponseWriter, r *http.Request) {
+	planID, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil || planID <= 0 {
+		http.Error(w, "invalid plan id", http.StatusBadRequest)
+		return
+	}
+	dailyID, err := strconv.Atoi(chi.URLParam(r, "daily_id"))
+	if err != nil || dailyID <= 0 {
+		http.Error(w, "invalid daily plan id", http.StatusBadRequest)
+		return
+	}
+
+	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.daily.delete", constant.APIKeyScopeTravelPlansWrite, "")
+	if !ok {
+		return
+	}
+
+	plan, err := integrationGetTravelPlanByIDFn(uint(planID))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if plan.RelationID != apiKey.Relation.ID {
+		http.Error(w, "plan does not belong to the api key relation", http.StatusForbidden)
+		return
+	}
+
+	if _, err := integrationGetTravelPlanDailyByIDFn(plan.ID, uint(dailyID)); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			http.Error(w, "daily plan not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := integrationDeleteTravelPlanDailyByIDFn(plan.ID, uint(dailyID)); err != nil {
+		writeTravelPlanError(w, err)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"deleted":        true,
+		"entity":         "travel_plan_daily",
+		"id":             dailyID,
+		"travel_plan_id": plan.ID,
+	})
 }
 
 func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanRequest) (*dbmodel.TravelPlan, error) {
