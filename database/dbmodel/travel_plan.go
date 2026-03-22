@@ -52,6 +52,14 @@ func (plan *TravelPlan) Update(db *gorm.DB) error {
 	return db.Save(plan).Error
 }
 
+func (plan *TravelPlan) Delete(db *gorm.DB) error {
+	return db.Delete(plan).Error
+}
+
 func (daily *TravelPlanDailyPlan) DeleteByTravelPlanID(db *gorm.DB, travelPlanID uint) error {
 	return db.Where("travel_plan_id = ?", travelPlanID).Delete(&TravelPlanDailyPlan{}).Error
+}
+
+func (daily *TravelPlanDailyPlan) DeleteByID(db *gorm.DB) error {
+	return db.Delete(daily).Error
 }
