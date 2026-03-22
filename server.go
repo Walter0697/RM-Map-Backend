@@ -296,6 +296,15 @@ func listUserTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
+	relation, err := service.GetCurrentRelation(*user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if relation == nil {
+		http.Error(w, "selected relation is required", http.StatusBadRequest)
+		return
+	}
 
 	limit := 20
 	if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
@@ -311,7 +320,7 @@ func listUserTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	plans := make([]dbmodel.TravelPlan, 0)
-	if err := database.Connection.Where("user_id = ?", user.ID).Order("updated_at desc").Limit(limit).Find(&plans).Error; err != nil {
+	if err := database.Connection.Where("relation_id = ?", relation.ID).Order("updated_at desc").Limit(limit).Find(&plans).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -330,6 +339,15 @@ func getUserTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 	user := middleware.ForContext(r.Context())
 	if user == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	relation, err := service.GetCurrentRelation(*user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if relation == nil {
+		http.Error(w, "selected relation is required", http.StatusBadRequest)
 		return
 	}
 
@@ -351,7 +369,7 @@ func getUserTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if plan.UserID != user.ID {
+	if plan.RelationID != relation.ID {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
