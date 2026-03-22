@@ -255,6 +255,7 @@ func startServer() {
 		r.Delete("/train-station-maps/{map_name}", service.AdminDeleteTrainStationMapHandler)
 		r.Get("/stations", service.AdminListStationsHandler)
 		r.Put("/stations", service.AdminUpsertStationHandler)
+		r.Delete("/stations/{map_name}/{identifier}", service.AdminDeleteStationHandler)
 		r.Put("/stations/lines", service.AdminUpdateStationLinesHandler)
 		r.Get("/station-lines", service.AdminListStationLineCatalogHandler)
 		r.Put("/station-lines", service.AdminSaveStationLineCatalogHandler)

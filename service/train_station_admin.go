@@ -447,6 +447,38 @@ func UpsertTrainStationByIdentifier(station dbmodel.TrainStation) (*dbmodel.Trai
 	return &station, nil
 }
 
+func RemoveTrainStationByIdentifier(mapName, identifier string) error {
+	mapName = strings.TrimSpace(mapName)
+	identifier = strings.TrimSpace(identifier)
+	if mapName == "" || identifier == "" {
+		return fmt.Errorf("map_name and identifier are required")
+	}
+
+	tx := database.Connection.Begin()
+	var station dbmodel.TrainStation
+	if err := tx.Where("map_name = ? AND identifier = ?", mapName, identifier).First(&station).Error; err != nil {
+		tx.Rollback()
+		if err == gorm.ErrRecordNotFound {
+			return fmt.Errorf("station not found")
+		}
+		return err
+	}
+
+	if err := tx.Unscoped().Where("station_id = ?", station.ID).Delete(&dbmodel.TrainStationStationLine{}).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Delete(&station).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	if err := tx.Commit().Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+	return nil
+}
+
 func UpdateTrainStationLines(mapName, identifier string, lines []initmodel.LineInfo) (*dbmodel.TrainStation, error) {
 	var station dbmodel.TrainStation
 	station.MapName = strings.TrimSpace(mapName)
