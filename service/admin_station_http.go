@@ -195,6 +195,30 @@ func AdminUpsertStationHandler(w http.ResponseWriter, r *http.Request) {
 	respondJSON(w, http.StatusOK, output)
 }
 
+func AdminDeleteStationHandler(w http.ResponseWriter, r *http.Request) {
+	if requireAdmin(w, r) == nil {
+		return
+	}
+
+	mapName := strings.TrimSpace(chi.URLParam(r, "map_name"))
+	identifier := strings.TrimSpace(chi.URLParam(r, "identifier"))
+	if mapName == "" || identifier == "" {
+		http.Error(w, "map_name and identifier are required", http.StatusBadRequest)
+		return
+	}
+
+	if err := RemoveTrainStationByIdentifier(mapName, identifier); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"deleted":    true,
+		"map_name":   mapName,
+		"identifier": identifier,
+	})
+}
+
 func AdminUpdateStationLinesHandler(w http.ResponseWriter, r *http.Request) {
 	if requireAdmin(w, r) == nil {
 		return
