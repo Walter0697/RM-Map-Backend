@@ -88,6 +88,7 @@ retrycount=1
 [tomtomstaticimage]
 baseurl="https://api.tomtom.com/map/1/staticimage"
 timeoutms=8000
+retrycount=2
 
 [weather]
 enable=false

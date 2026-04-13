@@ -93,8 +93,9 @@ type TomTomRouteSetting struct {
 }
 
 type TomTomStaticImageSetting struct {
-	BaseURL   string `mapstructure:"baseurl"`
-	TimeoutMS int    `mapstructure:"timeoutms"`
+	BaseURL    string `mapstructure:"baseurl"`
+	TimeoutMS  int    `mapstructure:"timeoutms"`
+	RetryCount int    `mapstructure:"retrycount"`
 }
 
 type WeatherSetting struct {

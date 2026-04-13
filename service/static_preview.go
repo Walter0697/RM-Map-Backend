@@ -30,9 +30,14 @@ const (
 	defaultStaticPreviewStyle   = "main"
 	defaultStaticPreviewLayer   = "basic"
 	defaultStaticPreviewTimeout = 8 * time.Second
+	defaultStaticPreviewRetries = 2
+	staticPreviewRetryBackoff   = 250 * time.Millisecond
 )
 
-var staticPreviewHTTPClient = &http.Client{Timeout: defaultStaticPreviewTimeout}
+var staticPreviewHTTPClientFactory = func(timeout time.Duration) *http.Client {
+	return &http.Client{Timeout: timeout}
+}
+var staticPreviewSleepFn = time.Sleep
 
 var (
 	ErrInvalidCoordinates = errors.New("invalid coordinates")
@@ -115,17 +120,18 @@ func validateCoordinates(lat float64, lon float64) error {
 }
 
 func fetchTomTomStaticMapImage(lat float64, lon float64) ([]byte, error) {
-	if strings.TrimSpace(config.Data.APIKEY.TomTomMap) == "" {
+	apiKey := resolveTomTomStaticPreviewAPIKey()
+	if apiKey == "" {
 		return nil, fmt.Errorf("%w: api key is not configured", ErrTomTomStaticMap)
 	}
 
-	endpoint, err := url.Parse("https://api.tomtom.com/map/1/staticimage")
+	endpoint, err := url.Parse(resolveTomTomStaticPreviewBaseURL())
 	if err != nil {
 		return nil, err
 	}
 
 	query := endpoint.Query()
-	query.Set("key", config.Data.APIKEY.TomTomMap)
+	query.Set("key", apiKey)
 	query.Set("layer", defaultStaticPreviewLayer)
 	query.Set("style", defaultStaticPreviewStyle)
 	query.Set("format", defaultStaticPreviewFormat)
@@ -135,30 +141,84 @@ func fetchTomTomStaticMapImage(lat float64, lon float64) ([]byte, error) {
 	query.Set("height", fmt.Sprintf("%d", defaultStaticPreviewHeight))
 	endpoint.RawQuery = query.Encode()
 
-	request, err := http.NewRequest(http.MethodGet, endpoint.String(), nil)
-	if err != nil {
-		return nil, err
+	retryCount := resolveTomTomStaticPreviewRetryCount()
+	var lastErr error
+	for attempt := 0; attempt <= retryCount; attempt++ {
+		payload, retryable, err := fetchTomTomStaticMapImageOnce(endpoint.String())
+		if err == nil {
+			return payload, nil
+		}
+
+		lastErr = err
+		if !retryable || attempt == retryCount {
+			break
+		}
+
+		staticPreviewSleepFn(time.Duration(attempt+1) * staticPreviewRetryBackoff)
 	}
 
-	response, err := staticPreviewHTTPClient.Do(request)
+	return nil, lastErr
+}
+
+func fetchTomTomStaticMapImageOnce(endpoint string) ([]byte, bool, error) {
+	request, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
-		return nil, fmt.Errorf("%w: request failed: %v", ErrTomTomStaticMap, err)
+		return nil, false, err
+	}
+
+	client := staticPreviewHTTPClientFactory(resolveTomTomStaticPreviewTimeout())
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, true, fmt.Errorf("%w: request failed: %v", ErrTomTomStaticMap, err)
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("%w: status %d", ErrTomTomStaticMap, response.StatusCode)
+		retryable := response.StatusCode == http.StatusTooManyRequests || response.StatusCode >= http.StatusInternalServerError
+		return nil, retryable, fmt.Errorf("%w: status %d", ErrTomTomStaticMap, response.StatusCode)
 	}
 
 	payload, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("%w: read response: %v", ErrTomTomStaticMap, err)
+		return nil, true, fmt.Errorf("%w: read response: %v", ErrTomTomStaticMap, err)
 	}
 	if len(payload) == 0 {
-		return nil, fmt.Errorf("%w: empty response", ErrTomTomStaticMap)
+		return nil, true, fmt.Errorf("%w: empty response", ErrTomTomStaticMap)
 	}
 
-	return payload, nil
+	return payload, false, nil
+}
+
+func resolveTomTomStaticPreviewAPIKey() string {
+	apiKey := strings.TrimSpace(config.Data.APIKEY.TomTomStaticImage)
+	if apiKey != "" {
+		return apiKey
+	}
+	return strings.TrimSpace(config.Data.APIKEY.TomTomMap)
+}
+
+func resolveTomTomStaticPreviewBaseURL() string {
+	baseURL := strings.TrimSpace(config.Data.TomTomStaticImage.BaseURL)
+	if baseURL != "" {
+		return baseURL
+	}
+	return "https://api.tomtom.com/map/1/staticimage"
+}
+
+func resolveTomTomStaticPreviewTimeout() time.Duration {
+	timeoutMS := config.Data.TomTomStaticImage.TimeoutMS
+	if timeoutMS > 0 {
+		return time.Duration(timeoutMS) * time.Millisecond
+	}
+	return defaultStaticPreviewTimeout
+}
+
+func resolveTomTomStaticPreviewRetryCount() int {
+	retryCount := config.Data.TomTomStaticImage.RetryCount
+	if retryCount >= 0 {
+		return retryCount
+	}
+	return defaultStaticPreviewRetries
 }
 
 func composeStaticPreviewImage(staticMapImage []byte, pin dbmodel.Pin, markerType *dbmodel.MarkerType) ([]byte, int, int, error) {
