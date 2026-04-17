@@ -27,7 +27,7 @@ func TestBuildReleaseNoteModelValidatesSemver(t *testing.T) {
 
 	_, err := buildReleaseNoteModel(nil, adminReleaseNoteUpsertRequest{
 		Title:         "Release",
-		Version:       "2.9.5",
+		Version:       "3.0.0",
 		Content:       "content",
 		ContentFormat: "markdown",
 		PublishState:  "draft",
@@ -214,7 +214,7 @@ func TestAdminReleaseNoteCRUDHandlers(t *testing.T) {
 
 func TestBuildReleaseNoteModelAllowsEditingExistingOlderVersion(t *testing.T) {
 	releaseNoteLoadBaselineVersionFn = func() (string, error) {
-		return "2.9.5", nil
+		return "3.0.0", nil
 	}
 	t.Cleanup(func() {
 		releaseNoteLoadBaselineVersionFn = loadReleaseNoteBaselineVersion
