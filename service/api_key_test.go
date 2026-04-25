@@ -160,6 +160,74 @@ func TestParseIntegrationListQuerySupportsMultiSearchValues(t *testing.T) {
 	}
 }
 
+func TestParseIntegrationPageQuery(t *testing.T) {
+	values := url.Values{}
+	values.Set("page", "3")
+	values.Set("page_size", "25")
+	values.Set("sort_by", "label")
+	values.Set("order", "desc")
+	values.Set("status", "active")
+
+	query, err := parseIntegrationPageQuery(values, map[string]string{
+		"label": "label",
+	}, "label", []string{"status"})
+	if err != nil {
+		t.Fatalf("parseIntegrationPageQuery returned error: %v", err)
+	}
+
+	if query.Page != 3 || query.PageSize != 25 || query.SortBy != "label" || query.Order != "desc" {
+		t.Fatalf("unexpected parsed page query: %+v", query)
+	}
+	if query.Filters["status"] != "active" {
+		t.Fatalf("expected status filter to be active, got %q", query.Filters["status"])
+	}
+}
+
+func TestParseIntegrationPageQueryInvalidPage(t *testing.T) {
+	values := url.Values{}
+	values.Set("page", "0")
+
+	_, err := parseIntegrationPageQuery(values, map[string]string{"label": "label"}, "label", []string{"status"})
+	if err == nil {
+		t.Fatalf("expected error for invalid page")
+	}
+}
+
+func TestParseIntegrationPageQueryRejectsUnsupportedFilter(t *testing.T) {
+	values := url.Values{}
+	values.Set("unknown", "x")
+
+	_, err := parseIntegrationPageQuery(values, map[string]string{"label": "label"}, "label", []string{"status"})
+	if err == nil {
+		t.Fatalf("expected error for unsupported filter")
+	}
+}
+
+func TestIntegrationPageResponse(t *testing.T) {
+	payload := integrationPageResponse([]string{"a", "b"}, 23, integrationPageQuery{
+		Page:     2,
+		PageSize: 10,
+		SortBy:   "updated_at",
+		Order:    "desc",
+	})
+
+	if payload["page"] != 2 {
+		t.Fatalf("expected page 2, got %+v", payload["page"])
+	}
+	if payload["page_size"] != 10 {
+		t.Fatalf("expected page_size 10, got %+v", payload["page_size"])
+	}
+	if payload["total_pages"] != 3 {
+		t.Fatalf("expected total_pages 3, got %+v", payload["total_pages"])
+	}
+	if payload["has_next"] != true {
+		t.Fatalf("expected has_next true, got %+v", payload["has_next"])
+	}
+	if payload["has_prev"] != true {
+		t.Fatalf("expected has_prev true, got %+v", payload["has_prev"])
+	}
+}
+
 func TestNormalizeSettingsPinLabelFallsBackToValue(t *testing.T) {
 	value := "canonical-value"
 	if got := normalizeSettingsPinLabel(value, nil); got != value {

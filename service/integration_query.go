@@ -22,6 +22,14 @@ type integrationListQuery struct {
 	Filters map[string]string
 }
 
+type integrationPageQuery struct {
+	Page     int
+	PageSize int
+	SortBy   string
+	Order    string
+	Filters  map[string]string
+}
+
 func parseIntegrationListQuery(values url.Values, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationListQuery, error) {
 	query := integrationListQuery{
 		Limit:   defaultIntegrationLimit,
@@ -116,7 +124,104 @@ func parseIntegrationListQuery(values url.Values, allowedSort map[string]string,
 	return query, nil
 }
 
+func parseIntegrationPageQuery(values url.Values, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationPageQuery, error) {
+	query := integrationPageQuery{
+		Page:     1,
+		PageSize: defaultIntegrationLimit,
+		SortBy:   strings.TrimSpace(defaultSort),
+		Order:    "asc",
+		Filters:  map[string]string{},
+	}
+
+	if query.SortBy == "" {
+		for key := range allowedSort {
+			query.SortBy = key
+			break
+		}
+	}
+
+	if raw := strings.TrimSpace(values.Get("page")); raw != "" {
+		page, err := strconv.Atoi(raw)
+		if err != nil || page <= 0 {
+			return query, fmt.Errorf("invalid page")
+		}
+		query.Page = page
+	}
+
+	if raw := strings.TrimSpace(values.Get("page_size")); raw != "" {
+		pageSize, err := strconv.Atoi(raw)
+		if err != nil || pageSize <= 0 {
+			return query, fmt.Errorf("invalid page_size")
+		}
+		if pageSize > maxIntegrationLimit {
+			pageSize = maxIntegrationLimit
+		}
+		query.PageSize = pageSize
+	}
+
+	if raw := strings.ToLower(strings.TrimSpace(values.Get("order"))); raw != "" {
+		if raw != "asc" && raw != "desc" {
+			return query, fmt.Errorf("invalid order")
+		}
+		query.Order = raw
+	}
+
+	if raw := strings.TrimSpace(values.Get("sort_by")); raw != "" {
+		if _, ok := allowedSort[raw]; !ok {
+			return query, fmt.Errorf("invalid sort_by")
+		}
+		query.SortBy = raw
+	}
+
+	allowedFilterSet := map[string]struct{}{}
+	for _, item := range allowedFilters {
+		allowedFilterSet[item] = struct{}{}
+	}
+	for key, rawValues := range values {
+		if key == "page" || key == "page_size" || key == "sort_by" || key == "order" {
+			continue
+		}
+		if _, ok := allowedFilterSet[key]; !ok {
+			return query, fmt.Errorf("invalid filter: %s", key)
+		}
+		if len(rawValues) == 0 {
+			continue
+		}
+		value := strings.TrimSpace(rawValues[0])
+		if key == "search" && len(rawValues) > 1 {
+			searchValues := make([]string, 0, len(rawValues))
+			for _, rawValue := range rawValues {
+				trimmed := strings.TrimSpace(rawValue)
+				if trimmed != "" {
+					searchValues = append(searchValues, trimmed)
+				}
+			}
+			value = strings.Join(searchValues, ",")
+		}
+		if value == "" {
+			continue
+		}
+		query.Filters[key] = value
+	}
+
+	return query, nil
+}
+
 func sortClause(query integrationListQuery, allowedSort map[string]string) string {
+	column, ok := allowedSort[query.SortBy]
+	if !ok || strings.TrimSpace(column) == "" {
+		for _, fallback := range allowedSort {
+			column = fallback
+			break
+		}
+	}
+	if strings.TrimSpace(column) == "" {
+		column = "id"
+	}
+	return fmt.Sprintf("%s %s", column, query.Order)
+}
+
+func sortClauseForPageQuery(query integrationPageQuery, allowedSort map[string]string) string {
 	column, ok := allowedSort[query.SortBy]
 	if !ok || strings.TrimSpace(column) == "" {
 		for _, fallback := range allowedSort {
@@ -147,6 +252,23 @@ func queryContextString(query integrationListQuery) string {
 	)
 }
 
+func queryContextStringForPage(query integrationPageQuery) string {
+	filterParts := make([]string, 0, len(query.Filters))
+	for key, value := range query.Filters {
+		if len(value) > 64 {
+			value = value[:64]
+		}
+		filterParts = append(filterParts, fmt.Sprintf("%s=%s", key, value))
+	}
+	return fmt.Sprintf("page=%d;page_size=%d;sort_by=%s;order=%s;filters=%s",
+		query.Page,
+		query.PageSize,
+		query.SortBy,
+		query.Order,
+		strings.Join(filterParts, ","),
+	)
+}
+
 func integrationListResponse(items interface{}, total int64, query integrationListQuery, nextCursor string) map[string]interface{} {
 	return map[string]interface{}{
 		"items":      items,
@@ -157,6 +279,24 @@ func integrationListResponse(items interface{}, total int64, query integrationLi
 		"nextCursor": nextCursor,
 		"sort_by":    query.SortBy,
 		"order":      query.Order,
+	}
+}
+
+func integrationPageResponse(items interface{}, total int64, query integrationPageQuery) map[string]interface{} {
+	totalPages := 0
+	if total > 0 {
+		totalPages = int((total + int64(query.PageSize) - 1) / int64(query.PageSize))
+	}
+	return map[string]interface{}{
+		"items":       items,
+		"total":       total,
+		"page":        query.Page,
+		"page_size":   query.PageSize,
+		"total_pages": totalPages,
+		"has_next":    query.Page < totalPages,
+		"has_prev":    query.Page > 1 && totalPages > 0,
+		"sort_by":     query.SortBy,
+		"order":       query.Order,
 	}
 }
 
@@ -173,4 +313,8 @@ func parseBoolQuery(value string) (bool, error) {
 
 func parseListQueryFromRequest(r *http.Request, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationListQuery, error) {
 	return parseIntegrationListQuery(r.URL.Query(), allowedSort, defaultSort, allowedFilters)
+}
+
+func parsePageQueryFromRequest(r *http.Request, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationPageQuery, error) {
+	return parseIntegrationPageQuery(r.URL.Query(), allowedSort, defaultSort, allowedFilters)
 }
