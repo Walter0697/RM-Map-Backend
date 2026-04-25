@@ -22,20 +22,67 @@ type integrationListQuery struct {
 	Filters map[string]string
 }
 
+type integrationPagedListQuery struct {
+	Page    int
+	PerPage int
+	SortBy  string
+	Order   string
+	Filters map[string]string
+}
+
+func defaultIntegrationSort(allowedSort map[string]string, defaultSort string) string {
+	sortBy := strings.TrimSpace(defaultSort)
+	if sortBy != "" {
+		return sortBy
+	}
+	for key := range allowedSort {
+		return key
+	}
+	return ""
+}
+
+func parseIntegrationFilters(values url.Values, allowedFilters []string, reservedKeys map[string]struct{}) (map[string]string, error) {
+	filters := map[string]string{}
+	allowedFilterSet := map[string]struct{}{}
+	for _, item := range allowedFilters {
+		allowedFilterSet[item] = struct{}{}
+	}
+	for key, rawValues := range values {
+		if _, ok := reservedKeys[key]; ok {
+			continue
+		}
+		if _, ok := allowedFilterSet[key]; !ok {
+			return nil, fmt.Errorf("invalid filter: %s", key)
+		}
+		if len(rawValues) == 0 {
+			continue
+		}
+		value := strings.TrimSpace(rawValues[0])
+		if key == "search" && len(rawValues) > 1 {
+			searchValues := make([]string, 0, len(rawValues))
+			for _, rawValue := range rawValues {
+				trimmed := strings.TrimSpace(rawValue)
+				if trimmed != "" {
+					searchValues = append(searchValues, trimmed)
+				}
+			}
+			value = strings.Join(searchValues, ",")
+		}
+		if value == "" {
+			continue
+		}
+		filters[key] = value
+	}
+	return filters, nil
+}
+
 func parseIntegrationListQuery(values url.Values, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationListQuery, error) {
 	query := integrationListQuery{
 		Limit:   defaultIntegrationLimit,
 		Offset:  0,
-		SortBy:  strings.TrimSpace(defaultSort),
+		SortBy:  defaultIntegrationSort(allowedSort, defaultSort),
 		Order:   "asc",
 		Filters: map[string]string{},
-	}
-
-	if query.SortBy == "" {
-		for key := range allowedSort {
-			query.SortBy = key
-			break
-		}
 	}
 
 	if raw := strings.TrimSpace(values.Get("limit")); raw != "" {
@@ -82,36 +129,73 @@ func parseIntegrationListQuery(values url.Values, allowedSort map[string]string,
 		query.SortBy = raw
 	}
 
-	allowedFilterSet := map[string]struct{}{}
-	for _, item := range allowedFilters {
-		allowedFilterSet[item] = struct{}{}
+	filters, err := parseIntegrationFilters(values, allowedFilters, map[string]struct{}{
+		"limit":   {},
+		"offset":  {},
+		"cursor":  {},
+		"sort_by": {},
+		"order":   {},
+	})
+	if err != nil {
+		return query, err
 	}
-	for key, rawValues := range values {
-		if key == "limit" || key == "offset" || key == "cursor" || key == "sort_by" || key == "order" {
-			continue
-		}
-		if _, ok := allowedFilterSet[key]; !ok {
-			return query, fmt.Errorf("invalid filter: %s", key)
-		}
-		if len(rawValues) == 0 {
-			continue
-		}
-		value := strings.TrimSpace(rawValues[0])
-		if key == "search" && len(rawValues) > 1 {
-			searchValues := make([]string, 0, len(rawValues))
-			for _, rawValue := range rawValues {
-				trimmed := strings.TrimSpace(rawValue)
-				if trimmed != "" {
-					searchValues = append(searchValues, trimmed)
-				}
-			}
-			value = strings.Join(searchValues, ",")
-		}
-		if value == "" {
-			continue
-		}
-		query.Filters[key] = value
+	query.Filters = filters
+
+	return query, nil
+}
+
+func parseIntegrationPagedListQuery(values url.Values, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationPagedListQuery, error) {
+	query := integrationPagedListQuery{
+		Page:    1,
+		PerPage: defaultIntegrationLimit,
+		SortBy:  defaultIntegrationSort(allowedSort, defaultSort),
+		Order:   "asc",
+		Filters: map[string]string{},
 	}
+
+	if raw := strings.TrimSpace(values.Get("page")); raw != "" {
+		page, err := strconv.Atoi(raw)
+		if err != nil || page <= 0 {
+			return query, fmt.Errorf("invalid page")
+		}
+		query.Page = page
+	}
+
+	if raw := strings.TrimSpace(values.Get("per_page")); raw != "" {
+		perPage, err := strconv.Atoi(raw)
+		if err != nil || perPage <= 0 {
+			return query, fmt.Errorf("invalid per_page")
+		}
+		if perPage > maxIntegrationLimit {
+			perPage = maxIntegrationLimit
+		}
+		query.PerPage = perPage
+	}
+
+	if raw := strings.ToLower(strings.TrimSpace(values.Get("order"))); raw != "" {
+		if raw != "asc" && raw != "desc" {
+			return query, fmt.Errorf("invalid order")
+		}
+		query.Order = raw
+	}
+
+	if raw := strings.TrimSpace(values.Get("sort_by")); raw != "" {
+		if _, ok := allowedSort[raw]; !ok {
+			return query, fmt.Errorf("invalid sort_by")
+		}
+		query.SortBy = raw
+	}
+
+	filters, err := parseIntegrationFilters(values, allowedFilters, map[string]struct{}{
+		"page":     {},
+		"per_page": {},
+		"sort_by":  {},
+		"order":    {},
+	})
+	if err != nil {
+		return query, err
+	}
+	query.Filters = filters
 
 	return query, nil
 }
@@ -160,6 +244,22 @@ func integrationListResponse(items interface{}, total int64, query integrationLi
 	}
 }
 
+func integrationPagedListResponse(items interface{}, total int64, query integrationPagedListQuery) map[string]interface{} {
+	totalPages := 0
+	if total > 0 {
+		totalPages = int((total + int64(query.PerPage) - 1) / int64(query.PerPage))
+	}
+	return map[string]interface{}{
+		"items":       items,
+		"total":       total,
+		"page":        query.Page,
+		"per_page":    query.PerPage,
+		"total_pages": totalPages,
+		"sort_by":     query.SortBy,
+		"order":       query.Order,
+	}
+}
+
 func parseBoolQuery(value string) (bool, error) {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "true", "1", "yes":
@@ -173,4 +273,8 @@ func parseBoolQuery(value string) (bool, error) {
 
 func parseListQueryFromRequest(r *http.Request, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationListQuery, error) {
 	return parseIntegrationListQuery(r.URL.Query(), allowedSort, defaultSort, allowedFilters)
+}
+
+func parsePagedListQueryFromRequest(r *http.Request, allowedSort map[string]string, defaultSort string, allowedFilters []string) (integrationPagedListQuery, error) {
+	return parseIntegrationPagedListQuery(r.URL.Query(), allowedSort, defaultSort, allowedFilters)
 }

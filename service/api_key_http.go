@@ -212,10 +212,10 @@ type integrationScheduleRoutePreviewResponse struct {
 
 type integrationScheduleResponse struct {
 	model.Schedule
-	Testing            bool                                    `json:"testing"`
+	Testing            bool                                     `json:"testing"`
 	RoutePreview       *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
-	Warnings           []string                                `json:"warnings,omitempty"`
-	TravelPlanItemLink *integrationTravelPlanItemLinkResponse  `json:"travel_plan_item_link,omitempty"`
+	Warnings           []string                                 `json:"warnings,omitempty"`
+	TravelPlanItemLink *integrationTravelPlanItemLinkResponse   `json:"travel_plan_item_link,omitempty"`
 }
 
 type integrationScheduleItemInput struct {
@@ -290,22 +290,22 @@ type integrationUserReminderTimeResponse struct {
 }
 
 type integrationDueReminderResponse struct {
-	ScheduleID       uint    `json:"schedule_id"`
-	ScheduleLabel    string  `json:"schedule_label"`
-	ScheduleStatus   string  `json:"schedule_status"`
-	ScheduleTime     string  `json:"schedule_time"`
+	ScheduleID       uint         `json:"schedule_id"`
+	ScheduleLabel    string       `json:"schedule_label"`
+	ScheduleStatus   string       `json:"schedule_status"`
+	ScheduleTime     string       `json:"schedule_time"`
 	Marker           model.Marker `json:"marker"`
-	MarkerID         uint    `json:"marker_id"`
-	MarkerLabel      string  `json:"marker_label"`
-	MarkerLatitude   float64 `json:"marker_latitude"`
-	MarkerLongitude  float64 `json:"marker_longitude"`
-	MarkerTimezone   string  `json:"marker_timezone"`
-	LocalDate        string  `json:"local_date"`
-	LocalNow         string  `json:"local_now"`
-	ReminderTime     string  `json:"reminder_time"`
-	ReminderAtLocal  string  `json:"reminder_at_local"`
-	RelationID       uint    `json:"relation_id"`
-	ReminderUsername string  `json:"username"`
+	MarkerID         uint         `json:"marker_id"`
+	MarkerLabel      string       `json:"marker_label"`
+	MarkerLatitude   float64      `json:"marker_latitude"`
+	MarkerLongitude  float64      `json:"marker_longitude"`
+	MarkerTimezone   string       `json:"marker_timezone"`
+	LocalDate        string       `json:"local_date"`
+	LocalNow         string       `json:"local_now"`
+	ReminderTime     string       `json:"reminder_time"`
+	ReminderAtLocal  string       `json:"reminder_at_local"`
+	RelationID       uint         `json:"relation_id"`
+	ReminderUsername string       `json:"username"`
 }
 
 type integrationStaticPreviewRequest struct {
@@ -418,6 +418,58 @@ var integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 }
 var integrationUpdateMarkerModelFn = func(marker *dbmodel.Marker) error {
 	return marker.Update(database.Connection)
+}
+var integrationListMarkersFn = func(apiKey *dbmodel.APIKey, queryOption integrationListQuery, allowedSort map[string]string) ([]dbmodel.Marker, int64, error) {
+	query, err := buildIntegrationMarkerListQuery(apiKey, queryOption.Filters)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	markers := make([]dbmodel.Marker, 0)
+	queryWithSort := query
+	if queryOption.Cursor > 0 {
+		queryWithSort = queryWithSort.Where("id > ?", queryOption.Cursor)
+		queryWithSort = queryWithSort.Order("id asc")
+	} else {
+		queryWithSort = queryWithSort.Order(sortClause(queryOption, allowedSort)).Order("id asc")
+	}
+	if err := queryWithSort.
+		Limit(queryOption.Limit).
+		Offset(queryOption.Offset).
+		Find(&markers).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return markers, total, nil
+}
+var integrationListMarkersByPageFn = func(apiKey *dbmodel.APIKey, queryOption integrationPagedListQuery, allowedSort map[string]string) ([]dbmodel.Marker, int64, error) {
+	query, err := buildIntegrationMarkerListQuery(apiKey, queryOption.Filters)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+
+	markers := make([]dbmodel.Marker, 0)
+	offset := (queryOption.Page - 1) * queryOption.PerPage
+	if err := query.
+		Order(fmt.Sprintf("%s %s", allowedSort[queryOption.SortBy], queryOption.Order)).
+		Order("id asc").
+		Limit(queryOption.PerPage).
+		Offset(offset).
+		Find(&markers).Error; err != nil {
+		return nil, 0, err
+	}
+
+	return markers, total, nil
 }
 var integrationFindNearbyMarkersFn = findNearbyMarkersByDistance
 var integrationListDistinctMarkerCountriesFn = func(query *gorm.DB) ([]string, error) {
@@ -602,6 +654,132 @@ func toIntegrationSettingsPinResponse(pin dbmodel.Pin) integrationSettingsPinRes
 }
 
 var integrationResolveRestaurantByProviderFn = GetOrCreateRestaurantByProvider
+
+type integrationMarkerQueryError struct {
+	message string
+}
+
+func (e *integrationMarkerQueryError) Error() string {
+	return e.message
+}
+
+func integrationMarkerAllowedSort() map[string]string {
+	return map[string]string{
+		"created_at": "created_at",
+		"updated_at": "updated_at",
+		"label":      "label",
+		"type":       "type",
+		"to_time":    "to_time",
+	}
+}
+
+func decorateIntegrationMarkerList(markers []dbmodel.Marker) []integrationMarkerResponse {
+	response := make([]model.Marker, 0, len(markers))
+	for _, item := range markers {
+		response = append(response, helper.ConvertMarker(item))
+	}
+
+	decorated := make([]integrationMarkerResponse, 0, len(response))
+	for index, marker := range response {
+		decorated = append(decorated, buildIntegrationMarkerResponse(marker, markers[index].Testing))
+	}
+
+	return decorated
+}
+
+func buildIntegrationMarkerListQuery(apiKey *dbmodel.APIKey, filters map[string]string) (*gorm.DB, error) {
+	current := time.Now().AddDate(0, 0, -1)
+	query := database.Connection.Model(&dbmodel.Marker{}).Preload("RestaurantInfo")
+	query = query.Where("relation_id = ?", apiKey.Relation.ID)
+	query = query.Where("status != ?", constant.Arrived)
+	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
+	query = query.Where(`type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)`)
+
+	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	if value, ok := filters["testing"]; ok {
+		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
+		if requestTesting && !canAccessTesting {
+			return nil, &helper.PermissionDeniedError{}
+		}
+		query = query.Where("testing = ?", requestTesting)
+	} else if !canAccessTesting {
+		query = query.Where("testing = ?", false)
+	}
+
+	if value, ok := filters["type"]; ok {
+		query = query.Where("type = ?", value)
+	}
+	if value, ok := filters["status"]; ok {
+		query = query.Where("status = ?", value)
+	}
+	if value, ok := filters["country"]; ok {
+		query = query.Where("country = ?", value)
+	}
+	if value, ok := filters["country_code"]; ok {
+		query = query.Where("country_code = ?", value)
+	}
+	if value, ok := filters["country_part"]; ok {
+		query = query.Where("country_part = ?", value)
+	}
+	if value, ok := filters["label"]; ok {
+		query = query.Where("label ILIKE ?", "%"+value+"%")
+	}
+	if value, ok := filters["search"]; ok {
+		searchTerms := parseIntegrationSearchTerms(value)
+		if len(searchTerms) > 0 {
+			searchQuery := database.Connection.Where("1 = 0")
+			for _, term := range searchTerms {
+				keyword := "%" + term + "%"
+				searchQuery = searchQuery.Or(
+					"label ILIKE ? OR address ILIKE ? OR description ILIKE ?",
+					keyword,
+					keyword,
+					keyword,
+				)
+			}
+			query = query.Where(searchQuery)
+		}
+	}
+
+	westRaw, hasWest := filters["west"]
+	southRaw, hasSouth := filters["south"]
+	eastRaw, hasEast := filters["east"]
+	northRaw, hasNorth := filters["north"]
+	if hasWest || hasSouth || hasEast || hasNorth {
+		if !hasWest || !hasSouth || !hasEast || !hasNorth {
+			return nil, &integrationMarkerQueryError{message: "bbox requires west,south,east,north"}
+		}
+
+		west, err := strconv.ParseFloat(westRaw, 64)
+		if err != nil || west < -180 || west > 180 {
+			return nil, &integrationMarkerQueryError{message: "invalid west"}
+		}
+		south, err := strconv.ParseFloat(southRaw, 64)
+		if err != nil || south < -90 || south > 90 {
+			return nil, &integrationMarkerQueryError{message: "invalid south"}
+		}
+		east, err := strconv.ParseFloat(eastRaw, 64)
+		if err != nil || east < -180 || east > 180 {
+			return nil, &integrationMarkerQueryError{message: "invalid east"}
+		}
+		north, err := strconv.ParseFloat(northRaw, 64)
+		if err != nil || north < -90 || north > 90 {
+			return nil, &integrationMarkerQueryError{message: "invalid north"}
+		}
+		if south > north {
+			return nil, &integrationMarkerQueryError{message: "south cannot be greater than north"}
+		}
+
+		query = query.Where("latitude >= ? AND latitude <= ?", south, north)
+		if west <= east {
+			query = query.Where("longitude >= ? AND longitude <= ?", west, east)
+		} else {
+			query = query.Where("(longitude >= ? OR longitude <= ?)", west, east)
+		}
+	}
+
+	return query, nil
+}
 
 func CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 	operator := currentUserFromRequest(r)
@@ -836,161 +1014,72 @@ func DeleteAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
-	allowedSort := map[string]string{
-		"created_at": "created_at",
-		"updated_at": "updated_at",
-		"label":      "label",
-		"type":       "type",
-		"to_time":    "to_time",
-	}
+	allowedSort := integrationMarkerAllowedSort()
 	queryOption, err := parseListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "country_part", "label", "search", "west", "south", "east", "north", "zoom", "testing"})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.markers.list", constant.APIKeyScopeMarkersRead, queryContextString(queryOption))
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.list", constant.APIKeyScopeMarkersRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
 
-	current := time.Now().AddDate(0, 0, -1)
-	query := database.Connection.Model(&dbmodel.Marker{}).Preload("RestaurantInfo")
-	query = query.Where("relation_id = ?", apiKey.Relation.ID)
-	query = query.Where("status != ?", constant.Arrived)
-	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
-	// Enforce hidden-marker filtering via marker type visibility.
-	query = query.Where(
-		`type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)`,
-	)
-
-	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
-	if value, ok := queryOption.Filters["testing"]; ok {
-		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
-		if requestTesting && !canAccessTesting {
+	markers, total, err := integrationListMarkersFn(apiKey, queryOption, allowedSort)
+	if err != nil {
+		var permissionErr *helper.PermissionDeniedError
+		var queryErr *integrationMarkerQueryError
+		if errors.As(err, &permissionErr) {
 			http.Error(w, "permission denied", http.StatusForbidden)
 			return
 		}
-		query = query.Where("testing = ?", requestTesting)
-	} else if !canAccessTesting {
-		query = query.Where("testing = ?", false)
-	}
-
-	if value, ok := queryOption.Filters["type"]; ok {
-		query = query.Where("type = ?", value)
-	}
-	if value, ok := queryOption.Filters["status"]; ok {
-		query = query.Where("status = ?", value)
-	}
-	if value, ok := queryOption.Filters["country"]; ok {
-		query = query.Where("country = ?", value)
-	}
-	if value, ok := queryOption.Filters["country_code"]; ok {
-		query = query.Where("country_code = ?", value)
-	}
-	if value, ok := queryOption.Filters["country_part"]; ok {
-		query = query.Where("country_part = ?", value)
-	}
-	if value, ok := queryOption.Filters["label"]; ok {
-		query = query.Where("label ILIKE ?", "%"+value+"%")
-	}
-	if value, ok := queryOption.Filters["search"]; ok {
-		searchTerms := parseIntegrationSearchTerms(value)
-		if len(searchTerms) > 0 {
-			searchQuery := database.Connection.Where("1 = 0")
-			for _, term := range searchTerms {
-				keyword := "%" + term + "%"
-				searchQuery = searchQuery.Or(
-					"label ILIKE ? OR address ILIKE ? OR description ILIKE ?",
-					keyword,
-					keyword,
-					keyword,
-				)
-			}
-			query = query.Where(searchQuery)
-		}
-	}
-
-	westRaw, hasWest := queryOption.Filters["west"]
-	southRaw, hasSouth := queryOption.Filters["south"]
-	eastRaw, hasEast := queryOption.Filters["east"]
-	northRaw, hasNorth := queryOption.Filters["north"]
-	if hasWest || hasSouth || hasEast || hasNorth {
-		if !hasWest || !hasSouth || !hasEast || !hasNorth {
-			http.Error(w, "bbox requires west,south,east,north", http.StatusBadRequest)
+		if errors.As(err, &queryErr) {
+			http.Error(w, queryErr.Error(), http.StatusBadRequest)
 			return
 		}
-
-		west, convErr := strconv.ParseFloat(westRaw, 64)
-		if convErr != nil || west < -180 || west > 180 {
-			http.Error(w, "invalid west", http.StatusBadRequest)
-			return
-		}
-		south, convErr := strconv.ParseFloat(southRaw, 64)
-		if convErr != nil || south < -90 || south > 90 {
-			http.Error(w, "invalid south", http.StatusBadRequest)
-			return
-		}
-		east, convErr := strconv.ParseFloat(eastRaw, 64)
-		if convErr != nil || east < -180 || east > 180 {
-			http.Error(w, "invalid east", http.StatusBadRequest)
-			return
-		}
-		north, convErr := strconv.ParseFloat(northRaw, 64)
-		if convErr != nil || north < -90 || north > 90 {
-			http.Error(w, "invalid north", http.StatusBadRequest)
-			return
-		}
-		if south > north {
-			http.Error(w, "south cannot be greater than north", http.StatusBadRequest)
-			return
-		}
-
-		query = query.Where("latitude >= ? AND latitude <= ?", south, north)
-		if west <= east {
-			query = query.Where("longitude >= ? AND longitude <= ?", west, east)
-		} else {
-			// Crossing the antimeridian; match either edge slice.
-			query = query.Where("(longitude >= ? OR longitude <= ?)", west, east)
-		}
-	}
-
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	markers := make([]dbmodel.Marker, 0)
-	queryWithSort := query
-	if queryOption.Cursor > 0 {
-		queryWithSort = queryWithSort.Where("id > ?", queryOption.Cursor)
-		queryWithSort = queryWithSort.Order("id asc")
-	} else {
-		queryWithSort = queryWithSort.Order(sortClause(queryOption, allowedSort)).Order("id asc")
-	}
-	err = queryWithSort.
-		Limit(queryOption.Limit).
-		Offset(queryOption.Offset).
-		Find(&markers).Error
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := make([]model.Marker, 0, len(markers))
-	for _, item := range markers {
-		response = append(response, helper.ConvertMarker(item))
-	}
-	decorated := make([]integrationMarkerResponse, 0, len(response))
-	for index, marker := range response {
-		decorated = append(decorated, buildIntegrationMarkerResponse(marker, markers[index].Testing))
-	}
+	decorated := decorateIntegrationMarkerList(markers)
 	nextCursor := ""
 	if len(markers) == queryOption.Limit {
 		nextCursor = strconv.FormatUint(uint64(markers[len(markers)-1].ID), 10)
 	}
 	respondJSON(w, http.StatusOK, integrationListResponse(decorated, total, queryOption, nextCursor))
+}
+
+func IntegrationListMarkersPagedHandler(w http.ResponseWriter, r *http.Request) {
+	allowedSort := integrationMarkerAllowedSort()
+	queryOption, err := parsePagedListQueryFromRequest(r, allowedSort, "updated_at", []string{"type", "status", "country", "country_code", "country_part", "label", "search", "west", "south", "east", "north", "zoom", "testing"})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.markers.list_paged", constant.APIKeyScopeMarkersRead, fmt.Sprintf("page=%d;per_page=%d;sort_by=%s;order=%s", queryOption.Page, queryOption.PerPage, queryOption.SortBy, queryOption.Order))
+	if !ok {
+		return
+	}
+
+	markers, total, err := integrationListMarkersByPageFn(apiKey, queryOption, allowedSort)
+	if err != nil {
+		var permissionErr *helper.PermissionDeniedError
+		var queryErr *integrationMarkerQueryError
+		if errors.As(err, &permissionErr) {
+			http.Error(w, "permission denied", http.StatusForbidden)
+			return
+		}
+		if errors.As(err, &queryErr) {
+			http.Error(w, queryErr.Error(), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respondJSON(w, http.StatusOK, integrationPagedListResponse(decorateIntegrationMarkerList(markers), total, queryOption))
 }
 
 func parseIntegrationSearchTerms(raw string) []string {
@@ -2932,8 +3021,8 @@ func humanizeRFC3339Duration(timestamp string, now time.Time) string {
 func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []string, link *integrationTravelPlanItemLinkResponse) integrationScheduleResponse {
 	modelSchedule := helper.ConvertSchedule(schedule)
 	response := integrationScheduleResponse{
-		Schedule:            modelSchedule,
-		Testing:             schedule.Testing,
+		Schedule:           modelSchedule,
+		Testing:            schedule.Testing,
 		TravelPlanItemLink: link,
 	}
 	if len(warnings) > 0 {

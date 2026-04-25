@@ -27,6 +27,50 @@ func setRouteParam(req *http.Request, key string, value string) *http.Request {
 func resetIntegrationMarkerHooks() {
 	integrationAuthenticateRequestFn = authenticateIntegrationRequest
 	integrationAuthenticateNearbyRequestFn = authenticateIntegrationRequestJSON
+	integrationListMarkersFn = func(apiKey *dbmodel.APIKey, queryOption integrationListQuery, allowedSort map[string]string) ([]dbmodel.Marker, int64, error) {
+		query, err := buildIntegrationMarkerListQuery(apiKey, queryOption.Filters)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			return nil, 0, err
+		}
+
+		markers := make([]dbmodel.Marker, 0)
+		queryWithSort := query
+		if queryOption.Cursor > 0 {
+			queryWithSort = queryWithSort.Where("id > ?", queryOption.Cursor)
+			queryWithSort = queryWithSort.Order("id asc")
+		} else {
+			queryWithSort = queryWithSort.Order(sortClause(queryOption, allowedSort)).Order("id asc")
+		}
+		if err := queryWithSort.Limit(queryOption.Limit).Offset(queryOption.Offset).Find(&markers).Error; err != nil {
+			return nil, 0, err
+		}
+
+		return markers, total, nil
+	}
+	integrationListMarkersByPageFn = func(apiKey *dbmodel.APIKey, queryOption integrationPagedListQuery, allowedSort map[string]string) ([]dbmodel.Marker, int64, error) {
+		query, err := buildIntegrationMarkerListQuery(apiKey, queryOption.Filters)
+		if err != nil {
+			return nil, 0, err
+		}
+
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			return nil, 0, err
+		}
+
+		markers := make([]dbmodel.Marker, 0)
+		offset := (queryOption.Page - 1) * queryOption.PerPage
+		if err := query.Order(allowedSort[queryOption.SortBy] + " " + queryOption.Order).Order("id asc").Limit(queryOption.PerPage).Offset(offset).Find(&markers).Error; err != nil {
+			return nil, 0, err
+		}
+
+		return markers, total, nil
+	}
 	integrationGetMarkerByIDFn = func(id uint) (*dbmodel.Marker, error) {
 		marker := &dbmodel.Marker{}
 		marker.ID = id
@@ -167,6 +211,71 @@ func TestBuildIntegrationMarkerResponseWebsitePayload(t *testing.T) {
 	}
 	if item.WebsiteIntegration.Rating == nil || !strings.Contains(*item.WebsiteIntegration.Rating, "like 80") {
 		t.Fatalf("expected normalized rating, got %+v", item.WebsiteIntegration.Rating)
+	}
+}
+
+func TestIntegrationListMarkersPagedHandlerSuccess(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	integrationAuthenticateRequestFn = func(w http.ResponseWriter, r *http.Request, operation string, requiredScope string, queryContext string) (*dbmodel.APIKey, bool) {
+		if operation != "integration.markers.list_paged" {
+			t.Fatalf("unexpected operation %s", operation)
+		}
+		return &dbmodel.APIKey{Relation: dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 1}}}, true
+	}
+	integrationListMarkersByPageFn = func(apiKey *dbmodel.APIKey, queryOption integrationPagedListQuery, allowedSort map[string]string) ([]dbmodel.Marker, int64, error) {
+		if queryOption.Page != 2 || queryOption.PerPage != 1 {
+			t.Fatalf("unexpected paged query: %+v", queryOption)
+		}
+		return []dbmodel.Marker{
+			{
+				ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 7, CreatedAt: time.Date(2026, time.March, 3, 12, 30, 0, 0, time.UTC)}},
+				Label:      "Paged Marker",
+				Testing:    false,
+			},
+		}, 3, nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/paged?page=2&per_page=1&sort_by=label&order=desc", nil)
+	IntegrationListMarkersPagedHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+
+	var payload struct {
+		Items []struct {
+			ID    int    `json:"id"`
+			Label string `json:"label"`
+		} `json:"items"`
+		Page       int `json:"page"`
+		PerPage    int `json:"per_page"`
+		Total      int `json:"total"`
+		TotalPages int `json:"total_pages"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("expected json response: %v", err)
+	}
+	if payload.Page != 2 || payload.PerPage != 1 || payload.Total != 3 || payload.TotalPages != 3 {
+		t.Fatalf("unexpected paging payload: %+v", payload)
+	}
+	if len(payload.Items) != 1 || payload.Items[0].ID != 7 || payload.Items[0].Label != "Paged Marker" {
+		t.Fatalf("unexpected items payload: %+v", payload.Items)
+	}
+}
+
+func TestIntegrationListMarkersPagedHandlerValidationError(t *testing.T) {
+	resetIntegrationMarkerHooks()
+	defer resetIntegrationMarkerHooks()
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/integration/markers/paged?page=0", nil)
+	IntegrationListMarkersPagedHandler(recorder, request)
+
+	if recorder.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", recorder.Code)
 	}
 }
 

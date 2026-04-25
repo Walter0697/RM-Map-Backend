@@ -160,6 +160,38 @@ func TestParseIntegrationListQuerySupportsMultiSearchValues(t *testing.T) {
 	}
 }
 
+func TestParseIntegrationPagedListQuery(t *testing.T) {
+	values := url.Values{}
+	values.Set("page", "3")
+	values.Set("per_page", "25")
+	values.Set("sort_by", "label")
+	values.Set("order", "desc")
+	values.Set("status", "active")
+
+	query, err := parseIntegrationPagedListQuery(values, map[string]string{
+		"label": "label",
+	}, "label", []string{"status"})
+	if err != nil {
+		t.Fatalf("parseIntegrationPagedListQuery returned error: %v", err)
+	}
+
+	if query.Page != 3 || query.PerPage != 25 || query.SortBy != "label" || query.Order != "desc" {
+		t.Fatalf("unexpected parsed paged query: %+v", query)
+	}
+	if query.Filters["status"] != "active" {
+		t.Fatalf("expected status filter to be active, got %q", query.Filters["status"])
+	}
+}
+
+func TestParseIntegrationPagedListQueryInvalidPage(t *testing.T) {
+	values := url.Values{}
+	values.Set("page", "0")
+
+	if _, err := parseIntegrationPagedListQuery(values, map[string]string{"label": "label"}, "label", []string{"status"}); err == nil {
+		t.Fatalf("expected error for invalid page")
+	}
+}
+
 func TestNormalizeSettingsPinLabelFallsBackToValue(t *testing.T) {
 	value := "canonical-value"
 	if got := normalizeSettingsPinLabel(value, nil); got != value {
