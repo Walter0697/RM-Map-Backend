@@ -61,6 +61,7 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&CountryLocation{})
 	database.Connection.AutoMigrate(&TravelPlan{})
 	database.Connection.AutoMigrate(&TravelPlanDailyPlan{})
+	database.Connection.AutoMigrate(&Recipe{})
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_provider_request_time ON external_api_audit_events (provider, request_time)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_request_time ON external_api_audit_events (request_time)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_external_api_audit_events_status_request_time ON external_api_audit_events (status_class, request_time)")

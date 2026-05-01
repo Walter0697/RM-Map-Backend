@@ -226,6 +226,13 @@ func startServer() {
 		r.Delete("/{id}", deleteUserTravelPlanHandler)
 		r.Delete("/{id}/daily-plans/{daily_id}", deleteUserTravelPlanDailyPlanHandler)
 	})
+	router.Route("/recipes", func(r chi.Router) {
+		r.Get("/", listUserRecipesHandler)
+		r.Post("/", createUserRecipeHandler)
+		r.Get("/{id}", getUserRecipeHandler)
+		r.Put("/{id}", updateUserRecipeHandler)
+		r.Delete("/{id}", deleteUserRecipeHandler)
+	})
 	router.Get("/weather/planning", service.PlanningWeatherHandler)
 	router.Post("/weather/overlay-events", service.WeatherOverlayClientEventHandler)
 	router.Route("/admin", func(r chi.Router) {
