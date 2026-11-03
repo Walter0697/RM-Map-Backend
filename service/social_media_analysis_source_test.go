@@ -72,7 +72,12 @@ func TestSelectSourceAdapter(t *testing.T) {
 func TestFetchGenericSourcePreservesFinalURLAndBody(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
-		_, _ = w.Write([]byte("<html><body>post content</body></html>"))
+		_, _ = w.Write([]byte(`<html><head>
+			<title>Weekend Food</title>
+			<meta name="description" content="A food festival">
+			<meta property="og:image" content="/images/hero.jpg">
+			<meta property="og:video" content="/videos/post.mp4">
+		</head><body>post content #Food #hong_kong #food</body></html>`))
 	}))
 	defer server.Close()
 
@@ -89,6 +94,18 @@ func TestFetchGenericSourcePreservesFinalURLAndBody(t *testing.T) {
 	}
 	if !strings.Contains(result.RawBody, "post content") {
 		t.Fatalf("expected fetched body to be retained, got %q", result.RawBody)
+	}
+	if result.Title != "Weekend Food" || result.Description != "A food festival" {
+		t.Fatalf("expected title and description, got %q and %q", result.Title, result.Description)
+	}
+	if len(result.ImageURLs) != 1 || !strings.HasSuffix(result.ImageURLs[0], "/images/hero.jpg") {
+		t.Fatalf("expected normalized image URL, got %v", result.ImageURLs)
+	}
+	if len(result.VideoURLs) != 1 || !strings.HasSuffix(result.VideoURLs[0], "/videos/post.mp4") {
+		t.Fatalf("expected normalized video URL, got %v", result.VideoURLs)
+	}
+	if strings.Join(result.Hashtags, ",") != "food,hong_kong" {
+		t.Fatalf("expected deduplicated hashtags, got %v", result.Hashtags)
 	}
 }
 

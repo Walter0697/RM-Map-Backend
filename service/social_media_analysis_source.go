@@ -1,6 +1,7 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -8,7 +9,10 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 var (
@@ -131,9 +135,106 @@ func fetchGenericSource(ctx context.Context, sourceURL *url.URL, client *http.Cl
 	if int64(len(body)) > maxBytes {
 		return NormalizedSocialPost{}, fmt.Errorf("source response too large: limit is %d bytes", maxBytes)
 	}
-	return NormalizedSocialPost{
+	finalURL := response.Request.URL.String()
+	post := NormalizedSocialPost{
 		SourceURL: sourceURL.String(),
-		FinalURL:  response.Request.URL.String(),
+		FinalURL:  finalURL,
 		RawBody:   string(body),
-	}, nil
+	}
+	if contentType := response.Header.Get("Content-Type"); strings.Contains(strings.ToLower(contentType), "html") || contentType == "" {
+		extractGenericMetadata(&post, body, response.Request.URL)
+	}
+	return post, nil
+}
+
+var sourceHashtagPattern = regexp.MustCompile(`(?i)#([\p{L}\p{N}_-]+)`)
+
+func extractGenericMetadata(post *NormalizedSocialPost, body []byte, baseURL *url.URL) {
+	document, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
+	if err != nil {
+		return
+	}
+	post.Title = strings.TrimSpace(document.Find("title").First().Text())
+	post.Description = firstMetaContent(document, "name", "description")
+	if post.Description == "" {
+		post.Description = firstMetaContent(document, "property", "og:description")
+	}
+	post.Metadata = map[string]string{}
+	for _, item := range []struct {
+		key      string
+		selector string
+	}{
+		{key: "canonical_url", selector: `link[rel="canonical"]`},
+		{key: "og_title", selector: `meta[property="og:title"]`},
+		{key: "og_description", selector: `meta[property="og:description"]`},
+	} {
+		value := ""
+		if item.key == "canonical_url" {
+			value, _ = document.Find(item.selector).First().Attr("href")
+		} else {
+			value, _ = document.Find(item.selector).First().Attr("content")
+		}
+		if strings.TrimSpace(value) != "" {
+			post.Metadata[item.key] = strings.TrimSpace(value)
+		}
+	}
+	if canonical := post.Metadata["canonical_url"]; canonical != "" {
+		if parsed, err := baseURL.Parse(canonical); err == nil {
+			post.FinalURL = parsed.String()
+		}
+	}
+	for _, selector := range []string{`meta[property="og:image"]`, `meta[name="twitter:image"]`, `meta[property="og:image:url"]`} {
+		document.Find(selector).Each(func(_ int, selection *goquery.Selection) {
+			if value, ok := selection.Attr("content"); ok {
+				appendResolvedURL(&post.ImageURLs, value, baseURL)
+			}
+		})
+	}
+	for _, selector := range []string{`meta[property="og:video"]`, `meta[property="og:video:url"]`, `meta[name="twitter:player:stream"]`} {
+		document.Find(selector).Each(func(_ int, selection *goquery.Selection) {
+			if value, ok := selection.Attr("content"); ok {
+				appendResolvedURL(&post.VideoURLs, value, baseURL)
+			}
+		})
+	}
+	for _, match := range sourceHashtagPattern.FindAllStringSubmatch(string(body), 32) {
+		if len(match) > 1 {
+			value := strings.ToLower(strings.TrimSpace(match[1]))
+			if !containsString(post.Hashtags, value) {
+				post.Hashtags = append(post.Hashtags, value)
+			}
+		}
+	}
+	if len(post.Metadata) == 0 {
+		post.Metadata = nil
+	}
+}
+
+func firstMetaContent(document *goquery.Document, attribute, value string) string {
+	content, _ := document.Find(fmt.Sprintf(`meta[%s="%s"]`, attribute, value)).First().Attr("content")
+	return strings.TrimSpace(content)
+}
+
+func appendResolvedURL(target *[]string, raw string, baseURL *url.URL) {
+	parsed, err := baseURL.Parse(strings.TrimSpace(raw))
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return
+	}
+	for _, existing := range *target {
+		if existing == parsed.String() {
+			return
+		}
+	}
+	if len(*target) < 16 {
+		*target = append(*target, parsed.String())
+	}
+}
+
+func containsString(values []string, candidate string) bool {
+	for _, value := range values {
+		if value == candidate {
+			return true
+		}
+	}
+	return false
 }

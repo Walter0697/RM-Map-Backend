@@ -20,9 +20,15 @@ type SocialMediaAnalysisResponse struct {
 }
 
 type NormalizedSocialPost struct {
-	SourceURL string `json:"source_url"`
-	FinalURL  string `json:"final_url"`
-	RawBody   string `json:"-"`
+	SourceURL   string            `json:"source_url"`
+	FinalURL    string            `json:"final_url"`
+	Title       string            `json:"title,omitempty"`
+	Description string            `json:"description,omitempty"`
+	Hashtags    []string          `json:"hashtags,omitempty"`
+	ImageURLs   []string          `json:"image_urls,omitempty"`
+	VideoURLs   []string          `json:"video_urls,omitempty"`
+	Metadata    map[string]string `json:"metadata,omitempty"`
+	RawBody     string            `json:"-"`
 }
 
 const (
