@@ -127,6 +127,23 @@ type SocialMediaAnalysisSetting struct {
 	RunnerTimeoutSeconds  int    `mapstructure:"runnertimeoutseconds"`
 }
 
+type InfisicalSetting struct {
+	Enable           bool   `mapstructure:"enable"`
+	SiteURL          string `mapstructure:"siteurl"`
+	ProjectID        string `mapstructure:"projectid"`
+	Environment      string `mapstructure:"environment"`
+	SecretPath       string `mapstructure:"secretpath"`
+	ClientID         string `mapstructure:"clientid"`
+	ClientSecret     string `mapstructure:"clientsecret"`
+	ClientSecretEnv  string `mapstructure:"clientsecretenv"`
+	ApifyToken       string `mapstructure:"apifytoken"`
+	ApifyTokenEnv    string `mapstructure:"apifytokenenv"`
+	GeminiToken      string `mapstructure:"geminitoken"`
+	GeminiTokenEnv   string `mapstructure:"geminitokenenv"`
+	ApifyActorID     string `mapstructure:"apifyactorid"`
+	ApifyBaseURL     string `mapstructure:"apifybaseurl"`
+}
+
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
@@ -170,6 +187,7 @@ type Config struct {
 	Weather             WeatherSetting             `mapstructure:"weather"`
 	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
 	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
+	Infisical           InfisicalSetting           `mapstructure:"infisical"`
 	Seed                SeedSetting                `mapstructure:"seed"`
 }
 
@@ -190,6 +208,9 @@ func Init() {
 	if err := applySocialMediaAnalysisEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid social media analysis config: %s \n", err))
 	}
+	if err := applyInfisicalEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid Infisical config: %s \n", err))
+	}
 
 	if err := ValidateAuthConfig(); err != nil {
 		panic(fmt.Errorf("invalid auth config: %s \n", err))
@@ -198,6 +219,59 @@ func Init() {
 	if mode, err := ResolveAuthMode(); err == nil {
 		log.Printf("Authentication mode resolved to: %s", mode)
 	}
+}
+
+func applyInfisicalEnvOverrides() error {
+	if enable, exists := os.LookupEnv("INFISICAL_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enable)) {
+		case "1", "true", "yes", "on":
+			Data.Infisical.Enable = true
+		case "0", "false", "no", "off":
+			Data.Infisical.Enable = false
+		default:
+			return fmt.Errorf("INFISICAL_ENABLE must be a boolean, got %q", enable)
+		}
+	}
+	if value, exists := os.LookupEnv("INFISICAL_SITE_URL"); exists {
+		Data.Infisical.SiteURL = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_PROJECT_ID"); exists {
+		Data.Infisical.ProjectID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_ENVIRONMENT"); exists {
+		Data.Infisical.Environment = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_SECRET_PATH"); exists {
+		Data.Infisical.SecretPath = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_ID"); exists {
+		Data.Infisical.ClientID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_SECRET"); exists {
+		Data.Infisical.ClientSecret = value
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_SECRET_ENV"); exists {
+		Data.Infisical.ClientSecretEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_TOKEN"); exists {
+		Data.Infisical.ApifyToken = value
+	}
+	if value, exists := os.LookupEnv("APIFY_TOKEN_ENV"); exists {
+		Data.Infisical.ApifyTokenEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("GEMINI_TOKEN"); exists {
+		Data.Infisical.GeminiToken = value
+	}
+	if value, exists := os.LookupEnv("GEMINI_TOKEN_ENV"); exists {
+		Data.Infisical.GeminiTokenEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_ACTOR_ID"); exists {
+		Data.Infisical.ApifyActorID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_BASE_URL"); exists {
+		Data.Infisical.ApifyBaseURL = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	return nil
 }
 
 func applySocialMediaAnalysisEnvOverrides() error {

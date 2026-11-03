@@ -116,6 +116,22 @@ workerintervalseconds=15
 sourcemaxbytes=5242880
 runnertimeoutseconds=600
 
+[infisical]
+enable=false
+siteurl="https://app.infisical.com"
+projectid=""
+environment="dev"
+secretpath="/roroadmap"
+clientid=""
+clientsecret=""
+clientsecretenv="INFISICAL_CLIENT_SECRET"
+apifytoken=""
+apifytokenenv="APIFY_TOKEN"
+geminitoken=""
+geminitokenenv="GEMINI_TOKEN"
+apifyactorid=""
+apifybaseurl="https://api.apify.com"
+
 [seed]
 enableSeed=true
 markerNums=20
