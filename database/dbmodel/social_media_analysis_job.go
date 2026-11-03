@@ -16,6 +16,7 @@ const (
 type SocialMediaAnalysisJob struct {
 	BaseModel
 	JobID         string     `json:"job_id" gorm:"size:64;not null;uniqueIndex"`
+	RelationID    uint       `json:"relation_id" gorm:"not null;index"`
 	SourceURL     string     `json:"source_url" gorm:"type:text;not null"`
 	Status        string     `json:"status" gorm:"size:32;not null;index"`
 	Stage         string     `json:"stage" gorm:"size:64;not null;index"`
