@@ -7,6 +7,8 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+
+	"mapmarker/backend/config"
 )
 
 func TestValidatePublicSourceURL(t *testing.T) {
@@ -66,6 +68,17 @@ func TestSelectSourceAdapter(t *testing.T) {
 				t.Fatalf("expected adapter %q, got %q", test.wantName, got)
 			}
 		})
+	}
+}
+
+func TestSelectSocialMediaAnalysisSourceAdapterUsesConfiguredProvider(t *testing.T) {
+	original := config.Data
+	defer func() { config.Data = original }()
+	config.Data.Infisical.ApifyActorID = "actor"
+	config.Data.Infisical.ApifyToken = "token"
+	adapter := selectSocialMediaAnalysisSourceAdapter("https://www.instagram.com/p/abc")
+	if adapter.Name() != "instagram" {
+		t.Fatalf("expected configured Instagram adapter, got %q", adapter.Name())
 	}
 }
 

@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
+	"mapmarker/backend/config"
 )
 
 var (
@@ -96,7 +97,23 @@ func SelectSourceAdapter(rawURL string) SourceAdapter {
 }
 
 func genericSourceFetcher(ctx context.Context, sourceURL *url.URL) (NormalizedSocialPost, error) {
-	return fetchGenericSource(ctx, sourceURL, http.DefaultClient, 5*1024*1024)
+	return fetchGenericSource(ctx, sourceURL, http.DefaultClient, sourceMaxBytes())
+}
+
+func sourceMaxBytes() int64 {
+	if config.Data.SocialMediaAnalysis.SourceMaxBytes > 0 {
+		return config.Data.SocialMediaAnalysis.SourceMaxBytes
+	}
+	return 5 * 1024 * 1024
+}
+
+func selectSocialMediaAnalysisSourceAdapter(rawURL string) SourceAdapter {
+	return SelectConfiguredSourceAdapter(
+		rawURL,
+		config.Data.Infisical.ApifyActorID,
+		NewSecretResolver(config.Data.Infisical, http.DefaultClient),
+		http.DefaultClient,
+	)
 }
 
 func fetchGenericSource(ctx context.Context, sourceURL *url.URL, client *http.Client, maxBytes int64) (NormalizedSocialPost, error) {

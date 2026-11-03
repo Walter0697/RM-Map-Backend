@@ -93,7 +93,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "invalid_source_url", err)
 	}
-	adapter := SelectSourceAdapter(parsedURL.String())
+	adapter := selectSocialMediaAnalysisSourceAdapter(parsedURL.String())
 	post, err := adapter.Fetch(ctx, parsedURL)
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "source_fetch_failed", err)
