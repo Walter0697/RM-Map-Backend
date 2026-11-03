@@ -78,25 +78,21 @@ func isBlockedSourceHost(host string) bool {
 func SelectSourceAdapter(rawURL string) SourceAdapter {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil {
-		return sourceAdapter{name: "generic", fetch: unavailableSourceAdapter("generic")}
+		return sourceAdapter{name: "generic", fetch: genericSourceFetcher}
 	}
 	host := strings.ToLower(parsed.Hostname())
 	switch {
 	case host == "instagram.com" || strings.HasSuffix(host, ".instagram.com"):
-		return sourceAdapter{name: "instagram", fetch: unavailableSourceAdapter("instagram")}
+		return sourceAdapter{name: "instagram", fetch: genericSourceFetcher}
 	case host == "threads.net" || strings.HasSuffix(host, ".threads.net") || host == "threads.com" || strings.HasSuffix(host, ".threads.com"):
-		return sourceAdapter{name: "threads", fetch: unavailableSourceAdapter("threads")}
+		return sourceAdapter{name: "threads", fetch: genericSourceFetcher}
 	default:
-		return sourceAdapter{name: "generic", fetch: func(ctx context.Context, sourceURL *url.URL) (NormalizedSocialPost, error) {
-			return fetchGenericSource(ctx, sourceURL, http.DefaultClient, 5*1024*1024)
-		}}
+		return sourceAdapter{name: "generic", fetch: genericSourceFetcher}
 	}
 }
 
-func unavailableSourceAdapter(name string) func(context.Context, *url.URL) (NormalizedSocialPost, error) {
-	return func(context.Context, *url.URL) (NormalizedSocialPost, error) {
-		return NormalizedSocialPost{}, fmt.Errorf("%w: %s", ErrSourceAdapterUnavailable, name)
-	}
+func genericSourceFetcher(ctx context.Context, sourceURL *url.URL) (NormalizedSocialPost, error) {
+	return fetchGenericSource(ctx, sourceURL, http.DefaultClient, 5*1024*1024)
 }
 
 func fetchGenericSource(ctx context.Context, sourceURL *url.URL, client *http.Client, maxBytes int64) (NormalizedSocialPost, error) {
