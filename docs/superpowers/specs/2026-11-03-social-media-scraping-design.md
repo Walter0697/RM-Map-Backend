@@ -52,8 +52,19 @@ search will be added as a later verification stage for uncertain candidates.
 
 ## Secrets and Infisical
 
-The backend uses Infisical Universal Auth. TOML contains only non-secret
-configuration and secret references:
+The backend supports two equivalent secret sources so the open-source project
+can run without requiring Infisical:
+
+1. Explicit secret values in local `config.toml`.
+2. Infisical Universal Auth for deployments that want centralized secret
+   management.
+
+Infisical is optional. When enabled and reachable, its values take precedence
+over matching TOML values. If Infisical is disabled, the backend uses TOML
+values directly. A deployment may also leave a value blank in TOML and require
+Infisical to provide it.
+
+The TOML configuration supports both secret values and Infisical references:
 
 - `enabled`
 - `siteurl`
@@ -61,11 +72,21 @@ configuration and secret references:
 - `environment`
 - `secretpath`
 - `clientid`
+- `clientsecret` (local fallback; preferably omitted in shared files)
 - the environment-variable name containing the Universal Auth client secret
+- Apify token/value and Gemini token/value local fallbacks
+- optional Infisical key names for the Apify and Gemini tokens
 
-Apify and Gemini tokens are retrieved through the configured Infisical
-runtime injection path. Secret values must not be committed to `config.toml`,
-workflow definitions, prompts, job metadata, or logs.
+The supported secret set includes the Infisical Universal Auth client secret,
+Apify token, Gemini token, and future provider credentials. Secret values must
+not be committed to shared example files, workflow definitions, prompts, job
+metadata, or logs. A local untracked `config.toml` may contain values for
+development, matching the existing project configuration model.
+
+Secret resolution is centralized and deterministic: Infisical value first,
+then TOML value, then an environment-variable override where explicitly
+configured. Missing required credentials produce a clear configuration error
+without logging the value.
 
 The first implementation will add the Infisical configuration contract and
 Apify source boundary. Gemini will be represented as an optional provider
@@ -88,4 +109,3 @@ Unit tests will cover host routing, generic metadata extraction, hashtag
 normalization, Apify response mapping, Infisical configuration validation,
 provider credential absence, bounded payloads, and the complete job ordering:
 scrape/normalize first, agent submission second.
-
