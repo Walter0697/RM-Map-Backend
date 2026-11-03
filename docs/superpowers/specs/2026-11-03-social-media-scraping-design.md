@@ -84,8 +84,8 @@ metadata, or logs. A local untracked `config.toml` may contain values for
 development, matching the existing project configuration model.
 
 Secret resolution is centralized and deterministic: Infisical value first,
-then TOML value, then an environment-variable override where explicitly
-configured. Missing required credentials produce a clear configuration error
+then an explicitly configured environment-variable override, then the TOML
+value. Missing required credentials produce a clear configuration error
 without logging the value.
 
 The first implementation will add the Infisical configuration contract and
