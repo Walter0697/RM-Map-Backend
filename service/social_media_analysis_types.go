@@ -13,6 +13,7 @@ type SocialMediaAnalysisResponse struct {
 	JobID       string          `json:"job_id"`
 	Status      string          `json:"status"`
 	Stage       string          `json:"stage,omitempty"`
+	MarkerID    *uint           `json:"marker_id,omitempty"`
 	RunnerJobID string          `json:"-"`
 	Prompt      string          `json:"-"`
 	Result      json.RawMessage `json:"result,omitempty"`
@@ -68,6 +69,13 @@ type AgentAnalysisInput struct {
 type AgentAnalysisResult struct {
 	Recommendation string             `json:"recommendation"`
 	Description    string             `json:"description,omitempty"`
+	ImageURL       string             `json:"image_url,omitempty"`
+	Tags           []string           `json:"tags,omitempty"`
+	Price          string             `json:"price,omitempty"`
+	NeedBooking    bool               `json:"need_booking"`
+	EstimateTime   string             `json:"estimate_time,omitempty"`
+	FromTime       *string            `json:"from_time,omitempty"`
+	ToTime         *string            `json:"to_time,omitempty"`
 	Location       *LocationCandidate `json:"location,omitempty"`
 	Evidence       []EvidenceItem     `json:"evidence,omitempty"`
 	Confidence     float64            `json:"confidence"`

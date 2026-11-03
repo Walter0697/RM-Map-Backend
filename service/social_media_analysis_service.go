@@ -83,9 +83,10 @@ func GetSocialMediaAnalysis(ctx context.Context, jobID string, relationID uint) 
 
 func socialMediaAnalysisResponse(job *dbmodel.SocialMediaAnalysisJob) SocialMediaAnalysisResponse {
 	response := SocialMediaAnalysisResponse{
-		JobID:  job.JobID,
-		Status: job.Status,
-		Stage:  job.Stage,
+		JobID:    job.JobID,
+		Status:   job.Status,
+		Stage:    job.Stage,
+		MarkerID: job.CreatedMarkerID,
 	}
 	if strings.TrimSpace(job.ResultJSON) != "" {
 		response.Result = json.RawMessage(job.ResultJSON)

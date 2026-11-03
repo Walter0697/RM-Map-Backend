@@ -21,6 +21,18 @@ submits analysis work to wcodex-runner. Instagram and Threads currently use the
 bounded generic fetch fallback; dedicated adapters can replace that behavior
 without changing the API contract.
 
+When a source exposes a direct canonical image (for example through
+`og:image`), the structured analysis may return `image_url`. Backend-created
+markers pass that value to the existing image downloader. The production and
+non-production n8n workflows use the same optional value as `image_link`, with
+the normalized media preview URL as a fallback. Missing or unusable image URLs
+do not change the marker's other metadata.
+
+For marker creation, the agent also returns optional `tags`, `price`,
+`need_booking`, `estimate_time`, `from_time`, and `to_time` values. Tags are
+normalized into `#tag` tokens in the description, which is the existing source
+used by the hashtag listing endpoint.
+
 ## Runtime configuration
 
 Non-secret settings belong in `[socialmediaanalysis]` or environment overrides:
