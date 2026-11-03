@@ -14,3 +14,9 @@ type SocialMediaAnalysisResponse struct {
 	Prompt      string          `json:"-"`
 	Result      json.RawMessage `json:"result,omitempty"`
 }
+
+type NormalizedSocialPost struct {
+	SourceURL string `json:"source_url"`
+	FinalURL  string `json:"final_url"`
+	RawBody   string `json:"-"`
+}
