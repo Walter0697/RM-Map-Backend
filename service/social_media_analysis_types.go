@@ -1,6 +1,9 @@
 package service
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type SocialMediaAnalysisRequest struct {
 	URL string `json:"url"`
@@ -47,4 +50,59 @@ type PreparedVideo struct {
 type MediaAnalysisResult struct {
 	Facts      []string `json:"facts"`
 	Confidence float64  `json:"confidence"`
+}
+
+const (
+	AgentRecommendationCompleted            = "completed"
+	AgentRecommendationNeedsInput           = "needs_input"
+	AgentRecommendationAwaitingConfirmation = "awaiting_confirmation"
+	AgentRecommendationCreateMarker         = "create_marker"
+)
+
+type AgentAnalysisInput struct {
+	Post       NormalizedSocialPost `json:"post"`
+	Media      MediaAnalysisResult  `json:"media"`
+	Candidates []MarkerCandidate    `json:"candidates"`
+}
+
+type AgentAnalysisResult struct {
+	Recommendation string             `json:"recommendation"`
+	Description    string             `json:"description,omitempty"`
+	Location       *LocationCandidate `json:"location,omitempty"`
+	Evidence       []EvidenceItem     `json:"evidence,omitempty"`
+	Confidence     float64            `json:"confidence"`
+	FollowUp       string             `json:"follow_up,omitempty"`
+}
+
+type LocationCandidate struct {
+	Name       string  `json:"name,omitempty"`
+	Address    string  `json:"address,omitempty"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	Confidence float64 `json:"confidence"`
+}
+
+type EvidenceItem struct {
+	Source string `json:"source"`
+	Claim  string `json:"claim"`
+}
+
+type MarkerCandidate struct {
+	ID        uint    `json:"id"`
+	Name      string  `json:"name,omitempty"`
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+	DistanceM float64 `json:"distance_m,omitempty"`
+}
+
+func ValidateAgentAnalysisResult(result AgentAnalysisResult) error {
+	switch result.Recommendation {
+	case AgentRecommendationCompleted, AgentRecommendationNeedsInput, AgentRecommendationAwaitingConfirmation, AgentRecommendationCreateMarker:
+	default:
+		return fmt.Errorf("unknown agent recommendation %q", result.Recommendation)
+	}
+	if result.Confidence < 0 || result.Confidence > 1 {
+		return fmt.Errorf("agent confidence must be between 0 and 1")
+	}
+	return nil
 }
