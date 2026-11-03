@@ -16,10 +16,11 @@ The response is `202 Accepted` with a job ID. Poll the job with:
 GET /integration/social-media/analyses/{job_id}
 ```
 
-The worker accepts public HTTP(S) URLs, uses the source adapter boundary, and
-submits analysis work to wcodex-runner. Instagram and Threads currently use the
-bounded generic fetch fallback; dedicated adapters can replace that behavior
-without changing the API contract.
+The worker accepts public HTTP(S) URLs, synchronously acquires and normalizes
+the source, then submits the normalized content to wcodex-runner. Instagram
+and Threads use the configured Apify actor; other URLs use the bounded generic
+HTML fetcher. Both paths expose the same title, description, hashtags, image
+references, video references, and metadata to the agent.
 
 When a source exposes a direct canonical image (for example through
 `og:image`), the structured analysis may return `image_url`. Backend-created
@@ -41,6 +42,13 @@ Non-secret settings belong in `[socialmediaanalysis]` or environment overrides:
 - `SOCIAL_MEDIA_ANALYSIS_ENABLE`
 - `SOCIAL_MEDIA_ANALYSIS_RUNNER_TIMEOUT_SECONDS`
 - `SOCIAL_MEDIA_ANALYSIS_SOURCE_MAX_BYTES`
+
+The `[infisical]` section supports Infisical Universal Auth and local TOML
+fallbacks. Infisical values take precedence, followed by explicitly named
+environment overrides, followed by TOML values. Configure `apifyactorid` and
+`apifybaseurl` for Instagram/Threads scraping. Gemini credentials can be
+configured now for a later media-provider phase; Gemini is not invoked by the
+scraping phase.
 
 ## Secret policy
 
