@@ -144,4 +144,3 @@
 - [ ] **Step 4: Verify the no-image fallback**
 
   Confirm a source with no valid direct image still creates a marker with an empty image link and a completed analysis status.
-

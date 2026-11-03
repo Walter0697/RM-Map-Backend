@@ -47,4 +47,3 @@
 - [ ] Rebuild and restart the local backend with persistent image mounts.
 - [ ] Verify backend and frontend health endpoints.
 - [ ] Confirm the existing n8n workflows remain active and compatible with the expanded marker payload.
-
