@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"os"
@@ -18,10 +19,18 @@ import (
 const socialMediaAnalysisWorkerInterval = 15 * time.Second
 
 var socialMediaRunnerClientFn = func() *wcodexRunnerClient {
-	return NewWcodexRunnerClient(strings.TrimSpace(os.Getenv("WCODEX_RUNNER_URL")), nil)
+	runnerURL := strings.TrimSpace(config.Data.SocialMediaAnalysis.RunnerURL)
+	if runnerURL == "" {
+		runnerURL = strings.TrimSpace(os.Getenv("WCODEX_RUNNER_URL"))
+	}
+	return NewWcodexRunnerClient(runnerURL, nil)
 }
 
 func StartSocialMediaAnalysisWorker() {
+	if !config.Data.SocialMediaAnalysis.Enable && strings.TrimSpace(os.Getenv("WCODEX_RUNNER_URL")) == "" {
+		log.Printf("[social-media-analysis] worker_disabled=true")
+		return
+	}
 	go func() {
 		ticker := time.NewTicker(socialMediaAnalysisWorkerInterval)
 		defer ticker.Stop()
@@ -98,7 +107,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 		Prompt:       prompt,
 		Application:  "roroadmap",
 		Operation:    "social-media-analysis",
-		Timeout:      600,
+		Timeout:      socialMediaRunnerTimeoutSeconds(),
 		OutputSchema: socialMediaAnalysisOutputSchema(),
 	})
 	if err != nil {
@@ -107,6 +116,13 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	job.RunnerJobID = runnerJob.ID
 	job.Stage = "agent_submitted"
 	return database.Connection.Save(job).Error
+}
+
+func socialMediaRunnerTimeoutSeconds() int {
+	if config.Data.SocialMediaAnalysis.RunnerTimeoutSeconds > 0 {
+		return config.Data.SocialMediaAnalysis.RunnerTimeoutSeconds
+	}
+	return 600
 }
 
 func reconcileRunnerJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob) error {

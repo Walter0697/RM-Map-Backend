@@ -119,6 +119,14 @@ type IntegrationAuthSetting struct {
 	CleanupIntervalHours   int  `mapstructure:"cleanupintervalhours"`
 }
 
+type SocialMediaAnalysisSetting struct {
+	Enable                bool   `mapstructure:"enable"`
+	RunnerURL             string `mapstructure:"runnerurl"`
+	WorkerIntervalSeconds int    `mapstructure:"workerintervalseconds"`
+	SourceMaxBytes        int64  `mapstructure:"sourcemaxbytes"`
+	RunnerTimeoutSeconds  int    `mapstructure:"runnertimeoutseconds"`
+}
+
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
@@ -148,20 +156,21 @@ type AuthStateSetting struct {
 }
 
 type Config struct {
-	DB                Database                 `mapstructure:"database"`
-	Redis             RedisSetting             `mapstructure:"redis"`
-	AuthState         AuthStateSetting         `mapstructure:"authstate"`
-	App               AppEnv                   `mapstructure:"app"`
-	LDAP              LDAPSetting              `mapstructure:"ldap"`
-	OIDC              OIDCSetting              `mapstructure:"oidc"`
-	CalendarGoogle    CalendarGoogleSetting    `mapstructure:"calendargoogle"`
-	APIKEY            APIKeySetting            `mapstructure:"apikey"`
-	ScheduleTravel    ScheduleTravelSetting    `mapstructure:"scheduletravel"`
-	TomTomRoute       TomTomRouteSetting       `mapstructure:"tomtomroute"`
-	TomTomStaticImage TomTomStaticImageSetting `mapstructure:"tomtomstaticimage"`
-	Weather           WeatherSetting           `mapstructure:"weather"`
-	IntegrationAuth   IntegrationAuthSetting   `mapstructure:"integrationauth"`
-	Seed              SeedSetting              `mapstructure:"seed"`
+	DB                  Database                   `mapstructure:"database"`
+	Redis               RedisSetting               `mapstructure:"redis"`
+	AuthState           AuthStateSetting           `mapstructure:"authstate"`
+	App                 AppEnv                     `mapstructure:"app"`
+	LDAP                LDAPSetting                `mapstructure:"ldap"`
+	OIDC                OIDCSetting                `mapstructure:"oidc"`
+	CalendarGoogle      CalendarGoogleSetting      `mapstructure:"calendargoogle"`
+	APIKEY              APIKeySetting              `mapstructure:"apikey"`
+	ScheduleTravel      ScheduleTravelSetting      `mapstructure:"scheduletravel"`
+	TomTomRoute         TomTomRouteSetting         `mapstructure:"tomtomroute"`
+	TomTomStaticImage   TomTomStaticImageSetting   `mapstructure:"tomtomstaticimage"`
+	Weather             WeatherSetting             `mapstructure:"weather"`
+	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
+	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
+	Seed                SeedSetting                `mapstructure:"seed"`
 }
 
 func Init() {
@@ -178,6 +187,9 @@ func Init() {
 	if err := applyRedisEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid redis config: %s \n", err))
 	}
+	if err := applySocialMediaAnalysisEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid social media analysis config: %s \n", err))
+	}
 
 	if err := ValidateAuthConfig(); err != nil {
 		panic(fmt.Errorf("invalid auth config: %s \n", err))
@@ -186,6 +198,37 @@ func Init() {
 	if mode, err := ResolveAuthMode(); err == nil {
 		log.Printf("Authentication mode resolved to: %s", mode)
 	}
+}
+
+func applySocialMediaAnalysisEnvOverrides() error {
+	if runnerURL, exists := os.LookupEnv("WCODEX_RUNNER_URL"); exists {
+		Data.SocialMediaAnalysis.RunnerURL = strings.TrimSpace(runnerURL)
+	}
+	if enable, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enable)) {
+		case "1", "true", "yes", "on":
+			Data.SocialMediaAnalysis.Enable = true
+		case "0", "false", "no", "off":
+			Data.SocialMediaAnalysis.Enable = false
+		default:
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_ENABLE must be a boolean, got %q", enable)
+		}
+	}
+	if timeout, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_RUNNER_TIMEOUT_SECONDS"); exists {
+		parsed, err := strconv.Atoi(strings.TrimSpace(timeout))
+		if err != nil || parsed <= 0 {
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_RUNNER_TIMEOUT_SECONDS must be a positive integer, got %q", timeout)
+		}
+		Data.SocialMediaAnalysis.RunnerTimeoutSeconds = parsed
+	}
+	if maxBytes, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_SOURCE_MAX_BYTES"); exists {
+		parsed, err := strconv.ParseInt(strings.TrimSpace(maxBytes), 10, 64)
+		if err != nil || parsed <= 0 {
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_SOURCE_MAX_BYTES must be a positive integer, got %q", maxBytes)
+		}
+		Data.SocialMediaAnalysis.SourceMaxBytes = parsed
+	}
+	return nil
 }
 
 func applyRedisEnvOverrides() error {

@@ -109,6 +109,13 @@ maxauditlogrows=200000
 revokedkeyretentiondays=30
 cleanupintervalhours=24
 
+[socialmediaanalysis]
+enable=false
+runnerurl="http://wcodex.home"
+workerintervalseconds=15
+sourcemaxbytes=5242880
+runnertimeoutseconds=600
+
 [seed]
 enableSeed=true
 markerNums=20

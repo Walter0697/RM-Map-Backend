@@ -72,3 +72,20 @@ func TestApplyRedisEnvOverrides(t *testing.T) {
 		}
 	})
 }
+
+func TestApplySocialMediaAnalysisEnvOverrides(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+	if err := os.Setenv("WCODEX_RUNNER_URL", "http://wcodex.test"); err != nil {
+		t.Fatalf("failed to set WCODEX_RUNNER_URL: %v", err)
+	}
+	defer os.Unsetenv("WCODEX_RUNNER_URL")
+
+	Data.SocialMediaAnalysis.RunnerURL = ""
+	if err := applySocialMediaAnalysisEnvOverrides(); err != nil {
+		t.Fatalf("applySocialMediaAnalysisEnvOverrides returned error: %v", err)
+	}
+	if Data.SocialMediaAnalysis.RunnerURL != "http://wcodex.test" {
+		t.Fatalf("expected runner URL override, got %q", Data.SocialMediaAnalysis.RunnerURL)
+	}
+}
