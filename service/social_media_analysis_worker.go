@@ -10,6 +10,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -195,7 +196,19 @@ func buildSocialMediaAnalysisPrompt(post NormalizedSocialPost) string {
 	if len(rawBody) > 32000 {
 		rawBody = rawBody[:32000]
 	}
-	return fmt.Sprintf("Analyze this public source and return only the required JSON output. If it clearly identifies a venue or restaurant with a reliable location, use recommendation create_marker and provide the location coordinates. Use completed for informational content without a reliable venue location. Set image_url to the page's direct canonical image URL (prefer og:image or equivalent) when one is explicitly available; otherwise return an empty string. Do not return the source page URL, tracking URL, or a guessed image path as image_url. Extract tags as short lowercase labels without #, and use empty tags when none are supported. Extract price as exactly free, cheap, middle, or expensive, or an empty string when unknown. Set need_booking only when booking is explicitly indicated. Set estimate_time as short, medium, or long only when supported. Set from_time and to_time only for reliable event times in YYYY-MM-DD HH:mm:ss+00 format; otherwise use null. URL: %s\nFinal URL: %s\nFetched content:\n%s", post.SourceURL, post.FinalURL, rawBody)
+	return fmt.Sprintf("Analyze this public source and return only the required JSON output. If it clearly identifies a venue or restaurant with a reliable location, use recommendation create_marker and provide the location coordinates. Use completed for informational content without a reliable venue location. Set image_url to the page's direct canonical image URL (prefer the supplied image references, og:image, or equivalent) when one is explicitly available; otherwise return an empty string. Do not return the source page URL, tracking URL, or a guessed image path as image_url. Extract tags as short lowercase labels without #, using supplied hashtags as candidates and adding only supported tags. Use empty tags when none are supported. Extract price as exactly free, cheap, middle, or expensive, or an empty string when unknown. Set need_booking only when booking is explicitly indicated. Set estimate_time as short, medium, or long only when supported. Set from_time and to_time only for reliable event times in YYYY-MM-DD HH:mm:ss+00 format; otherwise use null.\nSource URL: %s\nFinal URL: %s\nTitle: %s\nDescription: %s\nHashtags: %s\nImage references: %s\nVideo references: %s\nMetadata: %s\nFetched content:\n%s", post.SourceURL, post.FinalURL, post.Title, post.Description, strings.Join(post.Hashtags, ", "), strings.Join(post.ImageURLs, "\n"), strings.Join(post.VideoURLs, "\n"), formatSocialMediaMetadata(post.Metadata), rawBody)
+}
+
+func formatSocialMediaMetadata(metadata map[string]string) string {
+	if len(metadata) == 0 {
+		return ""
+	}
+	values := make([]string, 0, len(metadata))
+	for key, value := range metadata {
+		values = append(values, key+"="+value)
+	}
+	sort.Strings(values)
+	return strings.Join(values, "\n")
 }
 
 func socialMediaAnalysisOutputSchema() map[string]any {

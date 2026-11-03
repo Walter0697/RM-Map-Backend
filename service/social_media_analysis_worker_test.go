@@ -101,12 +101,19 @@ func TestBuildSocialMediaAnalysisMarkerInputIncludesOptionalImageURL(t *testing.
 
 func TestSocialMediaAnalysisPromptAndSchemaDescribeImageURL(t *testing.T) {
 	prompt := buildSocialMediaAnalysisPrompt(NormalizedSocialPost{
-		SourceURL: "https://example.com/post",
-		FinalURL:  "https://example.com/post",
-		RawBody:   "og:image: https://cdn.example.com/photo.jpg",
+		SourceURL:   "https://example.com/post",
+		FinalURL:    "https://example.com/post",
+		Title:       "Weekend Food",
+		Description: "A food festival",
+		Hashtags:    []string{"food", "hong_kong"},
+		ImageURLs:   []string{"https://cdn.example.com/photo.jpg"},
+		VideoURLs:   []string{"https://cdn.example.com/video.mp4"},
+		RawBody:     "og:image: https://cdn.example.com/photo.jpg",
 	})
-	if !strings.Contains(prompt, "image_url") || !strings.Contains(prompt, "og:image") {
-		t.Fatalf("prompt does not describe image extraction: %s", prompt)
+	for _, value := range []string{"image_url", "og:image", "Weekend Food", "A food festival", "hong_kong", "photo.jpg", "video.mp4"} {
+		if !strings.Contains(prompt, value) {
+			t.Fatalf("prompt does not include normalized source value %q: %s", value, prompt)
+		}
 	}
 	for _, field := range []string{"tags", "price", "need_booking", "estimate_time", "from_time", "to_time"} {
 		if !strings.Contains(prompt, field) {
