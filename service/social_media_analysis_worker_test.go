@@ -2,6 +2,9 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
+	"mapmarker/backend/database/dbmodel"
+	"mapmarker/backend/graph/model"
 	"strings"
 	"testing"
 )
@@ -162,5 +165,24 @@ func TestBuildSocialMediaAnalysisMarkerInputMapsMetadataAndHashtags(t *testing.T
 	}
 	if input.FromTime == nil || *input.FromTime != fromTime || input.ToTime != nil {
 		t.Fatalf("unexpected marker event times: from=%v to=%v", input.FromTime, input.ToTime)
+	}
+}
+
+func TestCreateMarkerWithOptionalImageRetriesWithoutBrokenImage(t *testing.T) {
+	imageURL := "https://example.com/broken.png"
+	input := buildSocialMediaAnalysisMarkerInput(AgentAnalysisResult{ImageURL: imageURL})
+	calls := 0
+	marker, err := createMarkerWithOptionalImage(input, func(input model.NewMarker) (*dbmodel.Marker, error) {
+		calls++
+		if input.ImageLink != nil {
+			return nil, fmt.Errorf("invalid image")
+		}
+		return &dbmodel.Marker{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 123}}}, nil
+	})
+	if err != nil || marker == nil || marker.ID != 123 {
+		t.Fatalf("expected fallback marker, marker=%v err=%v", marker, err)
+	}
+	if calls != 2 {
+		t.Fatalf("expected image attempt plus fallback, calls=%d", calls)
 	}
 }

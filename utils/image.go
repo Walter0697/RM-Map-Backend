@@ -3,6 +3,8 @@ package utils
 import (
 	"bytes"
 	"crypto/tls"
+	"fmt"
+	"image"
 	"image/gif"
 	"image/jpeg"
 	"image/png"
@@ -12,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const (
@@ -110,50 +113,51 @@ func SaveImageFromURL(path string, url string) error {
 		return e
 	}
 	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("image request returned HTTP %d", response.StatusCode)
+	}
+
+	rawBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	decoded, _, err := image.Decode(bytes.NewReader(rawBody))
+	if err != nil {
+		return fmt.Errorf("decode downloaded image: %w", err)
+	}
+
+	var normalized bytes.Buffer
+	switch extension := strings.ToLower(filepath.Ext(path)); extension {
+	case ".png":
+		err = png.Encode(&normalized, decoded)
+	case ".jpg", ".jpeg":
+		quality := 85
+		if len(rawBody) > 80000 {
+			quality = int(CompressRatio(int32(len(rawBody)), int32(TargetMemory)) * 100)
+			if quality < 10 {
+				quality = 10
+			}
+			if quality > 95 {
+				quality = 95
+			}
+		}
+		err = jpeg.Encode(&normalized, decoded, &jpeg.Options{Quality: quality})
+	case ".gif":
+		err = gif.Encode(&normalized, decoded, nil)
+	default:
+		return fmt.Errorf("unsupported image extension %q", extension)
+	}
+	if err != nil {
+		return fmt.Errorf("encode normalized image: %w", err)
+	}
 
 	out, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
-
-	rawBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
+	if _, err = io.Copy(out, &normalized); err != nil {
 		return err
-	}
-
-	compareReader := ioutil.NopCloser(bytes.NewBuffer(rawBody))
-	origin_size, should_compress := ShouldCompress(compareReader)
-	response.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
-
-	if should_compress {
-		extension := filepath.Ext(url)
-
-		compress_ratio := CompressRatio(int32(origin_size), int32(TargetMemory))
-		compressed, err := CompressImage(response.Body, compress_ratio, extension)
-		if err != nil {
-			return err
-		}
-
-		if compressed != nil {
-			_, err = io.Copy(out, compressed)
-			if err != nil {
-				return err
-			}
-		} else {
-			// even if the item cannot be compressed, we should still save it
-			response.Body = ioutil.NopCloser(bytes.NewBuffer(rawBody))
-			_, err = io.Copy(out, response.Body)
-			if err != nil {
-				return err
-			}
-		}
-
-	} else {
-		_, err = io.Copy(out, response.Body)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

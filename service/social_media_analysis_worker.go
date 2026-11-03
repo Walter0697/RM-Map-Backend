@@ -309,6 +309,16 @@ func valueOrEmpty(value *string) string {
 	return *value
 }
 
+func createMarkerWithOptionalImage(input model.NewMarker, create func(model.NewMarker) (*dbmodel.Marker, error)) (*dbmodel.Marker, error) {
+	marker, err := create(input)
+	if err == nil || input.ImageLink == nil {
+		return marker, err
+	}
+
+	input.ImageLink = nil
+	return create(input)
+}
+
 func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) (*dbmodel.Marker, error) {
 	if job == nil || result.Location == nil {
 		return nil, fmt.Errorf("marker location is required")
@@ -340,6 +350,7 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	markerInput.Link = &link
 	markerInput.SocialMediaLink = &socialLink
 	markerInput.Permanent = &permanent
-	return CreateMarker(markerInput,
-		nil, relation.UserOne, relation, false)
+	return createMarkerWithOptionalImage(markerInput, func(input model.NewMarker) (*dbmodel.Marker, error) {
+		return CreateMarker(input, nil, relation.UserOne, relation, false)
+	})
 }
