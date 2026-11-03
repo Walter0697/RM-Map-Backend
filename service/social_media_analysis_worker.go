@@ -52,7 +52,7 @@ func ReconcileSocialMediaAnalysisJobs(ctx context.Context, limit int) error {
 	}
 	jobs := make([]dbmodel.SocialMediaAnalysisJob, 0, limit)
 	transactionErr := database.Connection.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("status = ? AND (next_attempt_at IS NULL OR next_attempt_at <= ?)", dbmodel.SocialMediaAnalysisJobStatusQueued, time.Now().UTC()).Order("id asc").Limit(limit).Find(&jobs).Error; err != nil {
+		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Where("status IN ? AND (next_attempt_at IS NULL OR next_attempt_at <= ?)", []string{dbmodel.SocialMediaAnalysisJobStatusQueued, dbmodel.SocialMediaAnalysisJobStatusProcessing}, time.Now().UTC()).Order("id asc").Limit(limit).Find(&jobs).Error; err != nil {
 			return err
 		}
 		now := time.Now().UTC()
