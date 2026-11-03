@@ -33,6 +33,7 @@ type RunnerSubmitRequest struct {
 
 type RunnerJob struct {
 	ID     string          `json:"id"`
+	JobID  string          `json:"job_id,omitempty"`
 	Status string          `json:"status"`
 	Result json.RawMessage `json:"result,omitempty"`
 	Error  string          `json:"error,omitempty"`
@@ -116,6 +117,9 @@ func (client *wcodexRunnerClient) doJSON(ctx context.Context, method string, pat
 	var job RunnerJob
 	if err := json.NewDecoder(response.Body).Decode(&job); err != nil {
 		return RunnerJob{}, fmt.Errorf("decode runner response: %w", err)
+	}
+	if job.ID == "" {
+		job.ID = strings.TrimSpace(job.JobID)
 	}
 	if job.ID == "" {
 		return RunnerJob{}, errors.New("runner response did not include a job ID")

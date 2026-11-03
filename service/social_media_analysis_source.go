@@ -105,11 +105,18 @@ func fetchGenericSource(ctx context.Context, sourceURL *url.URL, client *http.Cl
 	if client == nil {
 		client = &http.Client{}
 	}
+	clientCopy := *client
+	clientCopy.CheckRedirect = func(request *http.Request, _ []*http.Request) error {
+		if _, err := ValidatePublicSourceURL(request.URL.String()); err != nil {
+			return fmt.Errorf("blocked redirect: %w", err)
+		}
+		return nil
+	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL.String(), nil)
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("create source request: %w", err)
 	}
-	response, err := client.Do(request)
+	response, err := clientCopy.Do(request)
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("fetch source: %w", err)
 	}
