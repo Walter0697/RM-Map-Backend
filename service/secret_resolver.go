@@ -199,6 +199,8 @@ func (resolver *infisicalSecretResolver) environmentName(name string) string {
 		return resolver.setting.ApifyTokenEnv
 	case "GEMINI_TOKEN":
 		return resolver.setting.GeminiTokenEnv
+	case "GOOGLE_MAPS_API_KEY":
+		return resolver.setting.GoogleMapsAPIKeyEnv
 	default:
 		return ""
 	}
@@ -212,6 +214,8 @@ func (resolver *infisicalSecretResolver) tomlValue(name string) string {
 		return resolver.setting.GeminiToken
 	case "APIFY_ACTOR_ID":
 		return resolver.setting.ApifyActorID
+	case "GOOGLE_MAPS_API_KEY":
+		return resolver.setting.GoogleMapsAPIKey
 	default:
 		return ""
 	}

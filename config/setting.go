@@ -127,21 +127,31 @@ type SocialMediaAnalysisSetting struct {
 	RunnerTimeoutSeconds  int    `mapstructure:"runnertimeoutseconds"`
 }
 
+type GoogleMapsSetting struct {
+	Enable     bool   `mapstructure:"enable"`
+	BaseURL    string `mapstructure:"baseurl"`
+	TimeoutMS  int    `mapstructure:"timeoutms"`
+	MaxResults int    `mapstructure:"maxresults"`
+	APIKey     string `mapstructure:"apikey"`
+}
+
 type InfisicalSetting struct {
-	Enable           bool   `mapstructure:"enable"`
-	SiteURL          string `mapstructure:"siteurl"`
-	ProjectID        string `mapstructure:"projectid"`
-	Environment      string `mapstructure:"environment"`
-	SecretPath       string `mapstructure:"secretpath"`
-	ClientID         string `mapstructure:"clientid"`
-	ClientSecret     string `mapstructure:"clientsecret"`
-	ClientSecretEnv  string `mapstructure:"clientsecretenv"`
-	ApifyToken       string `mapstructure:"apifytoken"`
-	ApifyTokenEnv    string `mapstructure:"apifytokenenv"`
-	GeminiToken      string `mapstructure:"geminitoken"`
-	GeminiTokenEnv   string `mapstructure:"geminitokenenv"`
-	ApifyActorID     string `mapstructure:"apifyactorid"`
-	ApifyBaseURL     string `mapstructure:"apifybaseurl"`
+	Enable              bool   `mapstructure:"enable"`
+	SiteURL             string `mapstructure:"siteurl"`
+	ProjectID           string `mapstructure:"projectid"`
+	Environment         string `mapstructure:"environment"`
+	SecretPath          string `mapstructure:"secretpath"`
+	ClientID            string `mapstructure:"clientid"`
+	ClientSecret        string `mapstructure:"clientsecret"`
+	ClientSecretEnv     string `mapstructure:"clientsecretenv"`
+	ApifyToken          string `mapstructure:"apifytoken"`
+	ApifyTokenEnv       string `mapstructure:"apifytokenenv"`
+	GeminiToken         string `mapstructure:"geminitoken"`
+	GeminiTokenEnv      string `mapstructure:"geminitokenenv"`
+	ApifyActorID        string `mapstructure:"apifyactorid"`
+	ApifyBaseURL        string `mapstructure:"apifybaseurl"`
+	GoogleMapsAPIKey    string `mapstructure:"googlemapsapikey"`
+	GoogleMapsAPIKeyEnv string `mapstructure:"googlemapsapikeyenv"`
 }
 
 type SeedSetting struct {
@@ -187,6 +197,7 @@ type Config struct {
 	Weather             WeatherSetting             `mapstructure:"weather"`
 	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
 	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
+	GoogleMaps          GoogleMapsSetting          `mapstructure:"googlemaps"`
 	Infisical           InfisicalSetting           `mapstructure:"infisical"`
 	Seed                SeedSetting                `mapstructure:"seed"`
 }
@@ -270,6 +281,12 @@ func applyInfisicalEnvOverrides() error {
 	}
 	if value, exists := os.LookupEnv("APIFY_BASE_URL"); exists {
 		Data.Infisical.ApifyBaseURL = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, exists := os.LookupEnv("GOOGLE_MAPS_API_KEY"); exists {
+		Data.Infisical.GoogleMapsAPIKey = value
+	}
+	if value, exists := os.LookupEnv("GOOGLE_MAPS_API_KEY_ENV"); exists {
+		Data.Infisical.GoogleMapsAPIKeyEnv = strings.TrimSpace(value)
 	}
 	return nil
 }

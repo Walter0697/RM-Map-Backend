@@ -90,6 +90,23 @@ func TestApplySocialMediaAnalysisEnvOverrides(t *testing.T) {
 	}
 }
 
+func TestApplyGoogleMapsDefaults(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+
+	Data.GoogleMaps = GoogleMapsSetting{}
+	applyGoogleMapsDefaults()
+	if Data.GoogleMaps.Enable {
+		t.Fatal("expected Google Maps to be disabled by default")
+	}
+	if Data.GoogleMaps.BaseURL != "https://places.googleapis.com" {
+		t.Fatalf("expected default Google Maps base URL, got %q", Data.GoogleMaps.BaseURL)
+	}
+	if Data.GoogleMaps.TimeoutMS != 5000 || Data.GoogleMaps.MaxResults != 5 {
+		t.Fatalf("unexpected Google Maps defaults: %+v", Data.GoogleMaps)
+	}
+}
+
 func TestApplyInfisicalEnvOverrides(t *testing.T) {
 	original := Data
 	defer func() { Data = original }()
@@ -110,17 +127,17 @@ func TestApplyInfisicalEnvOverrides(t *testing.T) {
 		defer os.Unsetenv(key)
 	}
 	for key, value := range map[string]string{
-		"INFISICAL_ENABLE":         "true",
-		"INFISICAL_SITE_URL":       "https://secrets.example",
-		"INFISICAL_PROJECT_ID":     "project-1",
-		"INFISICAL_ENVIRONMENT":    "dev",
-		"INFISICAL_SECRET_PATH":    "/roroadmap",
-		"INFISICAL_CLIENT_ID":      "client-1",
+		"INFISICAL_ENABLE":            "true",
+		"INFISICAL_SITE_URL":          "https://secrets.example",
+		"INFISICAL_PROJECT_ID":        "project-1",
+		"INFISICAL_ENVIRONMENT":       "dev",
+		"INFISICAL_SECRET_PATH":       "/roroadmap",
+		"INFISICAL_CLIENT_ID":         "client-1",
 		"INFISICAL_CLIENT_SECRET_ENV": "INFISICAL_TEST_CLIENT_SECRET",
-		"APIFY_TOKEN_ENV":          "APIFY_TEST_TOKEN",
-		"GEMINI_TOKEN_ENV":         "GEMINI_TEST_TOKEN",
-		"APIFY_ACTOR_ID":           "actor-1",
-		"APIFY_BASE_URL":           "https://api.apify.example",
+		"APIFY_TOKEN_ENV":             "APIFY_TEST_TOKEN",
+		"GEMINI_TOKEN_ENV":            "GEMINI_TEST_TOKEN",
+		"APIFY_ACTOR_ID":              "actor-1",
+		"APIFY_BASE_URL":              "https://api.apify.example",
 	} {
 		if err := os.Setenv(key, value); err != nil {
 			t.Fatalf("set %s: %v", key, err)

@@ -29,15 +29,15 @@ func TestSecretResolverPrefersInfisicalValue(t *testing.T) {
 	defer server.Close()
 
 	resolver := NewSecretResolver(config.InfisicalSetting{
-		Enable:          true,
-		SiteURL:         server.URL,
-		ProjectID:       "project",
-		Environment:     "dev",
-		SecretPath:      "/roroadmap",
-		ClientID:        "client",
-		ClientSecret:    "client-secret",
-		ApifyToken:      "toml-token",
-		ApifyTokenEnv:   "APIFY_TEST_TOKEN",
+		Enable:        true,
+		SiteURL:       server.URL,
+		ProjectID:     "project",
+		Environment:   "dev",
+		SecretPath:    "/roroadmap",
+		ClientID:      "client",
+		ClientSecret:  "client-secret",
+		ApifyToken:    "toml-token",
+		ApifyTokenEnv: "APIFY_TEST_TOKEN",
 	}, http.DefaultClient)
 
 	t.Setenv("APIFY_TEST_TOKEN", "environment-token")
@@ -68,6 +68,24 @@ func TestSecretResolverFallsBackToEnvironmentThenToml(t *testing.T) {
 		value, err := resolver.Resolve(context.Background(), "APIFY_TOKEN")
 		if err != nil || value != "toml-token" {
 			t.Fatalf("expected TOML fallback, got %q, %v", value, err)
+		}
+	})
+
+	t.Run("google maps environment and toml fallback", func(t *testing.T) {
+		t.Setenv("GOOGLE_MAPS_TEST_KEY", "environment-key")
+		resolver := NewSecretResolver(config.InfisicalSetting{
+			GoogleMapsAPIKey:    "toml-key",
+			GoogleMapsAPIKeyEnv: "GOOGLE_MAPS_TEST_KEY",
+		}, http.DefaultClient)
+		value, err := resolver.Resolve(context.Background(), "GOOGLE_MAPS_API_KEY")
+		if err != nil || value != "environment-key" {
+			t.Fatalf("expected Google Maps environment fallback, got %q, %v", value, err)
+		}
+
+		resolver = NewSecretResolver(config.InfisicalSetting{GoogleMapsAPIKey: "toml-key"}, http.DefaultClient)
+		value, err = resolver.Resolve(context.Background(), "GOOGLE_MAPS_API_KEY")
+		if err != nil || value != "toml-key" {
+			t.Fatalf("expected Google Maps TOML fallback, got %q, %v", value, err)
 		}
 	})
 }

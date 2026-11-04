@@ -116,6 +116,13 @@ workerintervalseconds=15
 sourcemaxbytes=5242880
 runnertimeoutseconds=600
 
+[googlemaps]
+enable=false
+baseurl="https://places.googleapis.com"
+timeoutms=5000
+maxresults=5
+apikey=""
+
 [infisical]
 enable=false
 siteurl="https://app.infisical.com"
