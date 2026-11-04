@@ -45,8 +45,15 @@ Non-secret settings belong in `[socialmediaanalysis]` or environment overrides:
 
 The `[infisical]` section supports Infisical Universal Auth and local TOML
 fallbacks. Infisical values take precedence, followed by explicitly named
-environment overrides, followed by TOML values. Configure `apifyactorid` and
-`apifybaseurl` for Instagram/Threads scraping. Gemini credentials can be
+environment overrides, followed by TOML values. Configure these Infisical
+secrets for source-specific Apify scraping:
+
+- `APIFY_TOKEN`
+- `APIFY_INSTAGRAM_ACTOR_ID` (`apify~instagram-scraper`)
+- `APIFY_THREADS_ACTOR_ID` (`n7ppgtM2MF7vWvKad`)
+
+`APIFY_ACTOR_ID` remains supported as a legacy fallback. `apifybaseurl` can be
+used to point at a compatible Apify API endpoint. Gemini credentials can be
 configured now for a later media-provider phase; Gemini is not invoked by the
 scraping phase.
 

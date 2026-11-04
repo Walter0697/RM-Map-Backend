@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -11,6 +12,16 @@ import (
 
 	"mapmarker/backend/config"
 )
+
+type mapSecretResolver map[string]string
+
+func (resolver mapSecretResolver) Resolve(_ context.Context, name string) (string, error) {
+	value := resolver[name]
+	if value == "" {
+		return "", fmt.Errorf("secret %s is not configured", name)
+	}
+	return value, nil
+}
 
 func TestApifyClientRunsActorAndNormalizesDataset(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -82,12 +93,73 @@ func TestApifyClientResolvesActorIDWhenNotInToml(t *testing.T) {
 	}
 }
 
+func TestApifyClientUsesInstagramActorSecretAndDirectURLInput(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v2/acts/apify~instagram-scraper/runs" {
+			http.NotFound(w, r)
+			return
+		}
+		var input map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatalf("decode actor input: %v", err)
+		}
+		directURLs, ok := input["directUrls"].([]any)
+		if !ok || len(directURLs) != 1 || directURLs[0] != "https://www.instagram.com/reel/abc" {
+			t.Fatalf("expected Instagram directUrls input, got %#v", input)
+		}
+		if input["resultsType"] != "posts" || input["resultsLimit"] != float64(1) {
+			t.Fatalf("expected bounded post input, got %#v", input)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"id":"run-1","defaultDatasetId":"dataset-1","status":"SUCCEEDED"}}`))
+	}))
+	defer server.Close()
+
+	client := newApifyClient(server.URL, "", "APIFY_INSTAGRAM_ACTOR_ID", "instagram", mapSecretResolver{
+		"APIFY_TOKEN":              "apify-token",
+		"APIFY_INSTAGRAM_ACTOR_ID": "apify~instagram-scraper",
+	}, server.Client())
+	parsed, _ := url.Parse("https://www.instagram.com/reel/abc")
+	if _, err := client.Fetch(context.Background(), parsed); err == nil || !strings.Contains(err.Error(), "fetch Apify dataset") {
+		t.Fatalf("expected dataset fetch error after validating actor input, got %v", err)
+	}
+}
+
+func TestApifyClientUsesThreadsActorSecretAndPostURLsInput(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v2/acts/threads-actor/runs" {
+			http.NotFound(w, r)
+			return
+		}
+		var input map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Fatalf("decode actor input: %v", err)
+		}
+		postURLs, ok := input["post_urls"].([]any)
+		if !ok || len(postURLs) != 1 || postURLs[0] != "https://www.threads.net/@user/post/abc" {
+			t.Fatalf("expected Threads post_urls input, got %#v", input)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"id":"run-1","defaultDatasetId":"dataset-1","status":"SUCCEEDED"}}`))
+	}))
+	defer server.Close()
+
+	client := newApifyClient(server.URL, "", "APIFY_THREADS_ACTOR_ID", "threads", mapSecretResolver{
+		"APIFY_TOKEN":            "apify-token",
+		"APIFY_THREADS_ACTOR_ID": "threads-actor",
+	}, server.Client())
+	parsed, _ := url.Parse("https://www.threads.net/@user/post/abc")
+	if _, err := client.Fetch(context.Background(), parsed); err == nil || !strings.Contains(err.Error(), "fetch Apify dataset") {
+		t.Fatalf("expected dataset fetch error after validating actor input, got %v", err)
+	}
+}
+
 func TestSelectConfiguredSourceAdapterUsesApifyForThreads(t *testing.T) {
 	resolver := NewSecretResolver(config.InfisicalSetting{ApifyToken: "token"}, http.DefaultClient)
 	instagram := SelectConfiguredSourceAdapter("https://www.instagram.com/p/abc", "actor", resolver, http.DefaultClient)
 	threads := SelectConfiguredSourceAdapter("https://www.threads.net/@user/post/abc", "actor", resolver, http.DefaultClient)
 	generic := SelectConfiguredSourceAdapter("https://example.com/post", "actor", resolver, http.DefaultClient)
-	if instagram.Name() != "instagram-guest" || threads.Name() != "threads" || generic.Name() != "generic" {
+	if instagram.Name() != "instagram" || threads.Name() != "threads" || generic.Name() != "generic" {
 		t.Fatalf("unexpected adapter names: %s %s %s", instagram.Name(), threads.Name(), generic.Name())
 	}
 }

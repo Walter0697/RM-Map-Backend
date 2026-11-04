@@ -20,23 +20,31 @@ type ApifyClient interface {
 }
 
 type apifyClient struct {
-	baseURL  string
-	actorID  string
-	secrets  SecretResolver
-	http     *http.Client
-	maxBytes int64
+	baseURL         string
+	actorID         string
+	actorSecretName string
+	inputMode       string
+	secrets         SecretResolver
+	http            *http.Client
+	maxBytes        int64
 }
 
 func NewApifyClient(baseURL, actorID string, secrets SecretResolver, client *http.Client) SourceAdapter {
+	return newApifyClient(baseURL, actorID, "APIFY_ACTOR_ID", "legacy", secrets, client)
+}
+
+func newApifyClient(baseURL, actorID, actorSecretName, inputMode string, secrets SecretResolver, client *http.Client) SourceAdapter {
 	if client == nil {
 		client = http.DefaultClient
 	}
 	return apifyClient{
-		baseURL:  strings.TrimRight(strings.TrimSpace(baseURL), "/"),
-		actorID:  strings.TrimSpace(actorID),
-		secrets:  secrets,
-		http:     client,
-		maxBytes: 5 * 1024 * 1024,
+		baseURL:         strings.TrimRight(strings.TrimSpace(baseURL), "/"),
+		actorID:         strings.TrimSpace(actorID),
+		actorSecretName: strings.TrimSpace(actorSecretName),
+		inputMode:       strings.TrimSpace(inputMode),
+		secrets:         secrets,
+		http:            client,
+		maxBytes:        5 * 1024 * 1024,
 	}
 }
 
@@ -58,7 +66,14 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 	}
 	actorID := client.actorID
 	if actorID == "" {
-		actorID, err = client.secrets.Resolve(ctx, "APIFY_ACTOR_ID")
+		secretName := client.actorSecretName
+		if secretName == "" {
+			secretName = "APIFY_ACTOR_ID"
+		}
+		actorID, err = client.secrets.Resolve(ctx, secretName)
+		if (err != nil || strings.TrimSpace(actorID) == "") && secretName != "APIFY_ACTOR_ID" {
+			actorID, err = client.secrets.Resolve(ctx, "APIFY_ACTOR_ID")
+		}
 		if err != nil {
 			return NormalizedSocialPost{}, err
 		}
@@ -66,7 +81,7 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 	if strings.TrimSpace(actorID) == "" {
 		return NormalizedSocialPost{}, fmt.Errorf("Apify actor ID is not configured")
 	}
-	input, err := json.Marshal(map[string]string{"url": sourceURL.String()})
+	input, err := client.input(sourceURL)
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("encode Apify input: %w", err)
 	}
@@ -97,6 +112,25 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 		return NormalizedSocialPost{}, fmt.Errorf("fetch Apify dataset: %w", err)
 	}
 	return normalizeApifyDataset(sourceURL, items, client.maxBytes)
+}
+
+func (client apifyClient) input(sourceURL *url.URL) ([]byte, error) {
+	var input map[string]any
+	switch client.inputMode {
+	case "instagram":
+		input = map[string]any{
+			"directUrls":   []string{sourceURL.String()},
+			"resultsType":  "posts",
+			"resultsLimit": 1,
+		}
+	case "threads":
+		input = map[string]any{
+			"post_urls": []string{sourceURL.String()},
+		}
+	default:
+		input = map[string]any{"url": sourceURL.String()}
+	}
+	return json.Marshal(input)
 }
 
 func (client apifyClient) waitForDataset(ctx context.Context, runID, token string) (string, error) {
@@ -213,20 +247,12 @@ func SelectConfiguredSourceAdapter(rawURL, actorID string, secrets SecretResolve
 	}
 	host := strings.ToLower(parsed.Hostname())
 	if host == "instagram.com" || strings.HasSuffix(host, ".instagram.com") {
-		return NewInstagramGuestClient(configuredInstagramBaseURL(), configuredInstagramDocID(), client)
+		return namedSourceAdapter{name: "instagram", adapter: newApifyClient(configuredApifyBaseURL(), "", "APIFY_INSTAGRAM_ACTOR_ID", "instagram", secrets, client)}
 	}
 	if host == "threads.net" || strings.HasSuffix(host, ".threads.net") || host == "threads.com" || strings.HasSuffix(host, ".threads.com") {
-		return namedSourceAdapter{name: "threads", adapter: NewApifyClient(configuredApifyBaseURL(), actorID, secrets, client)}
+		return namedSourceAdapter{name: "threads", adapter: newApifyClient(configuredApifyBaseURL(), actorID, "APIFY_THREADS_ACTOR_ID", "threads", secrets, client)}
 	}
 	return sourceAdapter{name: "generic", fetch: genericSourceFetcher}
-}
-
-func configuredInstagramBaseURL() string {
-	return defaultInstagramBaseURL
-}
-
-func configuredInstagramDocID() string {
-	return defaultInstagramDocID
 }
 
 type namedSourceAdapter struct {
