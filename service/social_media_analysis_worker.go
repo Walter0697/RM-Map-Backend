@@ -99,6 +99,11 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "source_fetch_failed", err)
 	}
+	sourceJSON, err := json.Marshal(post)
+	if err != nil {
+		return markSocialMediaAnalysisFailed(job, "source_normalization_failed", err)
+	}
+	job.SourceJSON = string(sourceJSON)
 	job.Stage = "source_fetched"
 	if err := database.Connection.Save(job).Error; err != nil {
 		return err
@@ -322,14 +327,64 @@ func valueOrEmpty(value *string) string {
 	return *value
 }
 
-func createMarkerWithOptionalImage(input model.NewMarker, create func(model.NewMarker) (*dbmodel.Marker, error)) (*dbmodel.Marker, error) {
-	marker, err := create(input)
-	if err == nil || input.ImageLink == nil {
-		return marker, err
+func createMarkerWithImageCandidates(input model.NewMarker, candidates []string, create func(model.NewMarker) (*dbmodel.Marker, error)) (*dbmodel.Marker, error) {
+	var lastErr error
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		input.ImageLink = &candidate
+		marker, err := create(input)
+		if err == nil {
+			return marker, nil
+		}
+		lastErr = err
 	}
-
 	input.ImageLink = nil
-	return create(input)
+	marker, err := create(input)
+	if err == nil {
+		return marker, nil
+	}
+	if lastErr != nil {
+		return nil, lastErr
+	}
+	return nil, err
+}
+
+func createMarkerWithOptionalImage(input model.NewMarker, create func(model.NewMarker) (*dbmodel.Marker, error)) (*dbmodel.Marker, error) {
+	candidates := make([]string, 0, 1)
+	if input.ImageLink != nil {
+		candidates = append(candidates, *input.ImageLink)
+	}
+	return createMarkerWithImageCandidates(input, candidates, create)
+}
+
+func imageCandidatesForSocialMediaMarker(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) []string {
+	candidates := make([]string, 0, 2)
+	if job != nil && strings.TrimSpace(job.SourceJSON) != "" {
+		var post NormalizedSocialPost
+		if err := json.Unmarshal([]byte(job.SourceJSON), &post); err == nil {
+			candidates = append(candidates, post.ImageURLs...)
+		}
+	}
+	if result.ImageURL != "" {
+		candidates = append(candidates, result.ImageURL)
+	}
+	unique := make([]string, 0, len(candidates))
+	seen := make(map[string]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "" {
+			continue
+		}
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		unique = append(unique, candidate)
+	}
+	return unique
 }
 
 func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) (*dbmodel.Marker, error) {
@@ -355,6 +410,8 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	socialLink := job.SourceURL
 	permanent := false
 	markerInput := buildSocialMediaAnalysisMarkerInput(result)
+	imageCandidates := imageCandidatesForSocialMediaMarker(job, result)
+	markerInput.ImageLink = nil
 	markerInput.Label = label
 	markerInput.Latitude = location.Latitude
 	markerInput.Longitude = location.Longitude
@@ -363,7 +420,7 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	markerInput.Link = &link
 	markerInput.SocialMediaLink = &socialLink
 	markerInput.Permanent = &permanent
-	return createMarkerWithOptionalImage(markerInput, func(input model.NewMarker) (*dbmodel.Marker, error) {
+	return createMarkerWithImageCandidates(markerInput, imageCandidates, func(input model.NewMarker) (*dbmodel.Marker, error) {
 		return CreateMarker(input, nil, relation.UserOne, relation, false)
 	})
 }

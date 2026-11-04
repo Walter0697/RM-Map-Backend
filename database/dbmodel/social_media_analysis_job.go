@@ -18,6 +18,7 @@ type SocialMediaAnalysisJob struct {
 	JobID           string     `json:"job_id" gorm:"size:64;not null;uniqueIndex"`
 	RelationID      uint       `json:"relation_id" gorm:"not null;index"`
 	SourceURL       string     `json:"source_url" gorm:"type:text;not null"`
+	SourceJSON      string     `json:"-" gorm:"type:text"`
 	Status          string     `json:"status" gorm:"size:32;not null;index"`
 	Stage           string     `json:"stage" gorm:"size:64;not null;index"`
 	RunnerJobID     string     `json:"runner_job_id,omitempty" gorm:"size:128;index"`

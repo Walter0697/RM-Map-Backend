@@ -193,3 +193,32 @@ func TestCreateMarkerWithOptionalImageRetriesWithoutBrokenImage(t *testing.T) {
 		t.Fatalf("expected image attempt plus fallback, calls=%d", calls)
 	}
 }
+
+func TestImageCandidatesPreferScrapedSourceAndFallbackToAgent(t *testing.T) {
+	job := &dbmodel.SocialMediaAnalysisJob{SourceJSON: `{"image_urls":["https://cdn.example.com/scraped.jpg"]}`}
+	result := AgentAnalysisResult{ImageURL: "https://cdn.example.com/agent.jpg"}
+	candidates := imageCandidatesForSocialMediaMarker(job, result)
+	if len(candidates) != 2 || candidates[0] != "https://cdn.example.com/scraped.jpg" || candidates[1] != "https://cdn.example.com/agent.jpg" {
+		t.Fatalf("unexpected image candidates: %v", candidates)
+	}
+
+	calls := make([]string, 0, 3)
+	input := model.NewMarker{}
+	marker, err := createMarkerWithImageCandidates(input, candidates, func(input model.NewMarker) (*dbmodel.Marker, error) {
+		if input.ImageLink == nil {
+			calls = append(calls, "none")
+			return &dbmodel.Marker{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 321}}}, nil
+		}
+		calls = append(calls, *input.ImageLink)
+		if strings.HasSuffix(*input.ImageLink, "scraped.jpg") {
+			return nil, fmt.Errorf("scraped image unavailable")
+		}
+		return &dbmodel.Marker{ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 322}}}, nil
+	})
+	if err != nil || marker.ID != 322 {
+		t.Fatalf("expected agent image fallback marker, got marker=%#v err=%v", marker, err)
+	}
+	if strings.Join(calls, ",") != "https://cdn.example.com/scraped.jpg,https://cdn.example.com/agent.jpg" {
+		t.Fatalf("unexpected create attempts: %v", calls)
+	}
+}
