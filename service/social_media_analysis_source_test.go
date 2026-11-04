@@ -77,8 +77,20 @@ func TestSelectSocialMediaAnalysisSourceAdapterUsesConfiguredProvider(t *testing
 	config.Data.Infisical.ApifyActorID = "actor"
 	config.Data.Infisical.ApifyToken = "token"
 	adapter := selectSocialMediaAnalysisSourceAdapter("https://www.instagram.com/p/abc")
-	if adapter.Name() != "instagram" {
+	if adapter.Name() != "instagram-guest" {
 		t.Fatalf("expected configured Instagram adapter, got %q", adapter.Name())
+	}
+}
+
+func TestSelectConfiguredSourceAdapterUsesGuestForInstagramAndApifyForThreads(t *testing.T) {
+	resolver := NewSecretResolver(config.InfisicalSetting{ApifyToken: "token"}, http.DefaultClient)
+	instagram := SelectConfiguredSourceAdapter("https://www.instagram.com/p/abc", "actor", resolver, http.DefaultClient)
+	threads := SelectConfiguredSourceAdapter("https://www.threads.net/@user/post/abc", "actor", resolver, http.DefaultClient)
+	if instagram.Name() != "instagram-guest" {
+		t.Fatalf("expected Instagram Guest adapter, got %q", instagram.Name())
+	}
+	if threads.Name() != "threads" {
+		t.Fatalf("expected Threads Apify adapter, got %q", threads.Name())
 	}
 }
 

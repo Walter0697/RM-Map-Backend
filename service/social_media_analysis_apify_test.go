@@ -82,12 +82,12 @@ func TestApifyClientResolvesActorIDWhenNotInToml(t *testing.T) {
 	}
 }
 
-func TestSelectConfiguredSourceAdapterUsesApifyForSocialHosts(t *testing.T) {
+func TestSelectConfiguredSourceAdapterUsesApifyForThreads(t *testing.T) {
 	resolver := NewSecretResolver(config.InfisicalSetting{ApifyToken: "token"}, http.DefaultClient)
 	instagram := SelectConfiguredSourceAdapter("https://www.instagram.com/p/abc", "actor", resolver, http.DefaultClient)
 	threads := SelectConfiguredSourceAdapter("https://www.threads.net/@user/post/abc", "actor", resolver, http.DefaultClient)
 	generic := SelectConfiguredSourceAdapter("https://example.com/post", "actor", resolver, http.DefaultClient)
-	if instagram.Name() != "instagram" || threads.Name() != "threads" || generic.Name() != "generic" {
+	if instagram.Name() != "instagram-guest" || threads.Name() != "threads" || generic.Name() != "generic" {
 		t.Fatalf("unexpected adapter names: %s %s %s", instagram.Name(), threads.Name(), generic.Name())
 	}
 }

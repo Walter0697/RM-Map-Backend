@@ -213,12 +213,20 @@ func SelectConfiguredSourceAdapter(rawURL, actorID string, secrets SecretResolve
 	}
 	host := strings.ToLower(parsed.Hostname())
 	if host == "instagram.com" || strings.HasSuffix(host, ".instagram.com") {
-		return namedSourceAdapter{name: "instagram", adapter: NewApifyClient(configuredApifyBaseURL(), actorID, secrets, client)}
+		return NewInstagramGuestClient(configuredInstagramBaseURL(), configuredInstagramDocID(), client)
 	}
 	if host == "threads.net" || strings.HasSuffix(host, ".threads.net") || host == "threads.com" || strings.HasSuffix(host, ".threads.com") {
 		return namedSourceAdapter{name: "threads", adapter: NewApifyClient(configuredApifyBaseURL(), actorID, secrets, client)}
 	}
 	return sourceAdapter{name: "generic", fetch: genericSourceFetcher}
+}
+
+func configuredInstagramBaseURL() string {
+	return defaultInstagramBaseURL
+}
+
+func configuredInstagramDocID() string {
+	return defaultInstagramDocID
 }
 
 type namedSourceAdapter struct {
