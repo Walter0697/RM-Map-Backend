@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"mapmarker/backend/database/dbmodel"
@@ -9,6 +10,79 @@ import (
 	"strings"
 	"testing"
 )
+
+type fakeSocialMediaRunnerClient struct {
+	submitted []RunnerSubmitRequest
+}
+
+func (client *fakeSocialMediaRunnerClient) Submit(_ context.Context, request RunnerSubmitRequest) (RunnerJob, error) {
+	client.submitted = append(client.submitted, request)
+	return RunnerJob{ID: "comparison-runner-1", Status: RunnerJobStatusAccepted}, nil
+}
+
+func (client *fakeSocialMediaRunnerClient) Get(context.Context, string) (RunnerJob, error) {
+	return RunnerJob{}, fmt.Errorf("not implemented")
+}
+
+type fakeGooglePlacesProvider struct {
+	places []GooglePlaceCandidate
+	query  string
+}
+
+func (provider *fakeGooglePlacesProvider) Search(_ context.Context, query string) ([]GooglePlaceCandidate, error) {
+	provider.query = query
+	return provider.places, nil
+}
+
+func TestMaybeSubmitLocationComparisonKeepsVerifiedGoogleLocation(t *testing.T) {
+	provider := &fakeGooglePlacesProvider{places: []GooglePlaceCandidate{{PlaceID: "place-1", Name: "IFC Mall", Address: "8 Finance Street, Central", Latitude: 22.2855, Longitude: 114.1579}}}
+	previousProvider := googlePlacesProviderFn
+	googlePlacesProviderFn = func() GooglePlacesProvider { return provider }
+	t.Cleanup(func() { googlePlacesProviderFn = previousProvider })
+
+	result := AgentAnalysisResult{Recommendation: AgentRecommendationCreateMarker, Location: &LocationCandidate{Name: "IFC Mall", Address: "8 Finance Street, Central", Latitude: 22.2854, Longitude: 114.1579}}
+	runner, submitted, err := maybeSubmitLocationComparison(context.Background(), &dbmodel.SocialMediaAnalysisJob{}, &result)
+	if err != nil || submitted || runner.ID != "" {
+		t.Fatalf("expected verified location to avoid Agent 2, runner=%#v submitted=%v err=%v", runner, submitted, err)
+	}
+	if result.Location.Name != "IFC Mall" || result.Location.Latitude != 22.2855 {
+		t.Fatalf("expected Google location to replace agent location, got %#v", result.Location)
+	}
+	if provider.query != "IFC Mall, 8 Finance Street, Central" {
+		t.Fatalf("unexpected Google query %q", provider.query)
+	}
+}
+
+func TestMaybeSubmitLocationComparisonSubmitsAgentTwoForAmbiguousCandidates(t *testing.T) {
+	provider := &fakeGooglePlacesProvider{places: []GooglePlaceCandidate{
+		{PlaceID: "place-1", Name: "Cafe", Address: "Central", Latitude: 22.28, Longitude: 114.15},
+		{PlaceID: "place-2", Name: "Cafe", Address: "Central", Latitude: 22.29, Longitude: 114.16},
+	}}
+	runner := &fakeSocialMediaRunnerClient{}
+	previousProvider := googlePlacesProviderFn
+	previousRunner := socialMediaRunnerClientFn
+	googlePlacesProviderFn = func() GooglePlacesProvider { return provider }
+	socialMediaRunnerClientFn = func() socialMediaRunnerClient { return runner }
+	t.Cleanup(func() {
+		googlePlacesProviderFn = previousProvider
+		socialMediaRunnerClientFn = previousRunner
+	})
+
+	result := AgentAnalysisResult{Recommendation: AgentRecommendationCreateMarker, Location: &LocationCandidate{Name: "Cafe", Address: "Central", Latitude: 22.285, Longitude: 114.155}}
+	job := &dbmodel.SocialMediaAnalysisJob{SourceJSON: `{"source_url":"https://example.com/post","title":"Cafe post","description":"A cafe"}`}
+	comparison, submitted, err := maybeSubmitLocationComparison(context.Background(), job, &result)
+	if err != nil || !submitted || comparison.ID != "comparison-runner-1" {
+		t.Fatalf("expected Agent 2 submission, runner=%#v submitted=%v err=%v", comparison, submitted, err)
+	}
+	if len(runner.submitted) != 1 || runner.submitted[0].Operation != "social-media-location-comparison" {
+		t.Fatalf("unexpected Agent 2 submissions: %#v", runner.submitted)
+	}
+	for _, expected := range []string{"Cafe post", "First agent result", "Google Places candidates", "needs_input"} {
+		if !strings.Contains(runner.submitted[0].Prompt, expected) {
+			t.Fatalf("comparison prompt missing %q: %s", expected, runner.submitted[0].Prompt)
+		}
+	}
+}
 
 func TestSocialMediaAnalysisOutputSchemaRequiresEveryProperty(t *testing.T) {
 	schema := socialMediaAnalysisOutputSchema()

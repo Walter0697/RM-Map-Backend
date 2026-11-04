@@ -51,11 +51,22 @@ secrets for source-specific Apify scraping:
 - `APIFY_TOKEN`
 - `APIFY_INSTAGRAM_ACTOR_ID` (`apify~instagram-scraper`)
 - `APIFY_THREADS_ACTOR_ID` (`n7ppgtM2MF7vWvKad`)
+- `GOOGLE_MAPS_API_KEY` when Google Places verification is enabled
 
 `APIFY_ACTOR_ID` remains supported as a legacy fallback. `apifybaseurl` can be
 used to point at a compatible Apify API endpoint. Gemini credentials can be
 configured now for a later media-provider phase; Gemini is not invoked by the
 scraping phase.
+
+Google Maps verification is optional. Enable it in `config.toml` with
+`[googlemaps] enable=true`, then configure `GOOGLE_MAPS_API_KEY` in Infisical
+project `roroadmap`, environment `dev`, secret path `/roroadmap`. The key may
+also be supplied through the configured environment override or
+`[googlemaps] apikey` for local-only fallback testing. The worker first checks
+the agent's proposed location against Google Places results; an unambiguous
+match uses the verified result, while an ambiguous or missing match is sent to
+a second wcodex comparison job. If Google is disabled, unavailable, or not
+configured, the original agent-only marker flow is preserved.
 
 ## Secret policy
 

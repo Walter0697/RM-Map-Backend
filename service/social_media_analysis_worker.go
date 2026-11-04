@@ -9,6 +9,7 @@ import (
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
@@ -19,8 +20,14 @@ import (
 )
 
 const socialMediaAnalysisWorkerInterval = 15 * time.Second
+const socialMediaLocationComparisonStage = "location_comparison_submitted"
 
-var socialMediaRunnerClientFn = func() *wcodexRunnerClient {
+type socialMediaRunnerClient interface {
+	Submit(context.Context, RunnerSubmitRequest) (RunnerJob, error)
+	Get(context.Context, string) (RunnerJob, error)
+}
+
+var socialMediaRunnerClientFn = func() socialMediaRunnerClient {
 	runnerURL := strings.TrimSpace(config.Data.SocialMediaAnalysis.RunnerURL)
 	if runnerURL == "" {
 		runnerURL = strings.TrimSpace(os.Getenv("WCODEX_RUNNER_URL"))
@@ -60,7 +67,9 @@ func ReconcileSocialMediaAnalysisJobs(ctx context.Context, limit int) error {
 		now := time.Now().UTC()
 		for idx := range jobs {
 			jobs[idx].Status = dbmodel.SocialMediaAnalysisJobStatusProcessing
-			jobs[idx].Stage = "processing"
+			if !strings.HasPrefix(jobs[idx].Stage, "location_comparison") {
+				jobs[idx].Stage = "processing"
+			}
 			jobs[idx].Attempts++
 			jobs[idx].StartedAt = &now
 			if err := tx.Save(&jobs[idx]).Error; err != nil {
@@ -152,24 +161,107 @@ func reconcileRunnerJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob
 		if err != nil {
 			return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
 		}
-		if err := ApplyAgentAnalysisResult(job, result); err != nil {
-			return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
-		}
-		if result.Recommendation == AgentRecommendationCreateMarker {
-			marker, err := createSocialMediaAnalysisMarker(job, result)
-			if err != nil {
-				return markSocialMediaAnalysisFailed(job, "marker_creation_failed", err)
+		if job.Stage != socialMediaLocationComparisonStage {
+			if comparisonResult, submitted, err := maybeSubmitLocationComparison(ctx, job, &result); err != nil {
+				return markSocialMediaAnalysisFailed(job, "location_comparison_failed", err)
+			} else if submitted {
+				job.RunnerJobID = comparisonResult.ID
+				job.Stage = socialMediaLocationComparisonStage
+				return database.Connection.Save(job).Error
 			}
-			job.CreatedMarkerID = &marker.ID
-			job.Status = dbmodel.SocialMediaAnalysisJobStatusCompleted
-			job.Stage = "marker_created"
 		}
-		now := time.Now().UTC()
-		job.CompletedAt = &now
-		return database.Connection.Save(job).Error
+		return finalizeSocialMediaAnalysisJob(job, result)
 	default:
 		return fmt.Errorf("unknown runner status %q", runnerJob.Status)
 	}
+}
+
+func finalizeSocialMediaAnalysisJob(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) error {
+	if err := ApplyAgentAnalysisResult(job, result); err != nil {
+		return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
+	}
+	if result.Recommendation == AgentRecommendationCreateMarker {
+		marker, err := createSocialMediaAnalysisMarker(job, result)
+		if err != nil {
+			return markSocialMediaAnalysisFailed(job, "marker_creation_failed", err)
+		}
+		job.CreatedMarkerID = &marker.ID
+		job.Status = dbmodel.SocialMediaAnalysisJobStatusCompleted
+		job.Stage = "marker_created"
+	}
+	now := time.Now().UTC()
+	job.CompletedAt = &now
+	return database.Connection.Save(job).Error
+}
+
+var googlePlacesProviderFn = func() GooglePlacesProvider {
+	if !config.Data.GoogleMaps.Enable {
+		return nil
+	}
+	setting := config.Data.Infisical
+	setting.GoogleMapsAPIKey = config.Data.GoogleMaps.APIKey
+	provider := NewGooglePlacesProvider(config.Data.GoogleMaps, NewSecretResolver(setting, http.DefaultClient), http.DefaultClient)
+	return provider
+}
+
+func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, result *AgentAnalysisResult) (RunnerJob, bool, error) {
+	if result == nil || result.Recommendation != AgentRecommendationCreateMarker || result.Location == nil {
+		return RunnerJob{}, false, nil
+	}
+	provider := googlePlacesProviderFn()
+	if provider == nil {
+		return RunnerJob{}, false, nil
+	}
+	query := locationSearchQuery(*result.Location)
+	if query == "" {
+		return RunnerJob{}, false, nil
+	}
+	places, err := provider.Search(ctx, query)
+	if err != nil {
+		log.Printf("[social-media-analysis] Google Places unavailable, keeping Agent 1 result: %v", err)
+		return RunnerJob{}, false, nil
+	}
+	verification := VerifyLocation(*result.Location, places)
+	if verification.Status == LocationMatch && verification.Candidate != nil {
+		result.Location.Name = verification.Candidate.Name
+		result.Location.Address = verification.Candidate.Address
+		result.Location.Latitude = verification.Candidate.Latitude
+		result.Location.Longitude = verification.Candidate.Longitude
+		return RunnerJob{}, false, nil
+	}
+	if verification.Status == LocationMatch {
+		return RunnerJob{}, false, nil
+	}
+	prompt := buildLocationComparisonPrompt(job, *result, verification.Candidates)
+	allowedTypes := []string{"restaurant"}
+	if markerType := strings.TrimSpace(result.MarkerType); markerType != "" {
+		allowedTypes = []string{markerType}
+	}
+	runnerJob, err := socialMediaRunnerClientFn().Submit(ctx, RunnerSubmitRequest{
+		Prompt:       prompt,
+		Application:  "roroadmap",
+		Operation:    "social-media-location-comparison",
+		Timeout:      socialMediaRunnerTimeoutSeconds(),
+		OutputSchema: socialMediaAnalysisOutputSchema(allowedTypes),
+	})
+	if err != nil {
+		return RunnerJob{}, false, err
+	}
+	return runnerJob, true, nil
+}
+
+func locationSearchQuery(location LocationCandidate) string {
+	return strings.TrimSpace(strings.Join([]string{location.Name, location.Address}, ", "))
+}
+
+func buildLocationComparisonPrompt(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult, places []GooglePlaceCandidate) string {
+	post := NormalizedSocialPost{}
+	if job != nil {
+		_ = json.Unmarshal([]byte(job.SourceJSON), &post)
+	}
+	candidates, _ := json.Marshal(places)
+	firstResult, _ := json.Marshal(result)
+	return fmt.Sprintf("Review the first agent's proposed location against the Google Places candidates and return only the required JSON output. Use create_marker only when one candidate is clearly the same venue and location. Copy the selected candidate's name, address, latitude, and longitude into location. If candidates are ambiguous or none is reliable, use needs_input and set location to null. Do not invent a location or use web search.\nSource URL: %s\nTitle: %s\nDescription: %s\nFirst agent result: %s\nGoogle Places candidates: %s", post.SourceURL, post.Title, post.Description, firstResult, candidates)
 }
 
 func decodeAgentAnalysisResult(raw json.RawMessage) (AgentAnalysisResult, error) {
