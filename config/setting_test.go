@@ -107,6 +107,55 @@ func TestApplyGoogleMapsDefaults(t *testing.T) {
 	}
 }
 
+func TestApplyObservabilityDefaults(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+
+	Data.Phoenix = PhoenixSetting{}
+	Data.MinIO = MinIOSetting{}
+	applyObservabilityDefaults()
+
+	if Data.Phoenix.Endpoint != "http://phoenix.home" || Data.Phoenix.Project != "roroadmap-social-analysis" {
+		t.Fatalf("unexpected Phoenix defaults: %+v", Data.Phoenix)
+	}
+	if Data.Phoenix.TimeoutMS != 5000 || Data.Phoenix.BatchSize != 64 {
+		t.Fatalf("unexpected Phoenix limits: %+v", Data.Phoenix)
+	}
+	if Data.MinIO.Region != "us-east-1" || Data.MinIO.Bucket != "roroadmap-social-analysis" {
+		t.Fatalf("unexpected MinIO defaults: %+v", Data.MinIO)
+	}
+	if Data.MinIO.TimeoutMS != 10000 || Data.MinIO.MaxBytes != 25*1024*1024 {
+		t.Fatalf("unexpected MinIO limits: %+v", Data.MinIO)
+	}
+}
+
+func TestApplyObservabilityEnvOverrides(t *testing.T) {
+	original := Data
+	defer func() { Data = original }()
+	for key, value := range map[string]string{
+		"PHOENIX_ENABLE":       "true",
+		"PHOENIX_ENDPOINT":     "https://phoenix.example",
+		"PHOENIX_PROJECT":      "social-analysis-dev",
+		"PHOENIX_API_KEY_ENV":  "PHOENIX_TEST_KEY",
+		"MINIO_ENABLE":         "true",
+		"MINIO_ENDPOINT":       "minio.example:9000",
+		"MINIO_BUCKET":         "analysis-dev",
+		"MINIO_ACCESS_KEY_ENV": "MINIO_TEST_ACCESS",
+		"MINIO_SECRET_KEY_ENV": "MINIO_TEST_SECRET",
+	} {
+		t.Setenv(key, value)
+	}
+	if err := applyObservabilityEnvOverrides(); err != nil {
+		t.Fatalf("applyObservabilityEnvOverrides returned error: %v", err)
+	}
+	if !Data.Phoenix.Enable || Data.Phoenix.Endpoint != "https://phoenix.example" || Data.Phoenix.Project != "social-analysis-dev" || Data.Phoenix.APIKeyEnv != "PHOENIX_TEST_KEY" {
+		t.Fatalf("unexpected Phoenix overrides: %+v", Data.Phoenix)
+	}
+	if !Data.MinIO.Enable || Data.MinIO.Endpoint != "minio.example:9000" || Data.MinIO.Bucket != "analysis-dev" || Data.MinIO.AccessKeyEnv != "MINIO_TEST_ACCESS" || Data.MinIO.SecretKeyEnv != "MINIO_TEST_SECRET" {
+		t.Fatalf("unexpected MinIO overrides: %+v", Data.MinIO)
+	}
+}
+
 func TestApplyInfisicalEnvOverrides(t *testing.T) {
 	original := Data
 	defer func() { Data = original }()

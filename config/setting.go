@@ -135,6 +135,29 @@ type GoogleMapsSetting struct {
 	APIKey     string `mapstructure:"apikey"`
 }
 
+type PhoenixSetting struct {
+	Enable    bool   `mapstructure:"enable"`
+	Endpoint  string `mapstructure:"endpoint"`
+	Project   string `mapstructure:"project"`
+	APIKey    string `mapstructure:"apikey"`
+	APIKeyEnv string `mapstructure:"apikeyenv"`
+	TimeoutMS int    `mapstructure:"timeoutms"`
+	BatchSize int    `mapstructure:"batchsize"`
+}
+
+type MinIOSetting struct {
+	Enable       bool   `mapstructure:"enable"`
+	Endpoint     string `mapstructure:"endpoint"`
+	Region       string `mapstructure:"region"`
+	Bucket       string `mapstructure:"bucket"`
+	AccessKey    string `mapstructure:"accesskey"`
+	AccessKeyEnv string `mapstructure:"accesskeyenv"`
+	SecretKey    string `mapstructure:"secretkey"`
+	SecretKeyEnv string `mapstructure:"secretkeyenv"`
+	TimeoutMS    int    `mapstructure:"timeoutms"`
+	MaxBytes     int64  `mapstructure:"maxbytes"`
+}
+
 type InfisicalSetting struct {
 	Enable              bool   `mapstructure:"enable"`
 	SiteURL             string `mapstructure:"siteurl"`
@@ -152,6 +175,12 @@ type InfisicalSetting struct {
 	ApifyBaseURL        string `mapstructure:"apifybaseurl"`
 	GoogleMapsAPIKey    string `mapstructure:"googlemapsapikey"`
 	GoogleMapsAPIKeyEnv string `mapstructure:"googlemapsapikeyenv"`
+	PhoenixAPIKey       string `mapstructure:"phoenixapikey"`
+	PhoenixAPIKeyEnv    string `mapstructure:"phoenixapikeyenv"`
+	MinIOAccessKey      string `mapstructure:"minioaccesskey"`
+	MinIOAccessKeyEnv   string `mapstructure:"minioaccesskeyenv"`
+	MinIOSecretKey      string `mapstructure:"miniosecretkey"`
+	MinIOSecretKeyEnv   string `mapstructure:"miniosecretkeyenv"`
 }
 
 type SeedSetting struct {
@@ -198,6 +227,8 @@ type Config struct {
 	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
 	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
 	GoogleMaps          GoogleMapsSetting          `mapstructure:"googlemaps"`
+	Phoenix             PhoenixSetting             `mapstructure:"phoenix"`
+	MinIO               MinIOSetting               `mapstructure:"minio"`
 	Infisical           InfisicalSetting           `mapstructure:"infisical"`
 	Seed                SeedSetting                `mapstructure:"seed"`
 }
@@ -218,6 +249,9 @@ func Init() {
 	}
 	if err := applySocialMediaAnalysisEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid social media analysis config: %s \n", err))
+	}
+	if err := applyObservabilityEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid observability config: %s \n", err))
 	}
 	if err := applyInfisicalEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid Infisical config: %s \n", err))
@@ -287,6 +321,90 @@ func applyInfisicalEnvOverrides() error {
 	}
 	if value, exists := os.LookupEnv("GOOGLE_MAPS_API_KEY_ENV"); exists {
 		Data.Infisical.GoogleMapsAPIKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY"); exists {
+		Data.Infisical.PhoenixAPIKey = value
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY_ENV"); exists {
+		Data.Infisical.PhoenixAPIKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY"); exists {
+		Data.Infisical.MinIOAccessKey = value
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY_ENV"); exists {
+		Data.Infisical.MinIOAccessKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY"); exists {
+		Data.Infisical.MinIOSecretKey = value
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY_ENV"); exists {
+		Data.Infisical.MinIOSecretKeyEnv = strings.TrimSpace(value)
+	}
+	return nil
+}
+
+func applyObservabilityDefaults() {
+	if strings.TrimSpace(Data.Phoenix.Endpoint) == "" {
+		Data.Phoenix.Endpoint = "http://phoenix.home"
+	}
+	if strings.TrimSpace(Data.Phoenix.Project) == "" {
+		Data.Phoenix.Project = "roroadmap-social-analysis"
+	}
+	if Data.Phoenix.TimeoutMS <= 0 {
+		Data.Phoenix.TimeoutMS = 5000
+	}
+	if Data.Phoenix.BatchSize <= 0 {
+		Data.Phoenix.BatchSize = 64
+	}
+	if strings.TrimSpace(Data.MinIO.Region) == "" {
+		Data.MinIO.Region = "us-east-1"
+	}
+	if strings.TrimSpace(Data.MinIO.Bucket) == "" {
+		Data.MinIO.Bucket = "roroadmap-social-analysis"
+	}
+	if Data.MinIO.TimeoutMS <= 0 {
+		Data.MinIO.TimeoutMS = 10000
+	}
+	if Data.MinIO.MaxBytes <= 0 {
+		Data.MinIO.MaxBytes = 25 * 1024 * 1024
+	}
+}
+
+func applyObservabilityEnvOverrides() error {
+	if enable, exists := os.LookupEnv("PHOENIX_ENABLE"); exists {
+		value, err := strconv.ParseBool(strings.TrimSpace(enable))
+		if err != nil {
+			return fmt.Errorf("PHOENIX_ENABLE must be a boolean, got %q", enable)
+		}
+		Data.Phoenix.Enable = value
+	}
+	if value, exists := os.LookupEnv("PHOENIX_ENDPOINT"); exists {
+		Data.Phoenix.Endpoint = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, exists := os.LookupEnv("PHOENIX_PROJECT"); exists {
+		Data.Phoenix.Project = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY_ENV"); exists {
+		Data.Phoenix.APIKeyEnv = strings.TrimSpace(value)
+	}
+	if enable, exists := os.LookupEnv("MINIO_ENABLE"); exists {
+		value, err := strconv.ParseBool(strings.TrimSpace(enable))
+		if err != nil {
+			return fmt.Errorf("MINIO_ENABLE must be a boolean, got %q", enable)
+		}
+		Data.MinIO.Enable = value
+	}
+	if value, exists := os.LookupEnv("MINIO_ENDPOINT"); exists {
+		Data.MinIO.Endpoint = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_BUCKET"); exists {
+		Data.MinIO.Bucket = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY_ENV"); exists {
+		Data.MinIO.AccessKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY_ENV"); exists {
+		Data.MinIO.SecretKeyEnv = strings.TrimSpace(value)
 	}
 	return nil
 }

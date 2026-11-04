@@ -88,6 +88,32 @@ func TestSecretResolverFallsBackToEnvironmentThenToml(t *testing.T) {
 			t.Fatalf("expected Google Maps TOML fallback, got %q, %v", value, err)
 		}
 	})
+
+	t.Run("Phoenix and MinIO environment and toml fallback", func(t *testing.T) {
+		t.Setenv("PHOENIX_TEST_KEY", "phoenix-environment-key")
+		t.Setenv("MINIO_TEST_ACCESS", "minio-environment-access")
+		t.Setenv("MINIO_TEST_SECRET", "minio-environment-secret")
+		resolver := NewSecretResolver(config.InfisicalSetting{
+			PhoenixAPIKey:     "phoenix-toml-key",
+			PhoenixAPIKeyEnv:  "PHOENIX_TEST_KEY",
+			MinIOAccessKey:    "minio-toml-access",
+			MinIOAccessKeyEnv: "MINIO_TEST_ACCESS",
+			MinIOSecretKey:    "minio-toml-secret",
+			MinIOSecretKeyEnv: "MINIO_TEST_SECRET",
+		}, http.DefaultClient)
+		value, err := resolver.Resolve(context.Background(), "PHOENIX_API_KEY")
+		if err != nil || value != "phoenix-environment-key" {
+			t.Fatalf("expected Phoenix environment fallback, got %q, %v", value, err)
+		}
+		value, err = resolver.Resolve(context.Background(), "MINIO_ACCESS_KEY")
+		if err != nil || value != "minio-environment-access" {
+			t.Fatalf("expected MinIO access environment fallback, got %q, %v", value, err)
+		}
+		value, err = resolver.Resolve(context.Background(), "MINIO_SECRET_KEY")
+		if err != nil || value != "minio-environment-secret" {
+			t.Fatalf("expected MinIO secret environment fallback, got %q, %v", value, err)
+		}
+	})
 }
 
 func TestSecretResolverRedactsProviderFailure(t *testing.T) {

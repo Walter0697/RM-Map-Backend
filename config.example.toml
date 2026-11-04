@@ -123,6 +123,27 @@ timeoutms=5000
 maxresults=5
 apikey=""
 
+[phoenix]
+enable=false
+endpoint="http://phoenix.home"
+project="roroadmap-social-analysis"
+apikey=""
+apikeyenv="PHOENIX_API_KEY"
+timeoutms=5000
+batchsize=64
+
+[minio]
+enable=false
+endpoint="minio.home:9000"
+region="us-east-1"
+bucket="roroadmap-social-analysis"
+accesskey=""
+accesskeyenv="MINIO_ACCESS_KEY"
+secretkey=""
+secretkeyenv="MINIO_SECRET_KEY"
+timeoutms=10000
+maxbytes=26214400
+
 [infisical]
 enable=false
 siteurl="https://app.infisical.com"

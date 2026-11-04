@@ -68,6 +68,7 @@ func ValidateAuthConfig() error {
 	applyIntegrationDefaults()
 	applyCalendarDefaults()
 	applyGoogleMapsDefaults()
+	applyObservabilityDefaults()
 	if err := ValidateAuthStateConfig(); err != nil {
 		return err
 	}

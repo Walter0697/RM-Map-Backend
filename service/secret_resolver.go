@@ -201,6 +201,12 @@ func (resolver *infisicalSecretResolver) environmentName(name string) string {
 		return resolver.setting.GeminiTokenEnv
 	case "GOOGLE_MAPS_API_KEY":
 		return resolver.setting.GoogleMapsAPIKeyEnv
+	case "PHOENIX_API_KEY":
+		return resolver.setting.PhoenixAPIKeyEnv
+	case "MINIO_ACCESS_KEY":
+		return resolver.setting.MinIOAccessKeyEnv
+	case "MINIO_SECRET_KEY":
+		return resolver.setting.MinIOSecretKeyEnv
 	default:
 		return ""
 	}
@@ -216,6 +222,12 @@ func (resolver *infisicalSecretResolver) tomlValue(name string) string {
 		return resolver.setting.ApifyActorID
 	case "GOOGLE_MAPS_API_KEY":
 		return resolver.setting.GoogleMapsAPIKey
+	case "PHOENIX_API_KEY":
+		return resolver.setting.PhoenixAPIKey
+	case "MINIO_ACCESS_KEY":
+		return resolver.setting.MinIOAccessKey
+	case "MINIO_SECRET_KEY":
+		return resolver.setting.MinIOSecretKey
 	default:
 		return ""
 	}
