@@ -27,8 +27,8 @@ type infisicalSecretResolver struct {
 
 	mu          sync.Mutex
 	accessToken string
-	tokenUntil time.Time
-	secrets    map[string]string
+	tokenUntil  time.Time
+	secrets     map[string]string
 }
 
 func NewSecretResolver(setting config.InfisicalSetting, client *http.Client) SecretResolver {
@@ -210,6 +210,8 @@ func (resolver *infisicalSecretResolver) tomlValue(name string) string {
 		return resolver.setting.ApifyToken
 	case "GEMINI_TOKEN":
 		return resolver.setting.GeminiToken
+	case "APIFY_ACTOR_ID":
+		return resolver.setting.ApifyActorID
 	default:
 		return ""
 	}

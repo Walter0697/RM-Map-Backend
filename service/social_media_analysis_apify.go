@@ -46,7 +46,7 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 	if sourceURL == nil || strings.TrimSpace(sourceURL.String()) == "" {
 		return NormalizedSocialPost{}, fmt.Errorf("Apify source URL is required")
 	}
-	if client.baseURL == "" || client.actorID == "" {
+	if client.baseURL == "" {
 		return NormalizedSocialPost{}, fmt.Errorf("Apify configuration is incomplete")
 	}
 	if client.secrets == nil {
@@ -56,11 +56,21 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 	if err != nil {
 		return NormalizedSocialPost{}, err
 	}
+	actorID := client.actorID
+	if actorID == "" {
+		actorID, err = client.secrets.Resolve(ctx, "APIFY_ACTOR_ID")
+		if err != nil {
+			return NormalizedSocialPost{}, err
+		}
+	}
+	if strings.TrimSpace(actorID) == "" {
+		return NormalizedSocialPost{}, fmt.Errorf("Apify actor ID is not configured")
+	}
 	input, err := json.Marshal(map[string]string{"url": sourceURL.String()})
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("encode Apify input: %w", err)
 	}
-	actorPath := path.Join("/v2/acts", client.actorID, "runs")
+	actorPath := path.Join("/v2/acts", actorID, "runs")
 	runPayload, err := client.doJSON(ctx, http.MethodPost, actorPath, token, bytes.NewReader(input))
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("start Apify actor: %w", err)

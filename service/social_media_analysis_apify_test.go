@@ -63,6 +63,25 @@ func TestApifyClientRunsActorAndNormalizesDataset(t *testing.T) {
 	}
 }
 
+func TestApifyClientResolvesActorIDWhenNotInToml(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v2/acts/test~actor/runs" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":{"id":"run-1","defaultDatasetId":"dataset-1","status":"SUCCEEDED"}}`))
+	}))
+	defer server.Close()
+
+	resolver := NewSecretResolver(config.InfisicalSetting{ApifyToken: "token", ApifyActorID: "test~actor"}, server.Client())
+	client := NewApifyClient(server.URL, "", resolver, server.Client())
+	parsed, _ := url.Parse("https://www.instagram.com/p/abc")
+	if _, err := client.Fetch(context.Background(), parsed); err == nil || !strings.Contains(err.Error(), "fetch Apify dataset") {
+		t.Fatalf("expected dataset fetch error after actor resolution, got %v", err)
+	}
+}
+
 func TestSelectConfiguredSourceAdapterUsesApifyForSocialHosts(t *testing.T) {
 	resolver := NewSecretResolver(config.InfisicalSetting{ApifyToken: "token"}, http.DefaultClient)
 	instagram := SelectConfiguredSourceAdapter("https://www.instagram.com/p/abc", "actor", resolver, http.DefaultClient)
