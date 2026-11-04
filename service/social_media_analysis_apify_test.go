@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"mapmarker/backend/config"
@@ -151,6 +152,39 @@ func TestApifyClientUsesThreadsActorSecretAndPostURLsInput(t *testing.T) {
 	parsed, _ := url.Parse("https://www.threads.net/@user/post/abc")
 	if _, err := client.Fetch(context.Background(), parsed); err == nil || !strings.Contains(err.Error(), "fetch Apify dataset") {
 		t.Fatalf("expected dataset fetch error after validating actor input, got %v", err)
+	}
+}
+
+func TestApifyClientWaitsForActorCompletionBeforeReadingDataset(t *testing.T) {
+	var datasetReads atomic.Int32
+	var statusReads atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v2/acts/test~actor/runs":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"data":{"id":"run-1","defaultDatasetId":"dataset-1","status":"RUNNING"}}`))
+		case "/v2/actor-runs/run-1":
+			statusReads.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"data":{"status":"SUCCEEDED","defaultDatasetId":"dataset-1"}}`))
+		case "/v2/datasets/dataset-1/items":
+			datasetReads.Add(1)
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`[{"caption":"Ready #food","displayUrl":"https://cdn.example/photo.jpg"}]`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	client := newApifyClient(server.URL, "test~actor", "APIFY_ACTOR_ID", "legacy", mapSecretResolver{"APIFY_TOKEN": "token"}, server.Client())
+	parsed, _ := url.Parse("https://www.instagram.com/p/abc")
+	post, err := client.Fetch(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("Fetch returned error: %v", err)
+	}
+	if post.Description != "Ready #food" || datasetReads.Load() != 1 || statusReads.Load() != 1 {
+		t.Fatalf("expected completed dataset result, got post=%+v dataset_reads=%d status_reads=%d", post, datasetReads.Load(), statusReads.Load())
 	}
 }
 

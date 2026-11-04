@@ -101,7 +101,7 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 		return NormalizedSocialPost{}, fmt.Errorf("decode Apify actor response")
 	}
 	datasetID := run.Data.DefaultDatasetID
-	if datasetID == "" {
+	if datasetID == "" || run.Data.Status != "SUCCEEDED" {
 		datasetID, err = client.waitForDataset(ctx, run.Data.ID, token)
 		if err != nil {
 			return NormalizedSocialPost{}, err
@@ -148,7 +148,7 @@ func (client apifyClient) waitForDataset(ctx context.Context, runID, token strin
 		if err := json.Unmarshal(payload, &status); err != nil {
 			return "", fmt.Errorf("decode Apify actor status")
 		}
-		if status.Data.DefaultDatasetID != "" {
+		if status.Data.Status == "SUCCEEDED" && status.Data.DefaultDatasetID != "" {
 			return status.Data.DefaultDatasetID, nil
 		}
 		if status.Data.Status == "FAILED" || status.Data.Status == "ABORTED" || status.Data.Status == "TIMED-OUT" {
@@ -209,10 +209,14 @@ func normalizeApifyDataset(sourceURL *url.URL, payload []byte, maxBytes int64) (
 		post.FinalURL = canonical
 	}
 	for _, value := range []string{firstJSONField(item, "displayUrl", "imageUrl", "image_url", "thumbnailUrl", "thumbnail_url")} {
-		appendResolvedURL(&post.ImageURLs, value, sourceURL)
+		if strings.TrimSpace(value) != "" {
+			appendResolvedURL(&post.ImageURLs, value, sourceURL)
+		}
 	}
 	for _, value := range []string{firstJSONField(item, "videoUrl", "video_url")} {
-		appendResolvedURL(&post.VideoURLs, value, sourceURL)
+		if strings.TrimSpace(value) != "" {
+			appendResolvedURL(&post.VideoURLs, value, sourceURL)
+		}
 	}
 	if caption != "" {
 		for _, match := range sourceHashtagPattern.FindAllStringSubmatch(caption, 32) {
