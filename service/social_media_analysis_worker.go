@@ -40,12 +40,20 @@ var socialMediaRunnerClientFn = func() socialMediaRunnerClient {
 }
 
 var socialAnalysisTracerFn = func() socialAnalysisTracerProvider {
-	tracer, _ := NewSocialAnalysisTracer(config.Data.Phoenix, NewSecretResolver(config.Data.Infisical, http.DefaultClient))
+	setting := config.Data.Infisical
+	setting.PhoenixAPIKey = config.Data.Phoenix.APIKey
+	setting.PhoenixAPIKeyEnv = config.Data.Phoenix.APIKeyEnv
+	tracer, _ := NewSocialAnalysisTracer(config.Data.Phoenix, NewSecretResolver(setting, http.DefaultClient))
 	return tracer
 }
 
 var socialAnalysisAssetStoreFn = func() AssetStore {
-	store, err := NewMinIOAssetStore(config.Data.MinIO, NewSecretResolver(config.Data.Infisical, http.DefaultClient), http.DefaultClient)
+	setting := config.Data.Infisical
+	setting.MinIOAccessKey = config.Data.MinIO.AccessKey
+	setting.MinIOAccessKeyEnv = config.Data.MinIO.AccessKeyEnv
+	setting.MinIOSecretKey = config.Data.MinIO.SecretKey
+	setting.MinIOSecretKeyEnv = config.Data.MinIO.SecretKeyEnv
+	store, err := NewMinIOAssetStore(config.Data.MinIO, NewSecretResolver(setting, http.DefaultClient), http.DefaultClient)
 	if err != nil {
 		log.Printf("[observability] MinIO asset store unavailable: %v", err)
 		return nil

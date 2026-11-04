@@ -1,0 +1,47 @@
+# Social Analysis Observability Verification
+
+## Configuration
+
+- [ ] Infisical `dev` contains `PHOENIX_API_KEY`, `MINIO_ACCESS_KEY`, and
+      `MINIO_SECRET_KEY` at `/roroadmap`.
+- [ ] Development TOML enables `[phoenix].enable` and `[minio].enable` with
+      the development Phoenix endpoint/project and MinIO endpoint/bucket.
+- [ ] Production uses separate Infisical values and storage destinations.
+
+## Clear-match analysis
+
+- [ ] Submit a public post with an explicit venue.
+- [ ] Confirm the backend trace in `roroadmap-social-analysis` includes
+      `source.fetch`, `google_places.search` when enabled, and
+      `wcodex_runner.submit` with `analysis.stage=agent_1`.
+- [ ] Confirm the runner job appears in project `wcodex` and shares the
+      analysis job ID and runner job ID metadata.
+- [ ] Confirm the marker is created and an artifact record contains checksum,
+      size, MIME type, and a private MinIO object key.
+
+## Agent 2 analysis
+
+- [ ] Submit a post whose location produces ambiguous or no Google Places
+      matches.
+- [ ] Confirm a second `wcodex_runner.submit` span has
+      `analysis.stage=agent_2` and operation
+      `social-media-location-comparison`.
+- [ ] Confirm the final marker or needs-input result is persisted once.
+
+## Failure and disabled paths
+
+- [ ] Stop or make Phoenix unavailable; analysis still completes and logs a
+      bounded exporter warning.
+- [ ] Stop or make MinIO unavailable; optional artifact capture is skipped and
+      the source/marker flow remains usable.
+- [ ] Make Google Places fail; the existing Agent 1 fallback remains active.
+- [ ] Verify traces and logs contain no API keys, authorization headers, or
+      raw video payloads.
+
+## Commands
+
+```bash
+GOCACHE=/tmp/roroadmap-go-cache go test ./...
+GOCACHE=/tmp/roroadmap-go-cache go vet ./...
+git diff --check
+```

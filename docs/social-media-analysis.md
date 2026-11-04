@@ -68,6 +68,48 @@ match uses the verified result, while an ambiguous or missing match is sent to
 a second wcodex comparison job. If Google is disabled, unavailable, or not
 configured, the original agent-only marker flow is preserved.
 
+## Observability and artifacts
+
+Backend provider traces are exported to the Phoenix project
+`roroadmap-social-analysis`. The wcodex-runner agent trace remains in its
+existing `wcodex` Phoenix project. Use the analysis job ID and runner job ID to
+correlate the two projects. Backend spans contain provider names, operations,
+durations, statuses, bounded error summaries, Apify run IDs, Google candidate
+counts, and MinIO object references. They do not contain provider keys, raw
+authorization headers, full videos, or unrestricted provider responses.
+
+Enable the backend exporter with:
+
+```toml
+[phoenix]
+enable=true
+endpoint="http://phoenix.home"
+project="roroadmap-social-analysis"
+apikeyenv="PHOENIX_API_KEY"
+
+[minio]
+enable=true
+endpoint="http://minio.home:9000"
+region="us-east-1"
+bucket="roroadmap-social-analysis"
+accesskeyenv="MINIO_ACCESS_KEY"
+secretkeyenv="MINIO_SECRET_KEY"
+```
+
+Store these secrets in Infisical under the matching project/environment/path
+(for example, project `roroadmap`, environment `dev`, path `/roroadmap`):
+
+- `PHOENIX_API_KEY`
+- `MINIO_ACCESS_KEY`
+- `MINIO_SECRET_KEY`
+
+Use separate values, Phoenix projects, and MinIO buckets for `dev` and `prod`.
+MinIO objects are private and job-scoped. Source snapshots and bounded first
+image/video artifacts are stored under
+`social-analysis/{analysis_job_id}/`; the database stores their checksums and
+metadata. Phoenix stores references and checksums only. Phoenix or MinIO being
+unavailable does not fail ordinary analysis when artifact capture is optional.
+
 ## Secret policy
 
 Scraper and provider API keys must be supplied through the deployment's
