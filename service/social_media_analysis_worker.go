@@ -108,14 +108,18 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	if err := database.Connection.Save(job).Error; err != nil {
 		return err
 	}
+	allowedMarkerTypes, err := socialMediaAnalysisMarkerTypeValues()
+	if err != nil {
+		return markSocialMediaAnalysisFailed(job, "marker_types_fetch_failed", err)
+	}
 	client := socialMediaRunnerClientFn()
-	prompt := buildSocialMediaAnalysisPrompt(post)
+	prompt := buildSocialMediaAnalysisPrompt(post, allowedMarkerTypes)
 	runnerJob, err := client.Submit(ctx, RunnerSubmitRequest{
 		Prompt:       prompt,
 		Application:  "roroadmap",
 		Operation:    "social-media-analysis",
 		Timeout:      socialMediaRunnerTimeoutSeconds(),
-		OutputSchema: socialMediaAnalysisOutputSchema(),
+		OutputSchema: socialMediaAnalysisOutputSchema(allowedMarkerTypes),
 	})
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "runner_submit_failed", err)
@@ -196,12 +200,55 @@ func markSocialMediaAnalysisFailed(job *dbmodel.SocialMediaAnalysisJob, code str
 	return database.Connection.Save(job).Error
 }
 
-func buildSocialMediaAnalysisPrompt(post NormalizedSocialPost) string {
+func socialMediaAnalysisMarkerTypeValues() ([]string, error) {
+	if database.Connection == nil {
+		return nil, fmt.Errorf("database connection is not initialized")
+	}
+	var markerTypes []dbmodel.MarkerType
+	if err := database.Connection.Where("hidden IS DISTINCT FROM TRUE").Order("priority asc, id asc").Find(&markerTypes).Error; err != nil {
+		return nil, fmt.Errorf("load marker types: %w", err)
+	}
+	values := make([]string, 0, len(markerTypes))
+	for _, markerType := range markerTypes {
+		value := strings.TrimSpace(markerType.Value)
+		if value != "" {
+			values = append(values, value)
+		}
+	}
+	if len(values) == 0 {
+		return nil, fmt.Errorf("no visible marker types are configured")
+	}
+	return values, nil
+}
+
+func resolveSocialMediaAnalysisMarkerType(value string, allowed []string) string {
+	value = strings.TrimSpace(value)
+	for _, candidate := range allowed {
+		if strings.EqualFold(value, strings.TrimSpace(candidate)) {
+			return strings.TrimSpace(candidate)
+		}
+	}
+	for _, candidate := range allowed {
+		if strings.EqualFold(strings.TrimSpace(candidate), "restaurant") {
+			return strings.TrimSpace(candidate)
+		}
+	}
+	if len(allowed) > 0 {
+		return strings.TrimSpace(allowed[0])
+	}
+	return "restaurant"
+}
+
+func buildSocialMediaAnalysisPrompt(post NormalizedSocialPost, allowedTypes ...[]string) string {
 	rawBody := post.RawBody
 	if len(rawBody) > 32000 {
 		rawBody = rawBody[:32000]
 	}
-	return fmt.Sprintf("Analyze this public source and return only the required JSON output. If it clearly identifies a venue or restaurant with a reliable location, use recommendation create_marker and provide the location coordinates. Use completed for informational content without a reliable venue location. Set image_url to the page's direct canonical image URL (prefer the supplied image references, og:image, or equivalent) when one is explicitly available; otherwise return an empty string. Do not return the source page URL, tracking URL, or a guessed image path as image_url. Extract tags as short lowercase labels without #, using supplied hashtags as candidates and adding only supported tags. Use empty tags when none are supported. Extract price as exactly free, cheap, middle, or expensive, or an empty string when unknown. Set need_booking only when booking is explicitly indicated. Set estimate_time as short, medium, or long only when supported. Set from_time and to_time only for reliable event times in YYYY-MM-DD HH:mm:ss+00 format; otherwise use null.\nSource URL: %s\nFinal URL: %s\nTitle: %s\nDescription: %s\nHashtags: %s\nImage references: %s\nVideo references: %s\nMetadata: %s\nFetched content:\n%s", post.SourceURL, post.FinalURL, post.Title, post.Description, strings.Join(post.Hashtags, ", "), strings.Join(post.ImageURLs, "\n"), strings.Join(post.VideoURLs, "\n"), formatSocialMediaMetadata(post.Metadata), rawBody)
+	types := []string{"restaurant"}
+	if len(allowedTypes) > 0 && len(allowedTypes[0]) > 0 {
+		types = allowedTypes[0]
+	}
+	return fmt.Sprintf("Analyze this public source and return only the required JSON output. If it clearly identifies a venue or restaurant with a reliable location, use recommendation create_marker and provide the location coordinates. Use completed for informational content without a reliable venue location. Set marker_type to exactly one value from the allowed marker types list; never invent a new type. Set image_url to the page's direct canonical image URL (prefer the supplied image references, og:image, or equivalent) when one is explicitly available; otherwise return an empty string. Do not return the source page URL, tracking URL, or a guessed image path as image_url. Extract tags as short lowercase labels without #, using supplied hashtags as candidates and adding only supported tags. Use empty tags when none are supported. Extract price as exactly free, cheap, middle, or expensive, or an empty string when unknown. Set need_booking only when booking is explicitly indicated. Set estimate_time as short, medium, or long only when supported. Set from_time and to_time only for reliable event times in YYYY-MM-DD HH:mm:ss+00 format; otherwise use null.\nAllowed marker types: %s\nSource URL: %s\nFinal URL: %s\nTitle: %s\nDescription: %s\nHashtags: %s\nImage references: %s\nVideo references: %s\nMetadata: %s\nFetched content:\n%s", strings.Join(types, ", "), post.SourceURL, post.FinalURL, post.Title, post.Description, strings.Join(post.Hashtags, ", "), strings.Join(post.ImageURLs, "\n"), strings.Join(post.VideoURLs, "\n"), formatSocialMediaMetadata(post.Metadata), rawBody)
 }
 
 func formatSocialMediaMetadata(metadata map[string]string) string {
@@ -216,7 +263,11 @@ func formatSocialMediaMetadata(metadata map[string]string) string {
 	return strings.Join(values, "\n")
 }
 
-func socialMediaAnalysisOutputSchema() map[string]any {
+func socialMediaAnalysisOutputSchema(allowedTypes ...[]string) map[string]any {
+	types := []string{"restaurant"}
+	if len(allowedTypes) > 0 && len(allowedTypes[0]) > 0 {
+		types = allowedTypes[0]
+	}
 	return map[string]any{
 		"type":                 "object",
 		"additionalProperties": false,
@@ -224,6 +275,7 @@ func socialMediaAnalysisOutputSchema() map[string]any {
 			"recommendation": map[string]any{"type": "string", "enum": []string{AgentRecommendationCompleted, AgentRecommendationNeedsInput, AgentRecommendationAwaitingConfirmation, AgentRecommendationCreateMarker}},
 			"description":    map[string]any{"type": "string"},
 			"image_url":      map[string]any{"type": "string", "description": "Direct canonical source image URL, or an empty string when unavailable."},
+			"marker_type":    map[string]any{"type": "string", "enum": types, "description": "Existing marker type value for the marker, never a new value."},
 			"tags":           map[string]any{"type": "array", "items": map[string]any{"type": "string"}},
 			"price":          map[string]any{"type": "string", "enum": []string{"", "free", "cheap", "middle", "expensive"}},
 			"need_booking":   map[string]any{"type": "boolean"},
@@ -266,7 +318,7 @@ func socialMediaAnalysisOutputSchema() map[string]any {
 				},
 			},
 		},
-		"required": []string{"recommendation", "description", "image_url", "tags", "price", "need_booking", "estimate_time", "from_time", "to_time", "location", "confidence", "follow_up", "evidence"},
+		"required": []string{"recommendation", "description", "image_url", "marker_type", "tags", "price", "need_booking", "estimate_time", "from_time", "to_time", "location", "confidence", "follow_up", "evidence"},
 	}
 }
 
@@ -339,6 +391,7 @@ func createMarkerWithImageCandidates(input model.NewMarker, candidates []string,
 		if err == nil {
 			return marker, nil
 		}
+		log.Printf("social media marker image candidate failed candidate=%q err=%v", candidate, err)
 		lastErr = err
 	}
 	input.ImageLink = nil
@@ -416,7 +469,11 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	markerInput.Latitude = location.Latitude
 	markerInput.Longitude = location.Longitude
 	markerInput.Address = location.Address
-	markerInput.Type = "food"
+	allowedMarkerTypes, err := socialMediaAnalysisMarkerTypeValues()
+	if err != nil {
+		return nil, err
+	}
+	markerInput.Type = resolveSocialMediaAnalysisMarkerType(result.MarkerType, allowedMarkerTypes)
 	markerInput.Link = &link
 	markerInput.SocialMediaLink = &socialLink
 	markerInput.Permanent = &permanent

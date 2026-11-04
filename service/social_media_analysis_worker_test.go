@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -137,6 +138,33 @@ func TestSocialMediaAnalysisPromptAndSchemaDescribeImageURL(t *testing.T) {
 		if !found {
 			t.Fatalf("expected %s to be required by the strict output schema", field)
 		}
+	}
+}
+
+func TestBuildSocialMediaAnalysisPromptIncludesAllowedMarkerTypes(t *testing.T) {
+	prompt := buildSocialMediaAnalysisPrompt(NormalizedSocialPost{}, []string{"restaurant", "event"})
+	if !strings.Contains(prompt, "Allowed marker types: restaurant, event") {
+		t.Fatalf("expected allowed marker types in prompt, got %q", prompt)
+	}
+}
+
+func TestSocialMediaAnalysisOutputSchemaConstrainsMarkerType(t *testing.T) {
+	schema := socialMediaAnalysisOutputSchema([]string{"restaurant", "event"})
+	properties := schema["properties"].(map[string]any)
+	markerType := properties["marker_type"].(map[string]any)
+	enum := markerType["enum"].([]string)
+	if !reflect.DeepEqual(enum, []string{"restaurant", "event"}) {
+		t.Fatalf("expected marker type enum, got %#v", enum)
+	}
+}
+
+func TestResolveSocialMediaAnalysisMarkerTypeFallsBackToRestaurant(t *testing.T) {
+	allowed := []string{"restaurant", "event"}
+	if got := resolveSocialMediaAnalysisMarkerType("food", allowed); got != "restaurant" {
+		t.Fatalf("expected unsupported marker type to fall back to restaurant, got %q", got)
+	}
+	if got := resolveSocialMediaAnalysisMarkerType("event", allowed); got != "event" {
+		t.Fatalf("expected supported marker type to be preserved, got %q", got)
 	}
 }
 

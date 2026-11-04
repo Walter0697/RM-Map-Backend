@@ -76,6 +76,7 @@ type AgentAnalysisResult struct {
 	Recommendation string             `json:"recommendation"`
 	Description    string             `json:"description,omitempty"`
 	ImageURL       string             `json:"image_url,omitempty"`
+	MarkerType     string             `json:"marker_type,omitempty"`
 	Tags           []string           `json:"tags,omitempty"`
 	Price          string             `json:"price,omitempty"`
 	NeedBooking    bool               `json:"need_booking"`
