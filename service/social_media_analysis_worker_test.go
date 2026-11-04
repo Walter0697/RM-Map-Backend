@@ -84,6 +84,14 @@ func TestMaybeSubmitLocationComparisonSubmitsAgentTwoForAmbiguousCandidates(t *t
 	}
 }
 
+func TestSocialAnalysisRunnerSpanAttributesSeparateAgentStages(t *testing.T) {
+	first := socialAnalysisRunnerSpanAttributes("analysis-1", "social-media-analysis", "agent_1")
+	second := socialAnalysisRunnerSpanAttributes("analysis-1", "social-media-location-comparison", "agent_2")
+	if first["provider.operation"] == second["provider.operation"] || first["analysis.stage"] == second["analysis.stage"] {
+		t.Fatalf("expected separate runner operation metadata: first=%v second=%v", first, second)
+	}
+}
+
 func TestSocialMediaAnalysisOutputSchemaRequiresEveryProperty(t *testing.T) {
 	schema := socialMediaAnalysisOutputSchema()
 	properties, ok := schema["properties"].(map[string]any)

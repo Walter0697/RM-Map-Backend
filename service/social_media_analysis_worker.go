@@ -159,13 +159,13 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	client := socialMediaRunnerClientFn()
 	prompt := buildSocialMediaAnalysisPrompt(post, allowedMarkerTypes)
-	runnerJob, err := client.Submit(ctx, RunnerSubmitRequest{
+	runnerJob, err := submitSocialAnalysisRunnerJob(ctx, client, RunnerSubmitRequest{
 		Prompt:       prompt,
 		Application:  "roroadmap",
 		Operation:    "social-media-analysis",
 		Timeout:      socialMediaRunnerTimeoutSeconds(),
 		OutputSchema: socialMediaAnalysisOutputSchema(allowedMarkerTypes),
-	})
+	}, job.JobID, "social-media-analysis", "agent_1")
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "runner_submit_failed", err)
 	}
@@ -273,17 +273,42 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 	if markerType := strings.TrimSpace(result.MarkerType); markerType != "" {
 		allowedTypes = []string{markerType}
 	}
-	runnerJob, err := socialMediaRunnerClientFn().Submit(ctx, RunnerSubmitRequest{
+	runnerJob, err := submitSocialAnalysisRunnerJob(ctx, socialMediaRunnerClientFn(), RunnerSubmitRequest{
 		Prompt:       prompt,
 		Application:  "roroadmap",
 		Operation:    "social-media-location-comparison",
 		Timeout:      socialMediaRunnerTimeoutSeconds(),
 		OutputSchema: socialMediaAnalysisOutputSchema(allowedTypes),
-	})
+	}, job.JobID, "social-media-location-comparison", "agent_2")
 	if err != nil {
 		return RunnerJob{}, false, err
 	}
 	return runnerJob, true, nil
+}
+
+func submitSocialAnalysisRunnerJob(ctx context.Context, client socialMediaRunnerClient, request RunnerSubmitRequest, analysisJobID, operation, stage string) (RunnerJob, error) {
+	tracer := socialAnalysisTracerFn()
+	traceCtx, span := tracer.Start(ctx, "wcodex_runner.submit", socialAnalysisRunnerSpanAttributes(analysisJobID, operation, stage))
+	runnerJob, err := client.Submit(traceCtx, request)
+	if err != nil {
+		span.RecordError(err)
+		span.SetStatus(false, "wcodex runner submission failed")
+		span.End()
+		return RunnerJob{}, err
+	}
+	span.SetAttribute("provider.run_id", runnerJob.ID)
+	span.SetStatus(true, "wcodex runner job submitted")
+	span.End()
+	return runnerJob, nil
+}
+
+func socialAnalysisRunnerSpanAttributes(analysisJobID, operation, stage string) map[string]string {
+	return map[string]string{
+		"analysis.job_id":    analysisJobID,
+		"provider.name":      "wcodex_runner",
+		"provider.operation": operation,
+		"analysis.stage":     stage,
+	}
 }
 
 func locationSearchQuery(location LocationCandidate) string {

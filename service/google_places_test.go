@@ -10,6 +10,33 @@ import (
 	"mapmarker/backend/config"
 )
 
+type recordingObservabilitySpan struct {
+	name       string
+	attributes map[string]string
+	ok         bool
+}
+
+func (span *recordingObservabilitySpan) SetAttribute(key, value string) {
+	if span.attributes == nil {
+		span.attributes = make(map[string]string)
+	}
+	span.attributes[key] = value
+}
+func (span *recordingObservabilitySpan) AddEvent(string)             {}
+func (span *recordingObservabilitySpan) RecordError(error)           { span.ok = false }
+func (span *recordingObservabilitySpan) SetStatus(ok bool, _ string) { span.ok = ok }
+func (span *recordingObservabilitySpan) End()                        {}
+
+type recordingObservabilityTracer struct {
+	spans []*recordingObservabilitySpan
+}
+
+func (tracer *recordingObservabilityTracer) Start(ctx context.Context, name string, attributes map[string]string) (context.Context, SpanHandle) {
+	span := &recordingObservabilitySpan{name: name, attributes: attributes, ok: true}
+	tracer.spans = append(tracer.spans, span)
+	return ctx, span
+}
+
 type googlePlacesTestSecrets map[string]string
 
 func (s googlePlacesTestSecrets) Resolve(_ context.Context, name string) (string, error) {
@@ -69,5 +96,36 @@ func TestGooglePlacesSearchRejectsMalformedResponse(t *testing.T) {
 	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
 	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err == nil {
 		t.Fatal("expected malformed response error")
+	}
+}
+
+func TestGooglePlacesSearchRecordsProviderSpanWithoutRawQueryOrKey(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"places":[]}`))
+	}))
+	defer server.Close()
+
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := socialAnalysisTracerFn
+	socialAnalysisTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { socialAnalysisTracerFn = previousTracer })
+
+	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
+	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err != nil {
+		t.Fatalf("Search returned error: %v", err)
+	}
+	if len(tracer.spans) != 1 {
+		t.Fatalf("expected one provider span, got %d", len(tracer.spans))
+	}
+	span := tracer.spans[0]
+	if span.name != "google_places.search" || span.attributes["provider.name"] != "google_places" || span.attributes["provider.operation"] != "search" || span.attributes["result.candidate_count"] != "0" || !span.ok {
+		t.Fatalf("unexpected Google span: %#v", span)
+	}
+	if span.attributes["provider.query"] != "" || span.attributes["google.api_key"] != "" {
+		t.Fatalf("Google span exposed sensitive query/key metadata: %#v", span.attributes)
+	}
+	if span.attributes["provider.query_sha256"] == "" {
+		t.Fatalf("expected query fingerprint: %#v", span.attributes)
 	}
 }
