@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
@@ -169,8 +168,4 @@ func isSensitiveObservabilityAttribute(key string) bool {
 		}
 	}
 	return false
-}
-
-func init() {
-	otel.SetTracerProvider(otel.GetTracerProvider())
 }

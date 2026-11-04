@@ -22,6 +22,10 @@ import (
 const socialMediaAnalysisWorkerInterval = 15 * time.Second
 const socialMediaLocationComparisonStage = "location_comparison_submitted"
 
+type socialAnalysisTracerProvider interface {
+	Start(context.Context, string, map[string]string) (context.Context, SpanHandle)
+}
+
 type socialMediaRunnerClient interface {
 	Submit(context.Context, RunnerSubmitRequest) (RunnerJob, error)
 	Get(context.Context, string) (RunnerJob, error)
@@ -33,6 +37,20 @@ var socialMediaRunnerClientFn = func() socialMediaRunnerClient {
 		runnerURL = strings.TrimSpace(os.Getenv("WCODEX_RUNNER_URL"))
 	}
 	return NewWcodexRunnerClient(runnerURL, nil)
+}
+
+var socialAnalysisTracerFn = func() socialAnalysisTracerProvider {
+	tracer, _ := NewSocialAnalysisTracer(config.Data.Phoenix, NewSecretResolver(config.Data.Infisical, http.DefaultClient))
+	return tracer
+}
+
+var socialAnalysisAssetStoreFn = func() AssetStore {
+	store, err := NewMinIOAssetStore(config.Data.MinIO, NewSecretResolver(config.Data.Infisical, http.DefaultClient), http.DefaultClient)
+	if err != nil {
+		log.Printf("[observability] MinIO asset store unavailable: %v", err)
+		return nil
+	}
+	return store
 }
 
 func StartSocialMediaAnalysisWorker() {
@@ -104,15 +122,33 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 		return markSocialMediaAnalysisFailed(job, "invalid_source_url", err)
 	}
 	adapter := selectSocialMediaAnalysisSourceAdapter(parsedURL.String())
-	post, err := adapter.Fetch(ctx, parsedURL)
+	tracer := socialAnalysisTracerFn()
+	sourceCtx, sourceSpan := tracer.Start(ctx, "source.fetch", map[string]string{
+		"analysis.job_id":      job.JobID,
+		"analysis.source_kind": adapter.Name(),
+		"provider.name":        adapter.Name(),
+		"provider.operation":   "fetch",
+	})
+	post, err := adapter.Fetch(sourceCtx, parsedURL)
 	if err != nil {
+		sourceSpan.RecordError(err)
+		sourceSpan.SetStatus(false, "source fetch failed")
+		sourceSpan.End()
 		return markSocialMediaAnalysisFailed(job, "source_fetch_failed", err)
 	}
+	if post.Metadata != nil {
+		if runID := strings.TrimSpace(post.Metadata["apify_run_id"]); runID != "" {
+			sourceSpan.SetAttribute("provider.run_id", runID)
+		}
+	}
+	sourceSpan.SetStatus(true, "source fetched")
+	sourceSpan.End()
 	sourceJSON, err := json.Marshal(post)
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "source_normalization_failed", err)
 	}
 	job.SourceJSON = string(sourceJSON)
+	captureSocialAnalysisArtifacts(ctx, job, post, sourceJSON, socialAnalysisAssetStoreFn())
 	job.Stage = "source_fetched"
 	if err := database.Connection.Save(job).Error; err != nil {
 		return err

@@ -73,6 +73,9 @@ func TestApifyClientRunsActorAndNormalizesDataset(t *testing.T) {
 	if strings.Join(post.Hashtags, ",") != "food" {
 		t.Fatalf("expected normalized hashtags, got %v", post.Hashtags)
 	}
+	if post.Metadata["apify_actor_id"] != "test~actor" || post.Metadata["apify_run_id"] != "run-1" {
+		t.Fatalf("expected Apify correlation metadata, got %v", post.Metadata)
+	}
 }
 
 func TestApifyClientResolvesActorIDWhenNotInToml(t *testing.T) {

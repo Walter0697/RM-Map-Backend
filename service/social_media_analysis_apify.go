@@ -111,7 +111,16 @@ func (client apifyClient) Fetch(ctx context.Context, sourceURL *url.URL) (Normal
 	if err != nil {
 		return NormalizedSocialPost{}, fmt.Errorf("fetch Apify dataset: %w", err)
 	}
-	return normalizeApifyDataset(sourceURL, items, client.maxBytes)
+	post, err := normalizeApifyDataset(sourceURL, items, client.maxBytes)
+	if err != nil {
+		return NormalizedSocialPost{}, err
+	}
+	if post.Metadata == nil {
+		post.Metadata = make(map[string]string)
+	}
+	post.Metadata["apify_actor_id"] = actorID
+	post.Metadata["apify_run_id"] = run.Data.ID
+	return post, nil
 }
 
 func (client apifyClient) input(sourceURL *url.URL) ([]byte, error) {

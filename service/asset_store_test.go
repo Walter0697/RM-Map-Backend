@@ -3,11 +3,28 @@ package service
 import (
 	"bytes"
 	"context"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
 	"mapmarker/backend/config"
+	"mapmarker/backend/database/dbmodel"
 )
+
+type recordingAssetStore struct {
+	keys []string
+}
+
+func (store *recordingAssetStore) Put(_ context.Context, key string, content io.Reader, size int64, contentType string) (StoredAsset, error) {
+	body, err := io.ReadAll(content)
+	if err != nil {
+		return StoredAsset{}, err
+	}
+	store.keys = append(store.keys, key+"|"+contentType)
+	return StoredAsset{Bucket: "test", Key: key, ContentType: contentType, Size: int64(len(body)), SHA256: "checksum", RetentionClass: "test"}, nil
+}
 
 type fakeAssetClient struct {
 	bucket      string
@@ -71,5 +88,43 @@ func TestMinIOAssetStoreDisabledReturnsNoop(t *testing.T) {
 	}
 	if store != nil {
 		t.Fatalf("expected disabled store to be nil, got %#v", store)
+	}
+}
+
+func TestCaptureSocialAnalysisArtifactsStoresBoundedSourceAndMedia(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "image/jpeg")
+		_, _ = w.Write([]byte("image"))
+	}))
+	defer server.Close()
+	previousDownloader := downloadSocialAnalysisMediaFn
+	downloadSocialAnalysisMediaFn = func(_ context.Context, rawURL string) ([]byte, string, string, error) {
+		if rawURL != server.URL+"/photo.jpg" {
+			t.Fatalf("unexpected media URL %q", rawURL)
+		}
+		return []byte("image"), "image/jpeg", "jpeg", nil
+	}
+	t.Cleanup(func() { downloadSocialAnalysisMediaFn = previousDownloader })
+
+	store := &recordingAssetStore{}
+	job := &dbmodel.SocialMediaAnalysisJob{JobID: "analysis-1"}
+	captureSocialAnalysisArtifacts(context.Background(), job, NormalizedSocialPost{
+		RawBody:   "<html>source</html>",
+		ImageURLs: []string{server.URL + "/photo.jpg"},
+	}, []byte(`{"source_url":"https://example.com"}`), store)
+	if len(store.keys) != 3 {
+		t.Fatalf("expected source JSON, raw body, and image artifacts, got %v", store.keys)
+	}
+	for _, key := range []string{"source.json", "source/raw-body.html", "image-1.jpeg"} {
+		found := false
+		for _, stored := range store.keys {
+			if strings.Contains(stored, key) {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Fatalf("expected artifact key containing %q, got %v", key, store.keys)
+		}
 	}
 }
