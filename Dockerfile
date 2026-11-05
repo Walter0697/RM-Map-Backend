@@ -10,6 +10,7 @@ FROM alpine:3.20 AS production-stage
 WORKDIR /app
 COPY --from=build-stage /app/RMMarker /app/RMMarker
 COPY --from=build-stage /app/json /app/json
+COPY --from=build-stage /app/assets /app/assets
 
 EXPOSE 3000
 

@@ -155,6 +155,8 @@ func startServer() {
 	router.Post("/calendar/schedules/{id}/retry-sync", service.CalendarRetrySyncHandler)
 	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
+		r.Post("/ios-shortcut/setup", service.CreateSocialMediaShortcutSetupHandler)
+		r.Get("/ios-shortcut/download", service.DownloadSocialMediaShortcutHandler)
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
 		r.Get("/reminder-time", service.SettingsGetReminderTimeHandler)
 		r.Get("/history-marker-preview", service.HistoryMarkerPreviewHandler)
@@ -180,6 +182,7 @@ func startServer() {
 		r.Post("/{id}/rotate", service.RotateAPIKeyHandler)
 		r.Delete("/{id}", service.DeleteAPIKeyHandler)
 	})
+	router.Post("/api/shortcut/setup/{token}", service.SetupSocialMediaShortcutHandler)
 	router.Route("/integration", func(r chi.Router) {
 		r.Post("/social-media/analyses", service.CreateSocialMediaAnalysisHandler)
 		r.Get("/social-media/analyses/{id}", service.GetSocialMediaAnalysisHandler)

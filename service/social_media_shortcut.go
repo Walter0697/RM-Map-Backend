@@ -4,8 +4,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
-	"fmt"
-	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -85,17 +83,17 @@ func ConsumeSocialMediaShortcutSetupToken(plaintext string) (SocialMediaShortcut
 	return SocialMediaShortcutSetupOwner{}, false, nil
 }
 
-func ExchangeSocialMediaShortcutSetupToken(token string) (string, string, error) {
+func ExchangeSocialMediaShortcutSetupToken(token string) (string, error) {
 	owner, found, err := ConsumeSocialMediaShortcutSetupToken(token)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
 	if !found {
-		return "", "", ErrInvalidSocialMediaShortcutSetupToken
+		return "", ErrInvalidSocialMediaShortcutSetupToken
 	}
 	var actor dbmodel.User
 	if err := database.Connection.Where("id = ?", owner.UserID).First(&actor).Error; err != nil {
-		return "", "", err
+		return "", err
 	}
 	_, rawKey, err := CreateAPIKey(APIKeyCreateInput{
 		Name:        "Roroadmap iOS Shortcut",
@@ -104,11 +102,7 @@ func ExchangeSocialMediaShortcutSetupToken(token string) (string, string, error)
 		ActorUserID: &owner.UserID,
 	}, &actor)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	origin := strings.TrimRight(strings.TrimSpace(config.Data.App.AllowedOrigin), "/")
-	if origin == "" {
-		return "", "", fmt.Errorf("app allowed origin is not configured")
-	}
-	return origin + "/integration/social-media/analyses", rawKey, nil
+	return rawKey, nil
 }
