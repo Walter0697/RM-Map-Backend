@@ -9,6 +9,7 @@ RUN go build -o /app/RMMarker
 FROM alpine:3.20 AS production-stage
 WORKDIR /app
 COPY --from=build-stage /app/RMMarker /app/RMMarker
+COPY --from=build-stage /app/json /app/json
 
 EXPOSE 3000
 

@@ -119,6 +119,70 @@ type IntegrationAuthSetting struct {
 	CleanupIntervalHours   int  `mapstructure:"cleanupintervalhours"`
 }
 
+type SocialMediaAnalysisSetting struct {
+	Enable                bool   `mapstructure:"enable"`
+	RunnerURL             string `mapstructure:"runnerurl"`
+	WorkerIntervalSeconds int    `mapstructure:"workerintervalseconds"`
+	SourceMaxBytes        int64  `mapstructure:"sourcemaxbytes"`
+	RunnerTimeoutSeconds  int    `mapstructure:"runnertimeoutseconds"`
+}
+
+type GoogleMapsSetting struct {
+	Enable     bool   `mapstructure:"enable"`
+	BaseURL    string `mapstructure:"baseurl"`
+	TimeoutMS  int    `mapstructure:"timeoutms"`
+	MaxResults int    `mapstructure:"maxresults"`
+	APIKey     string `mapstructure:"apikey"`
+}
+
+type PhoenixSetting struct {
+	Enable    bool   `mapstructure:"enable"`
+	Endpoint  string `mapstructure:"endpoint"`
+	Project   string `mapstructure:"project"`
+	APIKey    string `mapstructure:"apikey"`
+	APIKeyEnv string `mapstructure:"apikeyenv"`
+	TimeoutMS int    `mapstructure:"timeoutms"`
+	BatchSize int    `mapstructure:"batchsize"`
+}
+
+type MinIOSetting struct {
+	Enable       bool   `mapstructure:"enable"`
+	Endpoint     string `mapstructure:"endpoint"`
+	Region       string `mapstructure:"region"`
+	Bucket       string `mapstructure:"bucket"`
+	AccessKey    string `mapstructure:"accesskey"`
+	AccessKeyEnv string `mapstructure:"accesskeyenv"`
+	SecretKey    string `mapstructure:"secretkey"`
+	SecretKeyEnv string `mapstructure:"secretkeyenv"`
+	TimeoutMS    int    `mapstructure:"timeoutms"`
+	MaxBytes     int64  `mapstructure:"maxbytes"`
+}
+
+type InfisicalSetting struct {
+	Enable              bool   `mapstructure:"enable"`
+	SiteURL             string `mapstructure:"siteurl"`
+	ProjectID           string `mapstructure:"projectid"`
+	Environment         string `mapstructure:"environment"`
+	SecretPath          string `mapstructure:"secretpath"`
+	ClientID            string `mapstructure:"clientid"`
+	ClientSecret        string `mapstructure:"clientsecret"`
+	ClientSecretEnv     string `mapstructure:"clientsecretenv"`
+	ApifyToken          string `mapstructure:"apifytoken"`
+	ApifyTokenEnv       string `mapstructure:"apifytokenenv"`
+	GeminiToken         string `mapstructure:"geminitoken"`
+	GeminiTokenEnv      string `mapstructure:"geminitokenenv"`
+	ApifyActorID        string `mapstructure:"apifyactorid"`
+	ApifyBaseURL        string `mapstructure:"apifybaseurl"`
+	GoogleMapsAPIKey    string `mapstructure:"googlemapsapikey"`
+	GoogleMapsAPIKeyEnv string `mapstructure:"googlemapsapikeyenv"`
+	PhoenixAPIKey       string `mapstructure:"phoenixapikey"`
+	PhoenixAPIKeyEnv    string `mapstructure:"phoenixapikeyenv"`
+	MinIOAccessKey      string `mapstructure:"minioaccesskey"`
+	MinIOAccessKeyEnv   string `mapstructure:"minioaccesskeyenv"`
+	MinIOSecretKey      string `mapstructure:"miniosecretkey"`
+	MinIOSecretKeyEnv   string `mapstructure:"miniosecretkeyenv"`
+}
+
 type SeedSetting struct {
 	EnableSeed       bool    `mapstructure:"enableSeed"`
 	MarkerNums       int     `mapstructure:"markerNums"`
@@ -148,20 +212,25 @@ type AuthStateSetting struct {
 }
 
 type Config struct {
-	DB                Database                 `mapstructure:"database"`
-	Redis             RedisSetting             `mapstructure:"redis"`
-	AuthState         AuthStateSetting         `mapstructure:"authstate"`
-	App               AppEnv                   `mapstructure:"app"`
-	LDAP              LDAPSetting              `mapstructure:"ldap"`
-	OIDC              OIDCSetting              `mapstructure:"oidc"`
-	CalendarGoogle    CalendarGoogleSetting    `mapstructure:"calendargoogle"`
-	APIKEY            APIKeySetting            `mapstructure:"apikey"`
-	ScheduleTravel    ScheduleTravelSetting    `mapstructure:"scheduletravel"`
-	TomTomRoute       TomTomRouteSetting       `mapstructure:"tomtomroute"`
-	TomTomStaticImage TomTomStaticImageSetting `mapstructure:"tomtomstaticimage"`
-	Weather           WeatherSetting           `mapstructure:"weather"`
-	IntegrationAuth   IntegrationAuthSetting   `mapstructure:"integrationauth"`
-	Seed              SeedSetting              `mapstructure:"seed"`
+	DB                  Database                   `mapstructure:"database"`
+	Redis               RedisSetting               `mapstructure:"redis"`
+	AuthState           AuthStateSetting           `mapstructure:"authstate"`
+	App                 AppEnv                     `mapstructure:"app"`
+	LDAP                LDAPSetting                `mapstructure:"ldap"`
+	OIDC                OIDCSetting                `mapstructure:"oidc"`
+	CalendarGoogle      CalendarGoogleSetting      `mapstructure:"calendargoogle"`
+	APIKEY              APIKeySetting              `mapstructure:"apikey"`
+	ScheduleTravel      ScheduleTravelSetting      `mapstructure:"scheduletravel"`
+	TomTomRoute         TomTomRouteSetting         `mapstructure:"tomtomroute"`
+	TomTomStaticImage   TomTomStaticImageSetting   `mapstructure:"tomtomstaticimage"`
+	Weather             WeatherSetting             `mapstructure:"weather"`
+	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
+	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
+	GoogleMaps          GoogleMapsSetting          `mapstructure:"googlemaps"`
+	Phoenix             PhoenixSetting             `mapstructure:"phoenix"`
+	MinIO               MinIOSetting               `mapstructure:"minio"`
+	Infisical           InfisicalSetting           `mapstructure:"infisical"`
+	Seed                SeedSetting                `mapstructure:"seed"`
 }
 
 func Init() {
@@ -178,6 +247,15 @@ func Init() {
 	if err := applyRedisEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid redis config: %s \n", err))
 	}
+	if err := applySocialMediaAnalysisEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid social media analysis config: %s \n", err))
+	}
+	if err := applyObservabilityEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid observability config: %s \n", err))
+	}
+	if err := applyInfisicalEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid Infisical config: %s \n", err))
+	}
 
 	if err := ValidateAuthConfig(); err != nil {
 		panic(fmt.Errorf("invalid auth config: %s \n", err))
@@ -186,6 +264,180 @@ func Init() {
 	if mode, err := ResolveAuthMode(); err == nil {
 		log.Printf("Authentication mode resolved to: %s", mode)
 	}
+}
+
+func applyInfisicalEnvOverrides() error {
+	if enable, exists := os.LookupEnv("INFISICAL_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enable)) {
+		case "1", "true", "yes", "on":
+			Data.Infisical.Enable = true
+		case "0", "false", "no", "off":
+			Data.Infisical.Enable = false
+		default:
+			return fmt.Errorf("INFISICAL_ENABLE must be a boolean, got %q", enable)
+		}
+	}
+	if value, exists := os.LookupEnv("INFISICAL_SITE_URL"); exists {
+		Data.Infisical.SiteURL = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_PROJECT_ID"); exists {
+		Data.Infisical.ProjectID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_ENVIRONMENT"); exists {
+		Data.Infisical.Environment = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_SECRET_PATH"); exists {
+		Data.Infisical.SecretPath = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_ID"); exists {
+		Data.Infisical.ClientID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_SECRET"); exists {
+		Data.Infisical.ClientSecret = value
+	}
+	if value, exists := os.LookupEnv("INFISICAL_CLIENT_SECRET_ENV"); exists {
+		Data.Infisical.ClientSecretEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_TOKEN"); exists {
+		Data.Infisical.ApifyToken = value
+	}
+	if value, exists := os.LookupEnv("APIFY_TOKEN_ENV"); exists {
+		Data.Infisical.ApifyTokenEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("GEMINI_TOKEN"); exists {
+		Data.Infisical.GeminiToken = value
+	}
+	if value, exists := os.LookupEnv("GEMINI_TOKEN_ENV"); exists {
+		Data.Infisical.GeminiTokenEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_ACTOR_ID"); exists {
+		Data.Infisical.ApifyActorID = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("APIFY_BASE_URL"); exists {
+		Data.Infisical.ApifyBaseURL = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, exists := os.LookupEnv("GOOGLE_MAPS_API_KEY"); exists {
+		Data.Infisical.GoogleMapsAPIKey = value
+	}
+	if value, exists := os.LookupEnv("GOOGLE_MAPS_API_KEY_ENV"); exists {
+		Data.Infisical.GoogleMapsAPIKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY"); exists {
+		Data.Infisical.PhoenixAPIKey = value
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY_ENV"); exists {
+		Data.Infisical.PhoenixAPIKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY"); exists {
+		Data.Infisical.MinIOAccessKey = value
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY_ENV"); exists {
+		Data.Infisical.MinIOAccessKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY"); exists {
+		Data.Infisical.MinIOSecretKey = value
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY_ENV"); exists {
+		Data.Infisical.MinIOSecretKeyEnv = strings.TrimSpace(value)
+	}
+	return nil
+}
+
+func applyObservabilityDefaults() {
+	if strings.TrimSpace(Data.Phoenix.Endpoint) == "" {
+		Data.Phoenix.Endpoint = "http://phoenix.home"
+	}
+	if strings.TrimSpace(Data.Phoenix.Project) == "" {
+		Data.Phoenix.Project = "roroadmap-social-analysis"
+	}
+	if Data.Phoenix.TimeoutMS <= 0 {
+		Data.Phoenix.TimeoutMS = 5000
+	}
+	if Data.Phoenix.BatchSize <= 0 {
+		Data.Phoenix.BatchSize = 64
+	}
+	if strings.TrimSpace(Data.MinIO.Region) == "" {
+		Data.MinIO.Region = "us-east-1"
+	}
+	if strings.TrimSpace(Data.MinIO.Bucket) == "" {
+		Data.MinIO.Bucket = "roroadmap-social-analysis"
+	}
+	if Data.MinIO.TimeoutMS <= 0 {
+		Data.MinIO.TimeoutMS = 10000
+	}
+	if Data.MinIO.MaxBytes <= 0 {
+		Data.MinIO.MaxBytes = 25 * 1024 * 1024
+	}
+}
+
+func applyObservabilityEnvOverrides() error {
+	if enable, exists := os.LookupEnv("PHOENIX_ENABLE"); exists {
+		value, err := strconv.ParseBool(strings.TrimSpace(enable))
+		if err != nil {
+			return fmt.Errorf("PHOENIX_ENABLE must be a boolean, got %q", enable)
+		}
+		Data.Phoenix.Enable = value
+	}
+	if value, exists := os.LookupEnv("PHOENIX_ENDPOINT"); exists {
+		Data.Phoenix.Endpoint = strings.TrimRight(strings.TrimSpace(value), "/")
+	}
+	if value, exists := os.LookupEnv("PHOENIX_PROJECT"); exists {
+		Data.Phoenix.Project = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("PHOENIX_API_KEY_ENV"); exists {
+		Data.Phoenix.APIKeyEnv = strings.TrimSpace(value)
+	}
+	if enable, exists := os.LookupEnv("MINIO_ENABLE"); exists {
+		value, err := strconv.ParseBool(strings.TrimSpace(enable))
+		if err != nil {
+			return fmt.Errorf("MINIO_ENABLE must be a boolean, got %q", enable)
+		}
+		Data.MinIO.Enable = value
+	}
+	if value, exists := os.LookupEnv("MINIO_ENDPOINT"); exists {
+		Data.MinIO.Endpoint = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_BUCKET"); exists {
+		Data.MinIO.Bucket = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_ACCESS_KEY_ENV"); exists {
+		Data.MinIO.AccessKeyEnv = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("MINIO_SECRET_KEY_ENV"); exists {
+		Data.MinIO.SecretKeyEnv = strings.TrimSpace(value)
+	}
+	return nil
+}
+
+func applySocialMediaAnalysisEnvOverrides() error {
+	if runnerURL, exists := os.LookupEnv("WCODEX_RUNNER_URL"); exists {
+		Data.SocialMediaAnalysis.RunnerURL = strings.TrimSpace(runnerURL)
+	}
+	if enable, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enable)) {
+		case "1", "true", "yes", "on":
+			Data.SocialMediaAnalysis.Enable = true
+		case "0", "false", "no", "off":
+			Data.SocialMediaAnalysis.Enable = false
+		default:
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_ENABLE must be a boolean, got %q", enable)
+		}
+	}
+	if timeout, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_RUNNER_TIMEOUT_SECONDS"); exists {
+		parsed, err := strconv.Atoi(strings.TrimSpace(timeout))
+		if err != nil || parsed <= 0 {
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_RUNNER_TIMEOUT_SECONDS must be a positive integer, got %q", timeout)
+		}
+		Data.SocialMediaAnalysis.RunnerTimeoutSeconds = parsed
+	}
+	if maxBytes, exists := os.LookupEnv("SOCIAL_MEDIA_ANALYSIS_SOURCE_MAX_BYTES"); exists {
+		parsed, err := strconv.ParseInt(strings.TrimSpace(maxBytes), 10, 64)
+		if err != nil || parsed <= 0 {
+			return fmt.Errorf("SOCIAL_MEDIA_ANALYSIS_SOURCE_MAX_BYTES must be a positive integer, got %q", maxBytes)
+		}
+		Data.SocialMediaAnalysis.SourceMaxBytes = parsed
+	}
+	return nil
 }
 
 func applyRedisEnvOverrides() error {

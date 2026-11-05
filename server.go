@@ -36,6 +36,7 @@ func main() {
 	service.StartAPIKeyCleanupWorker()
 	service.StartExternalAPIAuditCleanupWorker()
 	service.StartCalendarSyncWorker()
+	service.StartSocialMediaAnalysisWorker()
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -180,6 +181,8 @@ func startServer() {
 		r.Delete("/{id}", service.DeleteAPIKeyHandler)
 	})
 	router.Route("/integration", func(r chi.Router) {
+		r.Post("/social-media/analyses", service.CreateSocialMediaAnalysisHandler)
+		r.Get("/social-media/analyses/{id}", service.GetSocialMediaAnalysisHandler)
 		r.Get("/markers", service.IntegrationListMarkersHandler)
 		r.Get("/markers/countries", service.IntegrationListMarkerCountriesHandler)
 		r.Get("/markers/country-parts", service.IntegrationListMarkerCountryPartsHandler)
