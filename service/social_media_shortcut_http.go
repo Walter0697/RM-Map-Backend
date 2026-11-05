@@ -87,7 +87,7 @@ func DownloadSocialMediaShortcutHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", `attachment; filename="Roroadmap Social Analysis.shortcut"`)
+	w.Header().Set("Content-Disposition", `attachment; filename="Send To Tubemin.shortcut"`)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(contents)
 }
