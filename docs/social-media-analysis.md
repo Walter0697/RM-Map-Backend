@@ -16,6 +16,33 @@ The response is `202 Accepted` with a job ID. Poll the job with:
 GET /integration/social-media/analyses/{job_id}
 ```
 
+## iOS Shortcut
+
+Authenticated users can install the generic iOS Shortcut from the Roroadmap
+Settings page. The Settings flow creates a single-use setup token that expires
+after 10 minutes:
+
+```http
+POST /settings/ios-shortcut/setup
+Authorization: <user JWT>
+```
+
+The Shortcut then exchanges that token once:
+
+```http
+POST /api/shortcut/setup/{token}
+```
+
+The exchange creates a relation-owned API key with only the
+`social-media:analysis` scope and returns the submission URL plus plaintext key
+to the Shortcut for local storage. Subsequent Share Sheet submissions use the
+`X-API-Key` header against `POST /integration/social-media/analyses`.
+
+The Shortcut is intentionally fire-and-forget. A successful submission shows
+`Feature requested — analysing.`; it does not poll for marker creation. The
+generated key remains revocable through the existing API-key management flow.
+Telegram remains supported but is not required for Shortcut submissions.
+
 The worker accepts public HTTP(S) URLs, synchronously acquires and normalizes
 the source, then submits the normalized content to wcodex-runner. Instagram
 and Threads use the configured Apify actor; other URLs use the bounded generic
