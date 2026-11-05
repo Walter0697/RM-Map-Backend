@@ -25,6 +25,9 @@ func TestWcodexRunnerClientSubmitUsesStructuredContract(t *testing.T) {
 		if !ok || contextPayload["application"] != "roroadmap" || contextPayload["operation"] != "social-media-analysis" {
 			t.Fatalf("unexpected runner context: %#v", payload["context"])
 		}
+		if contextPayload["analysis_job_id"] != "analysis-1" || contextPayload["traceparent"] != "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01" {
+			t.Fatalf("runner context did not preserve analysis correlation: %#v", contextPayload)
+		}
 		if _, ok := payload["output_schema"]; !ok {
 			t.Fatal("expected strict output schema")
 		}
@@ -39,11 +42,13 @@ func TestWcodexRunnerClientSubmitUsesStructuredContract(t *testing.T) {
 
 	client := NewWcodexRunnerClient(server.URL, server.Client())
 	job, err := client.Submit(context.Background(), RunnerSubmitRequest{
-		Prompt:       "analyze normalized post",
-		Application:  "roroadmap",
-		Operation:    "social-media-analysis",
-		Timeout:      120,
-		OutputSchema: map[string]any{"type": "object"},
+		Prompt:        "analyze normalized post",
+		Application:   "roroadmap",
+		Operation:     "social-media-analysis",
+		Timeout:       120,
+		OutputSchema:  map[string]any{"type": "object"},
+		AnalysisJobID: "analysis-1",
+		TraceParent:   "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01",
 	})
 	if err != nil {
 		t.Fatalf("submit runner job: %v", err)

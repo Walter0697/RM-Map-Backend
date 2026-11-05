@@ -24,11 +24,13 @@ const (
 )
 
 type RunnerSubmitRequest struct {
-	Prompt       string
-	Application  string
-	Operation    string
-	Timeout      int
-	OutputSchema map[string]any
+	Prompt        string
+	Application   string
+	Operation     string
+	Timeout       int
+	OutputSchema  map[string]any
+	AnalysisJobID string
+	TraceParent   string
 }
 
 type RunnerJob struct {
@@ -67,12 +69,19 @@ func (client *wcodexRunnerClient) Submit(ctx context.Context, input RunnerSubmit
 	if input.Timeout <= 0 {
 		return RunnerJob{}, errors.New("runner timeout must be positive")
 	}
+	contextPayload := map[string]any{
+		"application": strings.TrimSpace(input.Application),
+		"operation":   strings.TrimSpace(input.Operation),
+	}
+	if strings.TrimSpace(input.AnalysisJobID) != "" {
+		contextPayload["analysis_job_id"] = strings.TrimSpace(input.AnalysisJobID)
+	}
+	if strings.TrimSpace(input.TraceParent) != "" {
+		contextPayload["traceparent"] = strings.TrimSpace(input.TraceParent)
+	}
 	payload := map[string]any{
-		"prompt": input.Prompt,
-		"context": map[string]any{
-			"application": strings.TrimSpace(input.Application),
-			"operation":   strings.TrimSpace(input.Operation),
-		},
+		"prompt":        input.Prompt,
+		"context":       contextPayload,
 		"timeout_sec":   input.Timeout,
 		"output_schema": input.OutputSchema,
 	}

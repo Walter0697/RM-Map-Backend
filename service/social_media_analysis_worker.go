@@ -26,6 +26,28 @@ type socialAnalysisTracerProvider interface {
 	Start(context.Context, string, map[string]string) (context.Context, SpanHandle)
 }
 
+func startSocialAnalysisRun(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, tracer socialAnalysisTracerProvider) (context.Context, SpanHandle) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if tracer == nil {
+		return ctx, noopSpanHandle{}
+	}
+	traceCtx := extractSocialAnalysisTraceParent(ctx, "")
+	if job != nil {
+		traceCtx = extractSocialAnalysisTraceParent(ctx, job.TraceParent)
+	}
+	attributes := map[string]string{"analysis.stage": "run"}
+	if job != nil {
+		attributes["analysis.job_id"] = job.JobID
+	}
+	traceCtx, span := tracer.Start(traceCtx, "analysis.run", attributes)
+	if job != nil && strings.TrimSpace(job.TraceParent) == "" {
+		job.TraceParent = injectSocialAnalysisTraceParent(traceCtx)
+	}
+	return traceCtx, span
+}
+
 type socialMediaRunnerClient interface {
 	Submit(context.Context, RunnerSubmitRequest) (RunnerJob, error)
 	Get(context.Context, string) (RunnerJob, error)
@@ -122,16 +144,23 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	if database.Connection == nil {
 		return fmt.Errorf("database connection is not initialized")
 	}
+	tracer := socialAnalysisTracerFn()
+	analysisCtx, analysisSpan := startSocialAnalysisRun(ctx, job, tracer)
+	defer analysisSpan.End()
+	if strings.TrimSpace(job.TraceParent) != "" {
+		if err := database.Connection.Save(job).Error; err != nil {
+			return err
+		}
+	}
 	if strings.TrimSpace(job.RunnerJobID) != "" {
-		return reconcileRunnerJob(ctx, job)
+		return reconcileRunnerJob(analysisCtx, job)
 	}
 	parsedURL, err := ValidatePublicSourceURL(job.SourceURL)
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "invalid_source_url", err)
 	}
 	adapter := selectSocialMediaAnalysisSourceAdapter(parsedURL.String())
-	tracer := socialAnalysisTracerFn()
-	sourceCtx, sourceSpan := tracer.Start(ctx, "source.fetch", map[string]string{
+	sourceCtx, sourceSpan := tracer.Start(analysisCtx, "source.fetch", map[string]string{
 		"analysis.job_id":      job.JobID,
 		"analysis.source_kind": adapter.Name(),
 		"provider.name":        adapter.Name(),
@@ -156,7 +185,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 		return markSocialMediaAnalysisFailed(job, "source_normalization_failed", err)
 	}
 	job.SourceJSON = string(sourceJSON)
-	captureSocialAnalysisArtifacts(ctx, job, post, sourceJSON, socialAnalysisAssetStoreFn())
+	captureSocialAnalysisArtifacts(analysisCtx, job, post, sourceJSON, socialAnalysisAssetStoreFn())
 	job.Stage = "source_fetched"
 	if err := database.Connection.Save(job).Error; err != nil {
 		return err
@@ -167,12 +196,14 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	client := socialMediaRunnerClientFn()
 	prompt := buildSocialMediaAnalysisPrompt(post, allowedMarkerTypes)
-	runnerJob, err := submitSocialAnalysisRunnerJob(ctx, client, RunnerSubmitRequest{
-		Prompt:       prompt,
-		Application:  "roroadmap",
-		Operation:    "social-media-analysis",
-		Timeout:      socialMediaRunnerTimeoutSeconds(),
-		OutputSchema: socialMediaAnalysisOutputSchema(allowedMarkerTypes),
+	runnerJob, err := submitSocialAnalysisRunnerJob(analysisCtx, client, RunnerSubmitRequest{
+		Prompt:        prompt,
+		Application:   "roroadmap",
+		Operation:     "social-media-analysis",
+		Timeout:       socialMediaRunnerTimeoutSeconds(),
+		OutputSchema:  socialMediaAnalysisOutputSchema(allowedMarkerTypes),
+		AnalysisJobID: job.JobID,
+		TraceParent:   injectSocialAnalysisTraceParent(analysisCtx),
 	}, job.JobID, "social-media-analysis", "agent_1")
 	if err != nil {
 		return markSocialMediaAnalysisFailed(job, "runner_submit_failed", err)
@@ -214,21 +245,32 @@ func reconcileRunnerJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob
 				return database.Connection.Save(job).Error
 			}
 		}
-		return finalizeSocialMediaAnalysisJob(job, result)
+		return finalizeSocialMediaAnalysisJob(ctx, job, result)
 	default:
 		return fmt.Errorf("unknown runner status %q", runnerJob.Status)
 	}
 }
 
-func finalizeSocialMediaAnalysisJob(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) error {
+func finalizeSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) error {
 	if err := ApplyAgentAnalysisResult(job, result); err != nil {
 		return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
 	}
 	if result.Recommendation == AgentRecommendationCreateMarker {
+		tracer := socialAnalysisTracerFn()
+		_, markerSpan := tracer.Start(ctx, "marker.create", map[string]string{
+			"analysis.job_id":    job.JobID,
+			"provider.name":      "roroadmap_backend",
+			"provider.operation": "marker.create",
+		})
 		marker, err := createSocialMediaAnalysisMarker(job, result)
 		if err != nil {
+			markerSpan.RecordError(err)
+			markerSpan.SetStatus(false, "marker creation failed")
+			markerSpan.End()
 			return markSocialMediaAnalysisFailed(job, "marker_creation_failed", err)
 		}
+		markerSpan.SetStatus(true, "marker created")
+		markerSpan.End()
 		job.CreatedMarkerID = &marker.ID
 		job.Status = dbmodel.SocialMediaAnalysisJobStatusCompleted
 		job.Stage = "marker_created"
@@ -282,11 +324,13 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 		allowedTypes = []string{markerType}
 	}
 	runnerJob, err := submitSocialAnalysisRunnerJob(ctx, socialMediaRunnerClientFn(), RunnerSubmitRequest{
-		Prompt:       prompt,
-		Application:  "roroadmap",
-		Operation:    "social-media-location-comparison",
-		Timeout:      socialMediaRunnerTimeoutSeconds(),
-		OutputSchema: socialMediaAnalysisOutputSchema(allowedTypes),
+		Prompt:        prompt,
+		Application:   "roroadmap",
+		Operation:     "social-media-location-comparison",
+		Timeout:       socialMediaRunnerTimeoutSeconds(),
+		OutputSchema:  socialMediaAnalysisOutputSchema(allowedTypes),
+		AnalysisJobID: job.JobID,
+		TraceParent:   injectSocialAnalysisTraceParent(ctx),
 	}, job.JobID, "social-media-location-comparison", "agent_2")
 	if err != nil {
 		return RunnerJob{}, false, err
