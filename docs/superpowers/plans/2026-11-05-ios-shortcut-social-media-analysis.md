@@ -31,7 +31,7 @@ Backend repository: `/home/git/RoroadMap/RM-Map-Backend`
 - `service/social_media_shortcut_http.go`: authenticated setup/download handlers and JSON response types.
 - `server.go`: register Settings and public setup routes.
 - `database/dbmodel/base.go`: include the setup-token model in existing auto-migration if required by the project migration pattern.
-- `assets/roroadmap-ios-shortcut.shortcut`: checked-in copy of the generic TubeMin artifact, copied unchanged and verified byte-for-byte.
+- `assets/roroadmap-ios-shortcut.shortcut`: checked-in copy of the generic TubeMin artifact, copied unchanged and verified byte-for-byte. The installed shortcut name remains `Send To Tubemin` until a separately branded artifact is available.
 - `service/social_media_shortcut_test.go`: token and key-provisioning tests.
 - `service/social_media_shortcut_http_test.go`: route/auth/response tests.
 
@@ -165,7 +165,7 @@ go test ./service -run 'SocialMediaShortcutHTTP|SocialMediaShortcutSetupHandler'
 
 - [ ] **Step 4: Implement the handlers and routes.**
 
-Use the existing JWT user extraction and relation lookup patterns for Settings. Build the public setup response from the trusted backend origin/configuration, not an arbitrary request body value. Serve the embedded artifact with `Content-Type: application/octet-stream` and `Content-Disposition: attachment; filename="Roroadmap Social Analysis.shortcut"`. Do not include raw keys in logs or error responses.
+Use the existing JWT user extraction and relation lookup patterns for Settings. Build the public setup response from the trusted backend request origin, not an arbitrary request body value. Serve the unchanged artifact with `Content-Type: application/octet-stream` and `Content-Disposition: attachment; filename="Send To Tubemin.shortcut"`. Do not include raw keys in logs or error responses.
 
 - [ ] **Step 5: Run the HTTP tests and verify the complete exchange.**
 
@@ -211,7 +211,7 @@ Use the project’s existing package-manager command if it differs from `npm tes
 Replace the current external `ios_shortcut_install_url` launch in the social-media shortcut UI with a backend setup request. Fetch the binary with the JWT, create a `File`, use `navigator.share` when available, and otherwise trigger a normal download. Launch the installed shortcut with a URL of the form:
 
 ```js
-`shortcuts://run-shortcut?name=\${encodeURIComponent('Roroadmap Social Analysis')}&input=text&text=\${encodeURIComponent(setupUrl)}`
+`shortcuts://run-shortcut?name=\${encodeURIComponent('Send To Tubemin')}&input=text&text=\${encodeURIComponent(setupUrl)}`
 ```
 
 Keep Telegram’s separate Settings control unchanged. Update the help copy so it says that sharing a URL requests analysis and does not mention opening Telegram or tapping Send.
@@ -278,4 +278,3 @@ git commit -m "docs: document social analysis shortcut setup"
 - Telegram is preserved and only the social-media Shortcut handoff is changed.
 - No task requires modifying the signed Shortcut binary or embedding a secret.
 - MinIO, Jev, polling, and marker feedback remain explicitly deferred.
-
