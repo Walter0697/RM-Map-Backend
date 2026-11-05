@@ -8,6 +8,7 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -24,6 +25,26 @@ type SpanHandle interface {
 	RecordError(error)
 	SetStatus(bool, string)
 	End()
+}
+
+func injectSocialAnalysisTraceParent(ctx context.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	carrier := propagation.MapCarrier{}
+	propagation.TraceContext{}.Inject(ctx, carrier)
+	return strings.TrimSpace(carrier.Get("traceparent"))
+}
+
+func extractSocialAnalysisTraceParent(ctx context.Context, traceParent string) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if strings.TrimSpace(traceParent) == "" {
+		return ctx
+	}
+	carrier := propagation.MapCarrier{"traceparent": strings.TrimSpace(traceParent)}
+	return propagation.TraceContext{}.Extract(ctx, carrier)
 }
 
 type SocialAnalysisTracer struct {

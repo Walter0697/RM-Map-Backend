@@ -1,6 +1,10 @@
 package dbmodel
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestSocialMediaAnalysisJobDefaultsToQueued(t *testing.T) {
 	job := NewSocialMediaAnalysisJob("https://example.com/post")
@@ -10,6 +14,22 @@ func TestSocialMediaAnalysisJobDefaultsToQueued(t *testing.T) {
 	}
 	if job.SourceURL != "https://example.com/post" {
 		t.Fatalf("expected source URL to be retained, got %q", job.SourceURL)
+	}
+}
+
+func TestSocialMediaAnalysisJobStoresTraceParentWithoutExposingItAsJSON(t *testing.T) {
+	job := NewSocialMediaAnalysisJob("https://example.com/post")
+	job.TraceParent = "00-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-bbbbbbbbbbbbbbbb-01"
+
+	if job.TraceParent == "" {
+		t.Fatal("expected traceparent to be stored on the job")
+	}
+	encoded, err := json.Marshal(job)
+	if err != nil {
+		t.Fatalf("marshal job: %v", err)
+	}
+	if strings.Contains(string(encoded), job.TraceParent) {
+		t.Fatal("traceparent must not be exposed in JSON")
 	}
 }
 

@@ -22,6 +22,7 @@ type SocialMediaAnalysisJob struct {
 	Status          string     `json:"status" gorm:"size:32;not null;index"`
 	Stage           string     `json:"stage" gorm:"size:64;not null;index"`
 	RunnerJobID     string     `json:"runner_job_id,omitempty" gorm:"size:128;index"`
+	TraceParent     string     `json:"-" gorm:"size:255"`
 	CreatedMarkerID *uint      `json:"created_marker_id,omitempty"`
 	ResultJSON      string     `json:"result_json,omitempty" gorm:"type:text"`
 	ErrorCode       string     `json:"error_code,omitempty" gorm:"size:96"`
