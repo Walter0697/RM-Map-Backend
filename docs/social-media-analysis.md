@@ -72,11 +72,15 @@ configured, the original agent-only marker flow is preserved.
 
 Backend provider traces are exported to the Phoenix project
 `roroadmap-social-analysis`. The wcodex-runner agent trace remains in its
-existing `wcodex` Phoenix project. Use the analysis job ID and runner job ID to
-correlate the two projects. Backend spans contain provider names, operations,
-durations, statuses, bounded error summaries, Apify run IDs, Google candidate
-counts, and MinIO object references. They do not contain provider keys, raw
-authorization headers, full videos, or unrestricted provider responses.
+existing `wcodex` Phoenix project. One social-analysis job is represented by a
+single backend trace across worker polling and retry cycles. Its child spans
+cover source fetching, artifact capture, runner submission, Google Places, and
+marker creation. Use the analysis job ID and runner job ID to correlate the two
+projects; the runner request also carries the W3C traceparent when available.
+Backend spans contain provider names, operations, durations, statuses, bounded
+error summaries, Apify run IDs, Google candidate counts, and MinIO object
+references. They do not contain provider keys, raw authorization headers, full
+videos, or unrestricted provider responses.
 
 Enable the backend exporter with:
 

@@ -14,8 +14,10 @@
 - [ ] Confirm the backend trace in `roroadmap-social-analysis` includes
       `source.fetch`, `google_places.search` when enabled, and
       `wcodex_runner.submit` with `analysis.stage=agent_1`.
+- [ ] Confirm those spans share one trace ID, including after at least one
+      worker polling cycle; the analysis job stores an internal traceparent.
 - [ ] Confirm the runner job appears in project `wcodex` and shares the
-      analysis job ID and runner job ID metadata.
+      analysis job ID, runner job ID, and traceparent correlation metadata.
 - [ ] Confirm the marker is created and an artifact record contains checksum,
       size, MIME type, and a private MinIO object key.
 
@@ -26,6 +28,7 @@
 - [ ] Confirm a second `wcodex_runner.submit` span has
       `analysis.stage=agent_2` and operation
       `social-media-location-comparison`.
+- [ ] Confirm Agent 2 remains connected to the same backend analysis trace.
 - [ ] Confirm the final marker or needs-input result is persisted once.
 
 ## Failure and disabled paths
