@@ -76,15 +76,12 @@ func TestGooglePlacesSearchBuildsRequestAndParsesCandidates(t *testing.T) {
 
 func TestGooglePlacesSearchRejectsProviderErrors(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusForbidden)
-		_, _ = w.Write([]byte(`{"error":{"status":"PERMISSION_DENIED","message":"API key not valid"}}`))
+		http.Error(w, "provider failed", http.StatusBadGateway)
 	}))
 	defer server.Close()
 
 	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
-	_, err := provider.Search(context.Background(), "IFC Hong Kong")
-	if err == nil || !strings.Contains(err.Error(), "API key not valid") {
+	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err == nil {
 		t.Fatal("expected provider error")
 	}
 }

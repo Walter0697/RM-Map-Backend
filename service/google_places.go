@@ -120,6 +120,12 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 		return nil, err
 	}
 	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		err := fmt.Errorf("Google Places returned HTTP %d", response.StatusCode)
+		span.RecordError(err)
+		span.SetStatus(false, "Google Places returned an error")
+		return nil, err
+	}
 	payload, err := io.ReadAll(io.LimitReader(response.Body, googlePlacesMaxBytes+1))
 	if err != nil {
 		err = fmt.Errorf("read Google Places response: %w", err)
@@ -131,17 +137,6 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 		err := fmt.Errorf("Google Places response exceeds size limit")
 		span.RecordError(err)
 		span.SetStatus(false, "Google Places response exceeded size limit")
-		return nil, err
-	}
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		detail := strings.TrimSpace(string(payload))
-		if len(detail) > 4096 {
-			detail = detail[:4096] + "..."
-		}
-		detail = strings.ReplaceAll(detail, apiKey, "[REDACTED]")
-		err := fmt.Errorf("Google Places returned HTTP %d: %s", response.StatusCode, detail)
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places returned an error")
 		return nil, err
 	}
 	var decoded struct {
