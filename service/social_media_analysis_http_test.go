@@ -70,3 +70,44 @@ func TestGetSocialMediaAnalysisHandlerRejectsMissingJob(t *testing.T) {
 		t.Fatalf("expected 404, got %d: %s", recorder.Code, recorder.Body.String())
 	}
 }
+
+func TestListPendingSocialMediaAnalysisHandlerReturnsRelationScopedItems(t *testing.T) {
+	originalUser := socialMediaAnalysisReviewCurrentUserFn
+	originalRelation := socialMediaAnalysisReviewCurrentRelationFn
+	originalList := listPendingSocialMediaAnalysisFn
+	t.Cleanup(func() {
+		socialMediaAnalysisReviewCurrentUserFn = originalUser
+		socialMediaAnalysisReviewCurrentRelationFn = originalRelation
+		listPendingSocialMediaAnalysisFn = originalList
+	})
+
+	socialMediaAnalysisReviewCurrentUserFn = func(*http.Request) *dbmodel.User {
+		return &dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 2}}
+	}
+	socialMediaAnalysisReviewCurrentRelationFn = func(dbmodel.User) (*dbmodel.UserRelation, error) {
+		return &dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: 7}}, nil
+	}
+	listPendingSocialMediaAnalysisFn = func(context.Context, uint) ([]PendingSocialMediaAnalysisItem, error) {
+		return []PendingSocialMediaAnalysisItem{{
+			JobID:     "analysis_pending",
+			SourceURL: "https://example.com/post",
+			Status:    dbmodel.SocialMediaAnalysisJobStatusNeedsInput,
+			Stage:     "validated",
+		}}, nil
+	}
+
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodGet, "/settings/social-media-analysis/pending", nil)
+	ListPendingSocialMediaAnalysisHandler(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+	var response PendingSocialMediaAnalysisListResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.Count != 1 || len(response.Items) != 1 || response.Items[0].JobID != "analysis_pending" {
+		t.Fatalf("unexpected pending response: %+v", response)
+	}
+}

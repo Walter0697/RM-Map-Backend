@@ -155,6 +155,9 @@ func startServer() {
 	router.Post("/calendar/schedules/{id}/retry-sync", service.CalendarRetrySyncHandler)
 	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
+		r.Get("/social-media-analysis/pending", service.ListPendingSocialMediaAnalysisHandler)
+		r.Post("/social-media-analysis/pending/{id}/approve", service.ApprovePendingSocialMediaAnalysisHandler)
+		r.Post("/social-media-analysis/pending/{id}/reject", service.RejectPendingSocialMediaAnalysisHandler)
 		r.Post("/ios-shortcut/setup", service.CreateSocialMediaShortcutSetupHandler)
 		r.Get("/ios-shortcut/download", service.DownloadSocialMediaShortcutHandler)
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
