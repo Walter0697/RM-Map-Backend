@@ -3,9 +3,11 @@ package service
 import (
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/go-chi/chi"
@@ -70,14 +72,21 @@ func CreateSocialMediaShortcutSetupHandler(w http.ResponseWriter, r *http.Reques
 	}
 	respondJSON(w, http.StatusOK, socialMediaShortcutSetupResponse{
 		SetupURL:    origin + "/api/shortcut/setup/" + token,
-		DownloadURL: origin + "/settings/ios-shortcut/download",
+		DownloadURL: origin + "/settings/ios-shortcut/download?token=" + url.QueryEscape(token),
 	})
 }
 
 func DownloadSocialMediaShortcutHandler(w http.ResponseWriter, r *http.Request) {
 	if socialMediaShortcutCurrentUserFn(r) == nil {
-		http.Error(w, "permission denied", http.StatusUnauthorized)
-		return
+		valid, err := ValidateSocialMediaShortcutSetupToken(r.URL.Query().Get("token"))
+		if err != nil {
+			http.Error(w, "failed to validate shortcut download", http.StatusInternalServerError)
+			return
+		}
+		if !valid {
+			http.Error(w, "permission denied", http.StatusUnauthorized)
+			return
+		}
 	}
 	_, sourceFile, _, _ := runtime.Caller(0)
 	artifactPath := filepath.Join(filepath.Dir(sourceFile), "..", "assets", "roroadmap-ios-shortcut.shortcut")
@@ -86,8 +95,8 @@ func DownloadSocialMediaShortcutHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "shortcut artifact unavailable", http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Disposition", `attachment; filename="Send To Tubemin.shortcut"`)
+	w.Header().Set("Content-Type", "application/x-shortcut")
+	w.Header().Set("Content-Disposition", `attachment; filename="Roroadmap Analyze.shortcut"`)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(contents)
 }
@@ -111,4 +120,41 @@ func SetupSocialMediaShortcutHandler(w http.ResponseWriter, r *http.Request) {
 		SubmitURL: socialMediaShortcutRequestOrigin(r) + "/integration/social-media/analyses",
 		APIKey:    rawAPIKey,
 	})
+}
+
+func ListSocialMediaShortcutAPIKeysHandler(w http.ResponseWriter, r *http.Request) {
+	user := socialMediaShortcutCurrentUserFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+	keys, err := ListSocialMediaShortcutAPIKeys(user.ID)
+	if err != nil {
+		http.Error(w, "failed to load shortcut API keys", http.StatusInternalServerError)
+		return
+	}
+	items := make([]apiKeyResponse, 0, len(keys))
+	for index := range keys {
+		items = append(items, formatAPIKey(&keys[index]))
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"items": items})
+}
+
+func RevokeSocialMediaShortcutAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
+	user := socialMediaShortcutCurrentUserFn(r)
+	if user == nil {
+		http.Error(w, "permission denied", http.StatusUnauthorized)
+		return
+	}
+	id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 32)
+	if err != nil || id == 0 {
+		http.Error(w, "invalid id", http.StatusBadRequest)
+		return
+	}
+	key, err := RevokeSocialMediaShortcutAPIKey(uint(id), user.ID, user)
+	if err != nil {
+		http.Error(w, "shortcut API key not found", http.StatusNotFound)
+		return
+	}
+	respondJSON(w, http.StatusOK, map[string]interface{}{"api_key": formatAPIKey(key)})
 }

@@ -48,7 +48,7 @@ func TestCreateSocialMediaShortcutSetupHandlerReturnsSetupAndDownloadURLs(t *tes
 	if response.SetupURL != "https://api.example.test/api/shortcut/setup/setup-token" {
 		t.Fatalf("unexpected setup URL: %q", response.SetupURL)
 	}
-	if response.DownloadURL != "https://api.example.test/settings/ios-shortcut/download" {
+	if response.DownloadURL != "https://api.example.test/settings/ios-shortcut/download?token=setup-token" {
 		t.Fatalf("unexpected download URL: %q", response.DownloadURL)
 	}
 }
@@ -81,8 +81,11 @@ func TestSocialMediaShortcutDownloadReturnsAttachment(t *testing.T) {
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d", recorder.Code)
 	}
-	if recorder.Header().Get("Content-Disposition") == "" {
-		t.Fatal("expected attachment content disposition")
+	if recorder.Header().Get("Content-Disposition") != `attachment; filename="Roroadmap Analyze.shortcut"` {
+		t.Fatalf("unexpected attachment content disposition: %q", recorder.Header().Get("Content-Disposition"))
+	}
+	if recorder.Header().Get("Content-Type") != "application/x-shortcut" {
+		t.Fatalf("expected Apple Shortcut content type, got %q", recorder.Header().Get("Content-Type"))
 	}
 	if recorder.Body.Len() == 0 {
 		t.Fatal("expected non-empty Shortcut artifact")

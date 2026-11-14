@@ -14,6 +14,9 @@ import (
 
 const socialMediaShortcutSetupTokenLifetime = 10 * time.Minute
 
+const socialMediaShortcutAPIKeySource = "social_media_shortcut"
+const socialMediaShortcutAPIKeyName = "Roroadmap iOS Shortcut"
+
 type SocialMediaShortcutSetupOwner struct {
 	UserID     uint
 	RelationID uint
@@ -58,29 +61,42 @@ func CreateSocialMediaShortcutSetupToken(userID, relationID uint) (string, error
 	return plaintext, nil
 }
 
-func ConsumeSocialMediaShortcutSetupToken(plaintext string) (SocialMediaShortcutSetupOwner, bool, error) {
+func findSocialMediaShortcutSetupToken(plaintext string) (SocialMediaShortcutSetupOwner, uint, bool, error) {
 	if strings.TrimSpace(plaintext) == "" {
-		return SocialMediaShortcutSetupOwner{}, false, nil
+		return SocialMediaShortcutSetupOwner{}, 0, false, nil
 	}
 	now := time.Now()
 	var candidates []dbmodel.SocialMediaShortcutSetupToken
 	if err := database.Connection.Where("expires_at > ?", now).Find(&candidates).Error; err != nil {
-		return SocialMediaShortcutSetupOwner{}, false, err
+		return SocialMediaShortcutSetupOwner{}, 0, false, err
 	}
 	for _, candidate := range candidates {
 		if !utils.CompareHash(candidate.TokenHash, plaintext) {
 			continue
 		}
-		result := database.Connection.Where("id = ? AND expires_at > ?", candidate.ID, now).Delete(&dbmodel.SocialMediaShortcutSetupToken{})
-		if result.Error != nil {
-			return SocialMediaShortcutSetupOwner{}, false, result.Error
-		}
-		if result.RowsAffected != 1 {
-			return SocialMediaShortcutSetupOwner{}, false, nil
-		}
-		return SocialMediaShortcutSetupOwner{UserID: candidate.UserID, RelationID: candidate.RelationID}, true, nil
+		return SocialMediaShortcutSetupOwner{UserID: candidate.UserID, RelationID: candidate.RelationID}, candidate.ID, true, nil
 	}
-	return SocialMediaShortcutSetupOwner{}, false, nil
+	return SocialMediaShortcutSetupOwner{}, 0, false, nil
+}
+
+func ValidateSocialMediaShortcutSetupToken(plaintext string) (bool, error) {
+	_, _, found, err := findSocialMediaShortcutSetupToken(plaintext)
+	return found, err
+}
+
+func ConsumeSocialMediaShortcutSetupToken(plaintext string) (SocialMediaShortcutSetupOwner, bool, error) {
+	owner, tokenID, found, err := findSocialMediaShortcutSetupToken(plaintext)
+	if err != nil || !found {
+		return owner, found, err
+	}
+	result := database.Connection.Where("id = ? AND expires_at > ?", tokenID, time.Now()).Delete(&dbmodel.SocialMediaShortcutSetupToken{})
+	if result.Error != nil {
+		return SocialMediaShortcutSetupOwner{}, false, result.Error
+	}
+	if result.RowsAffected != 1 {
+		return SocialMediaShortcutSetupOwner{}, false, nil
+	}
+	return owner, true, nil
 }
 
 func ExchangeSocialMediaShortcutSetupToken(token string) (string, error) {
@@ -96,7 +112,8 @@ func ExchangeSocialMediaShortcutSetupToken(token string) (string, error) {
 		return "", err
 	}
 	_, rawKey, err := CreateAPIKey(APIKeyCreateInput{
-		Name:        "Roroadmap iOS Shortcut",
+		Name:        socialMediaShortcutAPIKeyName,
+		Source:      socialMediaShortcutAPIKeySource,
 		Scopes:      []string{constant.APIKeyScopeSocialMediaAnalysis},
 		RelationID:  owner.RelationID,
 		ActorUserID: &owner.UserID,
@@ -105,4 +122,27 @@ func ExchangeSocialMediaShortcutSetupToken(token string) (string, error) {
 		return "", err
 	}
 	return rawKey, nil
+}
+
+func ListSocialMediaShortcutAPIKeys(userID uint) ([]dbmodel.APIKey, error) {
+	var keys []dbmodel.APIKey
+	if err := database.Connection.
+		Where("actor_user_id = ?", userID).
+		Where("source = ? OR (source = '' AND name = ?)", socialMediaShortcutAPIKeySource, socialMediaShortcutAPIKeyName).
+		Order("created_at desc").
+		Find(&keys).Error; err != nil {
+		return nil, err
+	}
+	return keys, nil
+}
+
+func RevokeSocialMediaShortcutAPIKey(id, userID uint, operator *dbmodel.User) (*dbmodel.APIKey, error) {
+	var key dbmodel.APIKey
+	if err := database.Connection.
+		Where("id = ? AND actor_user_id = ?", id, userID).
+		Where("source = ? OR (source = '' AND name = ?)", socialMediaShortcutAPIKeySource, socialMediaShortcutAPIKeyName).
+		First(&key).Error; err != nil {
+		return nil, err
+	}
+	return RevokeAPIKey(id, operator)
 }

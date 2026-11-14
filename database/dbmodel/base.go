@@ -77,6 +77,7 @@ func AutoMigration() {
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_due ON calendar_sync_jobs (status, next_attempt_at)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_calendar_sync_jobs_schedule_provider ON calendar_sync_jobs (schedule_id, provider_key)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_api_keys_testing ON api_keys (testing)")
+	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_api_keys_source_actor_user_id ON api_keys (source, actor_user_id)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_markers_testing ON markers (testing)")
 	database.Connection.Exec("CREATE INDEX IF NOT EXISTS idx_schedules_testing ON schedules (testing)")
 	database.Connection.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_pin_group_assignments_unique_pin_group ON pin_group_assignments (pin_id, pin_group_id)")

@@ -162,6 +162,8 @@ func startServer() {
 		r.Get("/history-marker-preview", service.HistoryMarkerPreviewHandler)
 		r.Get("/pins", service.SettingsListPinsHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
+		r.Get("/api-keys/social-shortcut", service.ListSocialMediaShortcutAPIKeysHandler)
+		r.Post("/api-keys/social-shortcut/{id}/revoke", service.RevokeSocialMediaShortcutAPIKeyHandler)
 		r.Get("/telegram-bot-url", service.SettingsGetTelegramBotURLHandler)
 		r.Get("/release-notes", service.SettingsListReleaseNotesHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
