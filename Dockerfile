@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS build-stage
+FROM golang:1.26-alpine AS build-stage
 
 WORKDIR /app
 COPY . .
@@ -9,6 +9,8 @@ RUN go build -o /app/RMMarker
 FROM alpine:3.20 AS production-stage
 WORKDIR /app
 COPY --from=build-stage /app/RMMarker /app/RMMarker
+COPY --from=build-stage /app/json /app/json
+COPY --from=build-stage /app/assets /app/assets
 
 EXPOSE 3000
 

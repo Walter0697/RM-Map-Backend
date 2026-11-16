@@ -1,18 +1,19 @@
 package constant
 
 const (
-	APIKeyScopeMarkersRead      = "markers:read"
-	APIKeyScopeMarkersWrite     = "markers:write"
-	APIKeyScopeSchedulesRead    = "schedules:read"
-	APIKeyScopeSchedulesWrite   = "schedules:write"
-	APIKeyScopeStationsRead     = "stations:read"
-	APIKeyScopeStationsWrite    = "stations:write"
-	APIKeyScopeSettingsRead     = "settings:read"
-	APIKeyScopeSettingsWrite    = "settings:write"
-	APIKeyScopeStaticPreview    = "static-preview:generate"
-	APIKeyScopeCalendarSync     = "calendar:sync"
-	APIKeyScopeTravelPlansRead  = "travel-plans:read"
-	APIKeyScopeTravelPlansWrite = "travel-plans:write"
+	APIKeyScopeMarkersRead         = "markers:read"
+	APIKeyScopeMarkersWrite        = "markers:write"
+	APIKeyScopeSchedulesRead       = "schedules:read"
+	APIKeyScopeSchedulesWrite      = "schedules:write"
+	APIKeyScopeStationsRead        = "stations:read"
+	APIKeyScopeStationsWrite       = "stations:write"
+	APIKeyScopeSettingsRead        = "settings:read"
+	APIKeyScopeSettingsWrite       = "settings:write"
+	APIKeyScopeStaticPreview       = "static-preview:generate"
+	APIKeyScopeCalendarSync        = "calendar:sync"
+	APIKeyScopeTravelPlansRead     = "travel-plans:read"
+	APIKeyScopeTravelPlansWrite    = "travel-plans:write"
+	APIKeyScopeSocialMediaAnalysis = "social-media:analysis"
 )
 
 func AllAPIKeyScopes() []string {
@@ -29,5 +30,6 @@ func AllAPIKeyScopes() []string {
 		APIKeyScopeCalendarSync,
 		APIKeyScopeTravelPlansRead,
 		APIKeyScopeTravelPlansWrite,
+		APIKeyScopeSocialMediaAnalysis,
 	}
 }

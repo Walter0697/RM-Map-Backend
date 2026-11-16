@@ -15,6 +15,7 @@ const (
 type APIKey struct {
 	ObjectBase
 	Name          string       `json:"name" gorm:"index"`
+	Source        string       `json:"source" gorm:"index"`
 	Testing       bool         `json:"testing" gorm:"not null;default:false;index"`
 	Prefix        string       `json:"prefix"`
 	KeyHash       string       `json:"key_hash"`

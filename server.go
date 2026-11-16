@@ -36,6 +36,7 @@ func main() {
 	service.StartAPIKeyCleanupWorker()
 	service.StartExternalAPIAuditCleanupWorker()
 	service.StartCalendarSyncWorker()
+	service.StartSocialMediaAnalysisWorker()
 
 	argLength := len(os.Args[1:])
 	if argLength != 0 {
@@ -154,11 +155,18 @@ func startServer() {
 	router.Post("/calendar/schedules/{id}/retry-sync", service.CalendarRetrySyncHandler)
 	router.Post("/calendar/schedules/{id}/disconnect-sync", service.CalendarDisconnectSyncHandler)
 	router.Route("/settings", func(r chi.Router) {
+		r.Get("/social-media-analysis/pending", service.ListPendingSocialMediaAnalysisHandler)
+		r.Post("/social-media-analysis/pending/{id}/approve", service.ApprovePendingSocialMediaAnalysisHandler)
+		r.Post("/social-media-analysis/pending/{id}/reject", service.RejectPendingSocialMediaAnalysisHandler)
+		r.Post("/ios-shortcut/setup", service.CreateSocialMediaShortcutSetupHandler)
+		r.Get("/ios-shortcut/download", service.DownloadSocialMediaShortcutHandler)
 		r.Get("/preview-pin", service.SettingsGetPreviewPinHandler)
 		r.Get("/reminder-time", service.SettingsGetReminderTimeHandler)
 		r.Get("/history-marker-preview", service.HistoryMarkerPreviewHandler)
 		r.Get("/pins", service.SettingsListPinsHandler)
 		r.Get("/ios-shortcut-install-url", service.SettingsGetIOSShortcutInstallURLHandler)
+		r.Get("/api-keys/social-shortcut", service.ListSocialMediaShortcutAPIKeysHandler)
+		r.Post("/api-keys/social-shortcut/{id}/revoke", service.RevokeSocialMediaShortcutAPIKeyHandler)
 		r.Get("/telegram-bot-url", service.SettingsGetTelegramBotURLHandler)
 		r.Get("/release-notes", service.SettingsListReleaseNotesHandler)
 		r.Put("/preview-pin", service.SettingsUpdatePreviewPinHandler)
@@ -179,7 +187,10 @@ func startServer() {
 		r.Post("/{id}/rotate", service.RotateAPIKeyHandler)
 		r.Delete("/{id}", service.DeleteAPIKeyHandler)
 	})
+	router.Post("/api/shortcut/setup/{token}", service.SetupSocialMediaShortcutHandler)
 	router.Route("/integration", func(r chi.Router) {
+		r.Post("/social-media/analyses", service.CreateSocialMediaAnalysisHandler)
+		r.Get("/social-media/analyses/{id}", service.GetSocialMediaAnalysisHandler)
 		r.Get("/markers", service.IntegrationListMarkersHandler)
 		r.Get("/markers/countries", service.IntegrationListMarkerCountriesHandler)
 		r.Get("/markers/country-parts", service.IntegrationListMarkerCountryPartsHandler)

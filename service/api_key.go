@@ -21,6 +21,7 @@ const (
 
 type APIKeyCreateInput struct {
 	Name        string
+	Source      string
 	Testing     bool
 	Scopes      []string
 	RelationID  uint
@@ -132,6 +133,7 @@ func CreateAPIKey(input APIKeyCreateInput, operator *dbmodel.User) (*dbmodel.API
 
 	apiKey := &dbmodel.APIKey{
 		Name:        strings.TrimSpace(input.Name),
+		Source:      strings.TrimSpace(input.Source),
 		Testing:     input.Testing,
 		Prefix:      prefixSecret(secret),
 		KeyHash:     keyHash,

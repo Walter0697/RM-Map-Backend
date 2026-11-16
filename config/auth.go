@@ -67,6 +67,8 @@ func ValidateAuthConfig() error {
 	applyAuthSessionDefaults()
 	applyIntegrationDefaults()
 	applyCalendarDefaults()
+	applyGoogleMapsDefaults()
+	applyObservabilityDefaults()
 	if err := ValidateAuthStateConfig(); err != nil {
 		return err
 	}
@@ -106,6 +108,18 @@ func ValidateAuthConfig() error {
 
 	logAuthLifetimeAlignment()
 	return nil
+}
+
+func applyGoogleMapsDefaults() {
+	if strings.TrimSpace(Data.GoogleMaps.BaseURL) == "" {
+		Data.GoogleMaps.BaseURL = "https://places.googleapis.com"
+	}
+	if Data.GoogleMaps.TimeoutMS <= 0 {
+		Data.GoogleMaps.TimeoutMS = 5000
+	}
+	if Data.GoogleMaps.MaxResults <= 0 {
+		Data.GoogleMaps.MaxResults = 5
+	}
 }
 
 type AuthLifetimeAlignment struct {

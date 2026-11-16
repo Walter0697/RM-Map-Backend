@@ -96,6 +96,7 @@ AUTH_SESSION_LIFETIME_SECONDS=31536000 AUTH_STATE_MIGRATION_MODE=redis-primary A
 - Token state runbook: `docs/auth-token-state-runbook.md`
 - Local Authentik guide: `docs/local-authentik-oidc.md`
 - API key integration guide: `docs/api-key-integration.md`
+- Social media analysis API and secret policy: `docs/social-media-analysis.md`
 - API key rollout checklist: `docs/api-key-rollout-checklist.md`
 - Travel plan soft-delete API: `docs/travel-plan-soft-delete.md`
 - Train station admin workflow: `docs/train-station-admin-workflow.md`
