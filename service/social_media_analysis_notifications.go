@@ -30,7 +30,7 @@ func notifySocialMediaAnalysisEvent(job *dbmodel.SocialMediaAnalysisJob, event s
 	if !ok {
 		return
 	}
-	if err := NotifyTelegramMessage(user, message); err != nil {
+	if err := notifyTelegramMessage(user, message, event); err != nil {
 		log.Printf("social_media_analysis notification failed job_id=%s event=%s actor=%s err=%v", job.JobID, event, strings.TrimSpace(user.Username), err)
 	}
 }

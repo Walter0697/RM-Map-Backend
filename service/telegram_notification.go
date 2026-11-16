@@ -33,6 +33,10 @@ type telegramSendMessageResponse struct {
 	OK bool `json:"ok"`
 }
 
+var telegramNotificationTracerFn = func() socialAnalysisTracerProvider {
+	return socialAnalysisTracerFn()
+}
+
 func newTelegramNotifier(accessURL, accessToken, botToken, botAPIBaseURL string, timeoutMS int) *telegramNotifier {
 	if timeoutMS <= 0 {
 		timeoutMS = 5000
@@ -47,25 +51,52 @@ func newTelegramNotifier(accessURL, accessToken, botToken, botAPIBaseURL string,
 }
 
 func NotifyMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {
-	return NotifyTelegramMessage(user, fmt.Sprintf("📍 Marker created: %s (#%d)", marker.Label, marker.ID))
+	return notifyTelegramMessage(user, fmt.Sprintf("📍 Marker created: %s (#%d)", marker.Label, marker.ID), "marker_created")
 }
 
 func NotifyTelegramMessage(user dbmodel.User, message string) error {
+	return notifyTelegramMessage(user, message, "message")
+}
+
+func notifyTelegramMessage(user dbmodel.User, message string, event string) error {
 	settings := config.Data.TelegramNotification
 	if !settings.Enable {
 		return nil
 	}
-	if strings.TrimSpace(settings.AccessURL) == "" || strings.TrimSpace(settings.AccessToken) == "" || strings.TrimSpace(settings.BotToken) == "" {
-		return fmt.Errorf("telegram notification configuration is incomplete")
+	return traceTelegramNotification(event, user, func() error {
+		if strings.TrimSpace(settings.AccessURL) == "" || strings.TrimSpace(settings.AccessToken) == "" || strings.TrimSpace(settings.BotToken) == "" {
+			return fmt.Errorf("telegram notification configuration is incomplete")
+		}
+		notifier := newTelegramNotifier(
+			settings.AccessURL,
+			settings.AccessToken,
+			settings.BotToken,
+			defaultTelegramBotAPIBaseURL,
+			settings.TimeoutMS,
+		)
+		return notifier.NotifyMessage(user, message)
+	})
+}
+
+func traceTelegramNotification(event string, user dbmodel.User, operation func() error) error {
+	tracer := telegramNotificationTracerFn()
+	_, span := tracer.Start(context.Background(), "telegram.notification", map[string]string{
+		"notification.channel": "telegram",
+		"notification.event":   strings.TrimSpace(event),
+		"telegram.user_id":     strings.TrimSpace(user.Username),
+	})
+	defer span.End()
+
+	err := operation()
+	if err != nil {
+		span.SetAttribute("notification.outcome", "failed")
+		span.RecordError(err)
+		span.SetStatus(false, "telegram notification failed")
+		return err
 	}
-	notifier := newTelegramNotifier(
-		settings.AccessURL,
-		settings.AccessToken,
-		settings.BotToken,
-		defaultTelegramBotAPIBaseURL,
-		settings.TimeoutMS,
-	)
-	return notifier.NotifyMessage(user, message)
+	span.SetAttribute("notification.outcome", "sent_or_skipped")
+	span.SetStatus(true, "telegram notification completed")
+	return nil
 }
 
 func (n *telegramNotifier) NotifyMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {

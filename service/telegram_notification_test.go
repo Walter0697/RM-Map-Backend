@@ -2,6 +2,7 @@ package service
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -80,5 +81,43 @@ func TestTelegramNotificationDoesNotExposeSecretsOnFailure(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "access-secret") || strings.Contains(err.Error(), "bot-secret") {
 		t.Fatalf("error leaked secret: %v", err)
+	}
+}
+
+func TestTelegramNotificationCreatesPhoenixSpan(t *testing.T) {
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := telegramNotificationTracerFn
+	telegramNotificationTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { telegramNotificationTracerFn = previousTracer })
+
+	err := traceTelegramNotification("review_conflict", dbmodel.User{Username: "walter"}, func() error {
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("traceTelegramNotification returned error: %v", err)
+	}
+	if len(tracer.spans) != 1 {
+		t.Fatalf("expected one Phoenix span, got %d", len(tracer.spans))
+	}
+	span := tracer.spans[0]
+	if span.name != "telegram.notification" || span.attributes["notification.event"] != "review_conflict" || span.attributes["telegram.user_id"] != "walter" || span.attributes["notification.outcome"] != "sent_or_skipped" || !span.ok {
+		t.Fatalf("unexpected Telegram span: %#v", span)
+	}
+}
+
+func TestTelegramNotificationPhoenixSpanRecordsFailure(t *testing.T) {
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := telegramNotificationTracerFn
+	telegramNotificationTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { telegramNotificationTracerFn = previousTracer })
+
+	err := traceTelegramNotification("failed", dbmodel.User{Username: "walter"}, func() error {
+		return fmt.Errorf("telegram unavailable")
+	})
+	if err == nil {
+		t.Fatal("expected notification error")
+	}
+	if len(tracer.spans) != 1 || tracer.spans[0].attributes["notification.outcome"] != "failed" || tracer.spans[0].ok {
+		t.Fatalf("expected failed Telegram span: %#v", tracer.spans)
 	}
 }
