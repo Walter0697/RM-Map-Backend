@@ -21,6 +21,9 @@
 - `AUTH_STATE_SESSION_TTL_SECONDS` can override `[authstate].sessionttlseconds`.
 - `GET /auth/mode` shows active auth mode.
 - `GET /auth/health` provides auth diagnostics.
+- Telegram notifications are optional. When enabled, the backend resolves a
+  creator's Telegram ID through `telegram-access` and sends marker lifecycle
+  notifications itself. Missing Telegram mappings are skipped silently.
 - Optional OIDC/provider lifetime mirrors for alignment checks:
   - `[oidc].sessionttlseconds`
   - `[oidc].accesstokenttlseconds`

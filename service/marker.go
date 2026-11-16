@@ -14,6 +14,14 @@ import (
 	"gorm.io/gorm"
 )
 
+var markerCreatedNotificationFn = NotifyMarkerCreated
+
+func notifyMarkerCreator(marker *dbmodel.Marker, user dbmodel.User) {
+	if err := markerCreatedNotificationFn(*marker, user); err != nil {
+		log.Printf("marker notification failed marker_id=%d actor=%s err=%v", marker.ID, strings.TrimSpace(user.Username), err)
+	}
+}
+
 func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Marker, error) {
 	var fromTime time.Time
 	var toTime time.Time
@@ -176,6 +184,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 		return nil, err
 	}
 	invalidateIntegrationHashtagCacheForRelation(relation.ID)
+	notifyMarkerCreator(&marker, user)
 
 	return &marker, nil
 }

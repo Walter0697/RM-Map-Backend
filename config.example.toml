@@ -160,6 +160,14 @@ geminitokenenv="GEMINI_TOKEN"
 apifyactorid=""
 apifybaseurl="https://api.apify.com"
 
+[telegramnotification]
+enable=false
+accessurl="http://telegram-access:8080"
+accesstoken=""
+bottoken=""
+frontendurl=""
+timeoutms=5000
+
 [seed]
 enableSeed=true
 markerNums=20

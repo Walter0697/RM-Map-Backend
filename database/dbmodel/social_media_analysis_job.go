@@ -17,6 +17,7 @@ type SocialMediaAnalysisJob struct {
 	BaseModel
 	JobID           string     `json:"job_id" gorm:"size:64;not null;uniqueIndex"`
 	RelationID      uint       `json:"relation_id" gorm:"not null;index"`
+	CreatorUserID   *uint      `json:"-" gorm:"index"`
 	SourceURL       string     `json:"source_url" gorm:"type:text;not null"`
 	SourceJSON      string     `json:"-" gorm:"type:text"`
 	Status          string     `json:"status" gorm:"size:32;not null;index"`

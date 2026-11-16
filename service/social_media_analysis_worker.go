@@ -277,7 +277,15 @@ func finalizeSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedi
 	}
 	now := time.Now().UTC()
 	job.CompletedAt = &now
-	return database.Connection.Save(job).Error
+	if err := database.Connection.Save(job).Error; err != nil {
+		return err
+	}
+	if job.Status == dbmodel.SocialMediaAnalysisJobStatusAwaitingConfirmation || job.Status == dbmodel.SocialMediaAnalysisJobStatusNeedsInput {
+		notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationConflict)
+	} else if job.CreatedMarkerID != nil {
+		notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationCreated)
+	}
+	return nil
 }
 
 var googlePlacesProviderFn = func() GooglePlacesProvider {
@@ -402,7 +410,11 @@ func markSocialMediaAnalysisFailed(job *dbmodel.SocialMediaAnalysisJob, code str
 	job.ErrorDetail = strings.TrimSpace(err.Error())
 	now := time.Now().UTC()
 	job.CompletedAt = &now
-	return database.Connection.Save(job).Error
+	if saveErr := database.Connection.Save(job).Error; saveErr != nil {
+		return saveErr
+	}
+	notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationFailed)
+	return nil
 }
 
 func socialMediaAnalysisMarkerTypeValues() ([]string, error) {
