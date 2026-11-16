@@ -1,7 +1,7 @@
 package constant
 
 const (
-	AppVersion string = "3.0.0"
+	AppVersion string = "3.1.0"
 
 	// pin type
 	RegularPin   string = "regular"
