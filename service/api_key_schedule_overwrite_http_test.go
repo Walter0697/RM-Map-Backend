@@ -343,12 +343,12 @@ func TestIntegrationOverwriteSchedulesByDateHandlerAcceptsClockOnlyTime(t *testi
 			return nil, err
 		}
 		return &dbmodel.Schedule{
-			ObjectBase:   dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 778}},
-			Label:        input.Label,
-			Description:  input.Description,
-			Testing:      testing,
-			SelectedDate: selectedAt,
-			RelationId:   relation.ID,
+			ObjectBase:     dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 778}},
+			Label:          input.Label,
+			Description:    input.Description,
+			Testing:        testing,
+			SelectedDate:   selectedAt,
+			RelationId:     relation.ID,
 			SelectedMarker: &marker,
 		}, nil
 	}
@@ -409,12 +409,12 @@ func TestIntegrationOverwriteSchedulesByDateHandlerAcceptsLocalDateTimeWithoutSe
 			return nil, err
 		}
 		return &dbmodel.Schedule{
-			ObjectBase:   dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 779}},
-			Label:        input.Label,
-			Description:  input.Description,
-			Testing:      testing,
-			SelectedDate: selectedAt,
-			RelationId:   relation.ID,
+			ObjectBase:     dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 779}},
+			Label:          input.Label,
+			Description:    input.Description,
+			Testing:        testing,
+			SelectedDate:   selectedAt,
+			RelationId:     relation.ID,
 			SelectedMarker: &marker,
 		}, nil
 	}
@@ -435,5 +435,38 @@ func TestIntegrationOverwriteSchedulesByDateHandlerAcceptsLocalDateTimeWithoutSe
 
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("expected 200, got %d body=%s", recorder.Code, recorder.Body.String())
+	}
+}
+
+func TestIntegrationOverwriteRejectsExistingTestingBeforeMutation(t *testing.T) {
+	for _, kind := range []string{"schedule", "marker"} {
+		t.Run(kind, func(t *testing.T) {
+			resetIntegrationScheduleOverwriteHooks()
+			defer resetIntegrationScheduleOverwriteHooks()
+			p := testOAuthPrincipal()
+			p.Scopes = []string{constant.APIKeyScopeSchedulesWrite}
+			integrationBeginScheduleOverwriteTxFn = func() (*gorm.DB, error) { return &gorm.DB{}, nil }
+			integrationRollbackScheduleOverwriteTxFn = func(*gorm.DB) {}
+			integrationListSchedulesByDateFn = func(*gorm.DB, uint, time.Time, time.Time) ([]dbmodel.Schedule, error) {
+				ordinary := dbmodel.Schedule{SelectedMarker: &dbmodel.Marker{}}
+				ordinary.SelectedMarker.ID = 40
+				restricted := dbmodel.Schedule{Testing: kind == "schedule", SelectedMarker: &dbmodel.Marker{Testing: kind == "marker"}}
+				restricted.SelectedMarker.ID = 41
+				return []dbmodel.Schedule{ordinary, restricted}, nil
+			}
+			integrationResetMarkerStatusForOverwriteFn = func(*gorm.DB, *dbmodel.Marker, dbmodel.User) error { t.Fatal("reset before authorization"); return nil }
+			integrationDeleteSchedulesByDateFn = func(*gorm.DB, uint, time.Time, time.Time) (int64, error) {
+				t.Fatal("deleted restricted schedule")
+				return 0, nil
+			}
+			integrationCommitScheduleOverwriteTxFn = func(*gorm.DB) error { t.Fatal("committed unauthorized replacement"); return nil }
+			request := httptest.NewRequest(http.MethodPut, "/integration/schedules/overwrite-by-date", strings.NewReader(`{"date":"2026-03-14","items":[]}`))
+			request = request.WithContext(ContextWithMCPPrincipal(request.Context(), p))
+			recorder := httptest.NewRecorder()
+			IntegrationOverwriteSchedulesByDateHandler(recorder, request)
+			if recorder.Code != http.StatusForbidden {
+				t.Fatalf("expected403 got%d: %s", recorder.Code, recorder.Body.String())
+			}
+		})
 	}
 }

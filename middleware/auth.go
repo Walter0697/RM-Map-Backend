@@ -6,6 +6,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/service"
 	"net/http"
+	"strings"
 )
 
 var userCtxKey = &contextKey{"user"}
@@ -17,6 +18,12 @@ type contextKey struct {
 func Middleware() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// MCP has a separate OAuth audience and token validator. Never interpret
+			// an MCP access token as a browser session JWT (or the reverse).
+			if r.URL.Path == "/mcp" || strings.HasPrefix(r.URL.Path, "/mcp/") || strings.HasPrefix(r.URL.Path, "/.well-known/") {
+				next.ServeHTTP(w, r)
+				return
+			}
 			header := r.Header.Get("Authorization")
 
 			if header == "" {
