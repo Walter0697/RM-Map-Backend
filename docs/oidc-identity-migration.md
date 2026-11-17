@@ -40,7 +40,10 @@ process, after independently verifying provider identities:
 ```sql
 BEGIN;
 -- Verify this is the intended, active, non-deleted local user.
-SELECT id, username, is_activated FROM users WHERE id = :verified_user_id FOR UPDATE;
+SELECT id, username, is_activated FROM users
+WHERE id = :verified_user_id AND is_activated = true AND deleted_at IS NULL
+FOR UPDATE;
+-- STOP and ROLLBACK unless exactly one intended active user was returned.
 -- Insert only after independently confirming the provider's issuer and subject.
 INSERT INTO oidc_identities (issuer, subject, user_id)
 VALUES (:exact_provider_issuer, :verified_provider_subject, :verified_user_id);
@@ -76,7 +79,25 @@ The operator-only `service.BindOIDCIdentity(userID, issuer, subject)` helper
 performs transactional enrollment: checks the active, non-deleted local user,
 requires the exact configured issuer, and refuses to overwrite an existing
 identity mapping. Calling it again for the same identity/user is idempotent.
-It must only be exposed through an operator CLI, never an unauthenticated route.
+The backend exposes this through an operator CLI, not an HTTP route:
+
+```sh
+backend bind-oidc <existing-user-id> '<exact-configured-issuer>' '<verified-subject>'
+```
+
+Use the actual backend executable path for your installation and its normal
+configuration/database settings. The command runs database migrations, enrolls
+the mapping, then exits without starting HTTP or background workers. It is
+idempotent for the same mapping. Run it from the new image as a one-off bootstrap
+before replacing the serving image, or use the pre-staging SQL above. Do not run
+it against an unintended database. It does not discover or guess the subject.
+
+Automated coverage: `TestOIDCPreStagedPostgresMigration` executes the documented
+pre-staging DDL verbatim in a disposable PostgreSQL schema, runs the GORM migration
+twice, verifies preserved account identity/roles, refused reassignment and
+username auto-linking, disabled/deleted rejection, and both existing and newly
+issued browser session validation. It runs when `MCP_TEST_DATABASE_URL` is set;
+without that variable it explicitly skips, rather than claiming DB coverage.
 
 Before deploying, compare the staged mapping list with your provider admin list
 and verify every person expected to log in is enrolled. Keep database backups.
