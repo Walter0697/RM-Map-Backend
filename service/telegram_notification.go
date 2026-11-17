@@ -1,15 +1,19 @@
 package service
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database/dbmodel"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -38,6 +42,8 @@ var telegramNotificationTracerFn = func() socialAnalysisTracerProvider {
 	return socialAnalysisTracerFn()
 }
 
+var markerCreatedPreviewFn = GenerateStaticMapPreviewByUsername
+
 func newTelegramNotifier(accessURL, accessToken, botToken, botAPIBaseURL string, timeoutMS int) *telegramNotifier {
 	if timeoutMS <= 0 {
 		timeoutMS = 5000
@@ -52,7 +58,7 @@ func newTelegramNotifier(accessURL, accessToken, botToken, botAPIBaseURL string,
 }
 
 func NotifyMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {
-	return notifyTelegramMessage(user, fmt.Sprintf("📍 Marker created: %s (#%d)", marker.Label, marker.ID), "marker_created")
+	return notifyTelegramMarkerCreated(marker, user)
 }
 
 func NotifyTelegramMessage(user dbmodel.User, message string) error {
@@ -94,30 +100,51 @@ func notifyTelegramMessage(user dbmodel.User, message string, event string) erro
 		return nil
 	}
 	return traceTelegramNotification(event, user, func() error {
-		var secretResolver SecretResolver
-		if config.Data.Infisical.Enable {
-			secretResolver = NewSecretResolver(config.Data.Infisical, http.DefaultClient)
-		}
-		accessToken, botToken, err := resolveTelegramNotificationSecrets(
-			context.Background(),
-			settings,
-			secretResolver,
-		)
+		notifier, err := configuredTelegramNotifier(settings)
 		if err != nil {
 			return err
 		}
-		if strings.TrimSpace(settings.AccessURL) == "" || accessToken == "" || botToken == "" {
-			return fmt.Errorf("telegram notification configuration is incomplete")
-		}
-		notifier := newTelegramNotifier(
-			settings.AccessURL,
-			accessToken,
-			botToken,
-			defaultTelegramBotAPIBaseURL,
-			settings.TimeoutMS,
-		)
 		return notifier.NotifyMessage(user, message)
 	})
+}
+
+func notifyTelegramMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {
+	settings := config.Data.TelegramNotification
+	if !settings.Enable {
+		return nil
+	}
+	return traceTelegramNotification("marker_created", user, func() error {
+		notifier, err := configuredTelegramNotifier(settings)
+		if err != nil {
+			return err
+		}
+		return notifier.NotifyMarkerCreated(marker, user)
+	})
+}
+
+func configuredTelegramNotifier(settings config.TelegramNotificationSetting) (*telegramNotifier, error) {
+	var secretResolver SecretResolver
+	if config.Data.Infisical.Enable {
+		secretResolver = NewSecretResolver(config.Data.Infisical, http.DefaultClient)
+	}
+	accessToken, botToken, err := resolveTelegramNotificationSecrets(
+		context.Background(),
+		settings,
+		secretResolver,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(settings.AccessURL) == "" || accessToken == "" || botToken == "" {
+		return nil, fmt.Errorf("telegram notification configuration is incomplete")
+	}
+	return newTelegramNotifier(
+		settings.AccessURL,
+		accessToken,
+		botToken,
+		defaultTelegramBotAPIBaseURL,
+		settings.TimeoutMS,
+	), nil
 }
 
 func traceTelegramNotification(event string, user dbmodel.User, operation func() error) error {
@@ -142,7 +169,22 @@ func traceTelegramNotification(event string, user dbmodel.User, operation func()
 }
 
 func (n *telegramNotifier) NotifyMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {
-	return n.NotifyMessage(user, fmt.Sprintf("📍 Marker created: %s (#%d)", marker.Label, marker.ID))
+	telegramID, err := n.lookupTelegramID(user.Username)
+	if err != nil {
+		return err
+	}
+	if telegramID == 0 {
+		return nil
+	}
+
+	preview, previewErr := markerCreatedPreviewFn(user.Username, marker.Type, marker.Latitude, marker.Longitude)
+	if previewErr != nil {
+		log.Printf("marker Telegram preview failed marker_id=%d actor=%s err=%v", marker.ID, strings.TrimSpace(user.Username), previewErr)
+	} else if err := n.sendPhoto(telegramID, preview.Image, fmt.Sprintf("📍 %s", marker.Label)); err != nil {
+		log.Printf("marker Telegram photo failed marker_id=%d actor=%s err=%v", marker.ID, strings.TrimSpace(user.Username), err)
+	}
+
+	return n.sendMessageToChat(telegramID, fmt.Sprintf("📍 Marker created: %s (#%d)", marker.Label, marker.ID))
 }
 
 func (n *telegramNotifier) NotifyMessage(user dbmodel.User, message string) error {
@@ -153,6 +195,10 @@ func (n *telegramNotifier) NotifyMessage(user dbmodel.User, message string) erro
 	if telegramID == 0 {
 		return nil
 	}
+	return n.sendMessageToChat(telegramID, message)
+}
+
+func (n *telegramNotifier) sendMessageToChat(telegramID int64, message string) error {
 
 	endpoint := n.botAPIBaseURL + "/bot" + n.botToken + "/sendMessage"
 	payload := map[string]any{
@@ -182,6 +228,54 @@ func (n *telegramNotifier) NotifyMessage(user dbmodel.User, message string) erro
 	}
 	if !result.OK {
 		return fmt.Errorf("Telegram rejected notification")
+	}
+	return nil
+}
+
+func (n *telegramNotifier) sendPhoto(telegramID int64, imageBytes []byte, caption string) error {
+	if len(imageBytes) == 0 {
+		return fmt.Errorf("marker preview image is empty")
+	}
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	if err := writer.WriteField("chat_id", strconv.FormatInt(telegramID, 10)); err != nil {
+		return fmt.Errorf("write Telegram photo chat id: %w", err)
+	}
+	if err := writer.WriteField("caption", caption); err != nil {
+		return fmt.Errorf("write Telegram photo caption: %w", err)
+	}
+	part, err := writer.CreateFormFile("photo", "marker-preview.png")
+	if err != nil {
+		return fmt.Errorf("create Telegram photo field: %w", err)
+	}
+	if _, err := part.Write(imageBytes); err != nil {
+		return fmt.Errorf("write Telegram photo: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("close Telegram photo request: %w", err)
+	}
+
+	endpoint := n.botAPIBaseURL + "/bot" + n.botToken + "/sendPhoto"
+	request, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, &body)
+	if err != nil {
+		return fmt.Errorf("create Telegram photo request: %w", err)
+	}
+	request.Header.Set("Content-Type", writer.FormDataContentType())
+	response, err := n.httpClient.Do(request)
+	if err != nil {
+		return fmt.Errorf("send Telegram photo: request failed")
+	}
+	defer response.Body.Close()
+	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
+		return fmt.Errorf("send Telegram photo: status %d", response.StatusCode)
+	}
+	var result telegramSendMessageResponse
+	if err := json.NewDecoder(response.Body).Decode(&result); err != nil {
+		return fmt.Errorf("decode Telegram photo response: %w", err)
+	}
+	if !result.OK {
+		return fmt.Errorf("Telegram rejected photo notification")
 	}
 	return nil
 }

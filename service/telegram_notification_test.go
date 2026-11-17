@@ -79,6 +79,86 @@ func TestTelegramNotificationSendsMarkerCreatedMessage(t *testing.T) {
 	}
 }
 
+func TestTelegramNotificationSendsMarkerCreatedMapPreview(t *testing.T) {
+	var gotPhoto bool
+	var gotMessage bool
+	previousPreviewFn := markerCreatedPreviewFn
+	markerCreatedPreviewFn = func(string, string, float64, float64) (*staticPreviewResult, error) {
+		return &staticPreviewResult{Image: []byte("preview-png")}, nil
+	}
+	t.Cleanup(func() { markerCreatedPreviewFn = previousPreviewFn })
+
+	access := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/lookup" || r.URL.Query().Get("user_id") != "walter" {
+			t.Fatalf("unexpected lookup request: %s", r.URL.String())
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"user": "walter", "name": "Walter", "telegram_id": int64(42),
+		})
+	}))
+	defer access.Close()
+
+	bot := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/botbot-token/sendPhoto":
+			gotPhoto = true
+		case "/botbot-token/sendMessage":
+			gotMessage = true
+		default:
+			t.Fatalf("unexpected Telegram request path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer bot.Close()
+
+	notifier := newTelegramNotifier(access.URL, "access-token", "bot-token", bot.URL, 5000)
+	err := notifier.NotifyMarkerCreated(dbmodel.Marker{
+		ObjectBase: dbmodel.ObjectBase{BaseModel: dbmodel.BaseModel{ID: 7}},
+		Label:      "Cafe",
+	}, dbmodel.User{Username: "walter"})
+	if err != nil {
+		t.Fatalf("NotifyMarkerCreated returned error: %v", err)
+	}
+	if !gotPhoto || !gotMessage {
+		t.Fatalf("expected map preview and message notifications, photo=%t message=%t", gotPhoto, gotMessage)
+	}
+}
+
+func TestTelegramNotificationFallsBackWhenMarkerMapPreviewFails(t *testing.T) {
+	previousPreviewFn := markerCreatedPreviewFn
+	markerCreatedPreviewFn = func(string, string, float64, float64) (*staticPreviewResult, error) {
+		return nil, fmt.Errorf("preview unavailable")
+	}
+	t.Cleanup(func() { markerCreatedPreviewFn = previousPreviewFn })
+
+	var gotMessage bool
+	access := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{"telegram_id": int64(42)})
+	}))
+	defer access.Close()
+
+	bot := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/botbot-token/sendMessage" {
+			t.Fatalf("unexpected Telegram request path: %s", r.URL.Path)
+		}
+		gotMessage = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer bot.Close()
+
+	notifier := newTelegramNotifier(access.URL, "access-token", "bot-token", bot.URL, 5000)
+	if err := notifier.NotifyMarkerCreated(dbmodel.Marker{Label: "Cafe"}, dbmodel.User{Username: "walter"}); err != nil {
+		t.Fatalf("NotifyMarkerCreated returned error: %v", err)
+	}
+	if !gotMessage {
+		t.Fatal("expected text notification fallback")
+	}
+}
+
 func TestTelegramNotificationSkipsUnlinkedUser(t *testing.T) {
 	access := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
