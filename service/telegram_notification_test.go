@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -8,8 +9,31 @@ import (
 	"strings"
 	"testing"
 
+	"mapmarker/backend/config"
 	"mapmarker/backend/database/dbmodel"
 )
+
+type telegramTestSecretResolver map[string]string
+
+func (resolver telegramTestSecretResolver) Resolve(_ context.Context, name string) (string, error) {
+	return resolver[name], nil
+}
+
+func TestResolveTelegramNotificationSecretsFromInfisical(t *testing.T) {
+	settings := config.TelegramNotificationSetting{}
+	resolver := telegramTestSecretResolver{
+		"TELEGRAM_ACCESS_TOKEN": "infisical-access-token",
+		"TELEGRAM_BOT_TOKEN":    "infisical-bot-token",
+	}
+
+	accessToken, botToken, err := resolveTelegramNotificationSecrets(context.Background(), settings, resolver)
+	if err != nil {
+		t.Fatalf("resolveTelegramNotificationSecrets returned error: %v", err)
+	}
+	if accessToken != "infisical-access-token" || botToken != "infisical-bot-token" {
+		t.Fatalf("unexpected Telegram secrets: access=%q bot=%q", accessToken, botToken)
+	}
+}
 
 func TestTelegramNotificationSendsMarkerCreatedMessage(t *testing.T) {
 	var gotAuthorization string
