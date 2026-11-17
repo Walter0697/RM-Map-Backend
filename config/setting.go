@@ -127,6 +127,15 @@ type SocialMediaAnalysisSetting struct {
 	RunnerTimeoutSeconds  int    `mapstructure:"runnertimeoutseconds"`
 }
 
+type TelegramNotificationSetting struct {
+	Enable      bool   `mapstructure:"enable"`
+	AccessURL   string `mapstructure:"accessurl"`
+	AccessToken string `mapstructure:"accesstoken"`
+	BotToken    string `mapstructure:"bottoken"`
+	FrontendURL string `mapstructure:"frontendurl"`
+	TimeoutMS   int    `mapstructure:"timeoutms"`
+}
+
 type GoogleMapsSetting struct {
 	Enable     bool   `mapstructure:"enable"`
 	BaseURL    string `mapstructure:"baseurl"`
@@ -212,25 +221,26 @@ type AuthStateSetting struct {
 }
 
 type Config struct {
-	DB                  Database                   `mapstructure:"database"`
-	Redis               RedisSetting               `mapstructure:"redis"`
-	AuthState           AuthStateSetting           `mapstructure:"authstate"`
-	App                 AppEnv                     `mapstructure:"app"`
-	LDAP                LDAPSetting                `mapstructure:"ldap"`
-	OIDC                OIDCSetting                `mapstructure:"oidc"`
-	CalendarGoogle      CalendarGoogleSetting      `mapstructure:"calendargoogle"`
-	APIKEY              APIKeySetting              `mapstructure:"apikey"`
-	ScheduleTravel      ScheduleTravelSetting      `mapstructure:"scheduletravel"`
-	TomTomRoute         TomTomRouteSetting         `mapstructure:"tomtomroute"`
-	TomTomStaticImage   TomTomStaticImageSetting   `mapstructure:"tomtomstaticimage"`
-	Weather             WeatherSetting             `mapstructure:"weather"`
-	IntegrationAuth     IntegrationAuthSetting     `mapstructure:"integrationauth"`
-	SocialMediaAnalysis SocialMediaAnalysisSetting `mapstructure:"socialmediaanalysis"`
-	GoogleMaps          GoogleMapsSetting          `mapstructure:"googlemaps"`
-	Phoenix             PhoenixSetting             `mapstructure:"phoenix"`
-	MinIO               MinIOSetting               `mapstructure:"minio"`
-	Infisical           InfisicalSetting           `mapstructure:"infisical"`
-	Seed                SeedSetting                `mapstructure:"seed"`
+	DB                   Database                    `mapstructure:"database"`
+	Redis                RedisSetting                `mapstructure:"redis"`
+	AuthState            AuthStateSetting            `mapstructure:"authstate"`
+	App                  AppEnv                      `mapstructure:"app"`
+	LDAP                 LDAPSetting                 `mapstructure:"ldap"`
+	OIDC                 OIDCSetting                 `mapstructure:"oidc"`
+	CalendarGoogle       CalendarGoogleSetting       `mapstructure:"calendargoogle"`
+	APIKEY               APIKeySetting               `mapstructure:"apikey"`
+	ScheduleTravel       ScheduleTravelSetting       `mapstructure:"scheduletravel"`
+	TomTomRoute          TomTomRouteSetting          `mapstructure:"tomtomroute"`
+	TomTomStaticImage    TomTomStaticImageSetting    `mapstructure:"tomtomstaticimage"`
+	Weather              WeatherSetting              `mapstructure:"weather"`
+	IntegrationAuth      IntegrationAuthSetting      `mapstructure:"integrationauth"`
+	SocialMediaAnalysis  SocialMediaAnalysisSetting  `mapstructure:"socialmediaanalysis"`
+	GoogleMaps           GoogleMapsSetting           `mapstructure:"googlemaps"`
+	Phoenix              PhoenixSetting              `mapstructure:"phoenix"`
+	MinIO                MinIOSetting                `mapstructure:"minio"`
+	Infisical            InfisicalSetting            `mapstructure:"infisical"`
+	TelegramNotification TelegramNotificationSetting `mapstructure:"telegramnotification"`
+	Seed                 SeedSetting                 `mapstructure:"seed"`
 }
 
 func Init() {
@@ -256,6 +266,9 @@ func Init() {
 	if err := applyInfisicalEnvOverrides(); err != nil {
 		panic(fmt.Errorf("invalid Infisical config: %s \n", err))
 	}
+	if err := applyTelegramNotificationEnvOverrides(); err != nil {
+		panic(fmt.Errorf("invalid Telegram notification config: %s \n", err))
+	}
 
 	if err := ValidateAuthConfig(); err != nil {
 		panic(fmt.Errorf("invalid auth config: %s \n", err))
@@ -264,6 +277,39 @@ func Init() {
 	if mode, err := ResolveAuthMode(); err == nil {
 		log.Printf("Authentication mode resolved to: %s", mode)
 	}
+}
+
+func applyTelegramNotificationEnvOverrides() error {
+	if enable, exists := os.LookupEnv("TELEGRAM_NOTIFICATION_ENABLE"); exists {
+		switch strings.ToLower(strings.TrimSpace(enable)) {
+		case "1", "true", "yes", "on":
+			Data.TelegramNotification.Enable = true
+		case "0", "false", "no", "off":
+			Data.TelegramNotification.Enable = false
+		default:
+			return fmt.Errorf("TELEGRAM_NOTIFICATION_ENABLE must be a boolean, got %q", enable)
+		}
+	}
+	if value, exists := os.LookupEnv("TELEGRAM_ACCESS_URL"); exists {
+		Data.TelegramNotification.AccessURL = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("TELEGRAM_ACCESS_TOKEN"); exists {
+		Data.TelegramNotification.AccessToken = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("TELEGRAM_BOT_TOKEN"); exists {
+		Data.TelegramNotification.BotToken = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("TELEGRAM_FRONTEND_URL"); exists {
+		Data.TelegramNotification.FrontendURL = strings.TrimSpace(value)
+	}
+	if value, exists := os.LookupEnv("TELEGRAM_NOTIFICATION_TIMEOUT_MS"); exists {
+		parsed, err := strconv.Atoi(strings.TrimSpace(value))
+		if err != nil || parsed <= 0 {
+			return fmt.Errorf("TELEGRAM_NOTIFICATION_TIMEOUT_MS must be a positive integer, got %q", value)
+		}
+		Data.TelegramNotification.TimeoutMS = parsed
+	}
+	return nil
 }
 
 func applyInfisicalEnvOverrides() error {

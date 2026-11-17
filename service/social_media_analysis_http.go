@@ -25,7 +25,11 @@ func CreateSocialMediaAnalysisHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	request.URL = strings.TrimSpace(request.URL)
-	job, err := createSocialMediaAnalysisFn(r.Context(), request, SocialMediaAnalysisActor{RelationID: apiKey.RelationID})
+	creatorUserID := apiKey.ActorUser.ID
+	job, err := createSocialMediaAnalysisFn(r.Context(), request, SocialMediaAnalysisActor{
+		RelationID: apiKey.RelationID,
+		UserID:     &creatorUserID,
+	})
 	if err != nil {
 		writeIntegrationError(w, http.StatusBadRequest, "invalid_social_media_analysis_request", err.Error())
 		return

@@ -78,6 +78,7 @@ func ApprovePendingSocialMediaAnalysis(ctx context.Context, jobID string, relati
 	if err := database.Connection.WithContext(ctx).Save(job).Error; err != nil {
 		return nil, err
 	}
+	notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationCreated)
 	return job, nil
 }
 

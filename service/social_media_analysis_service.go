@@ -13,6 +13,7 @@ import (
 
 type SocialMediaAnalysisActor struct {
 	RelationID uint
+	UserID     *uint
 }
 
 var socialMediaAnalysisSequence uint64
@@ -59,6 +60,7 @@ func CreateSocialMediaAnalysis(ctx context.Context, request SocialMediaAnalysisR
 	job := dbmodel.NewSocialMediaAnalysisJob(parsed.String())
 	job.JobID = fmt.Sprintf("analysis_%d_%d", now.UnixNano(), atomic.AddUint64(&socialMediaAnalysisSequence, 1))
 	job.RelationID = actor.RelationID
+	job.CreatorUserID = actor.UserID
 	job.NextAttemptAt = &now
 	if err := database.Connection.WithContext(ctx).Create(job).Error; err != nil {
 		return nil, fmt.Errorf("create social media analysis job: %w", err)
