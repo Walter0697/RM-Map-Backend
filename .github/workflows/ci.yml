@@ -115,20 +115,47 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run gosec
-        continue-on-error: true
-        uses: securego/gosec@v2.22.2
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          args: ./...
+          go-version-file: go.mod
+          cache: true
 
-      - name: Summarize gosec mode
-        if: always()
+      - name: Install pinned gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@v2.30.0
+
+      - name: Run gosec and verify analysis completed
         run: |
-          {
-            echo "### gosec mode"
-            echo ""
-            echo "gosec is currently non-blocking while legacy findings are being remediated."
-          } >> "$GITHUB_STEP_SUMMARY"
+          set +e
+          gosec -fmt=json -out=gosec.json ./...
+          SCAN_EXIT=$?
+          set -e
+          export SCAN_EXIT
+          python3 - <<'PYSCAN'
+          import json, os
+          from pathlib import Path
+          report = json.loads(Path('gosec.json').read_text())
+          errors = report.get('Golang errors') or {}
+          if errors:
+              raise SystemExit('gosec package analysis failed: ' + json.dumps(errors))
+          stats = report.get('Stats', {})
+          if not stats.get('files', 0):
+              raise SystemExit('gosec analyzed no files')
+          if int(os.environ['SCAN_EXIT']) not in (0, 1):
+              raise SystemExit('gosec failed unexpectedly: ' + os.environ['SCAN_EXIT'])
+          issues = report.get('Issues', [])
+          print(json.dumps({'stats': stats, 'findings': len(issues)}))
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as out:
+              out.write('### gosec analysis completed\n\n')
+              out.write(f"Analyzed {stats.get('files')} files; {len(issues)} findings. Findings remain non-blocking under the existing legacy-remediation policy; analyzer failures are blocking. See gosec-report artifact.\n")
+          PYSCAN
+
+      - name: Upload gosec report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gosec-report
+          path: gosec.json
 
   go-mod-tidy-check:
     name: Go Mod Tidy Check
