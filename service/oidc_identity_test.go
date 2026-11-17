@@ -1,9 +1,12 @@
 package service
 
 import (
+	"gorm.io/gorm/schema"
 	"mapmarker/backend/config"
+	"mapmarker/backend/database/dbmodel"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 )
@@ -83,5 +86,21 @@ func TestOIDCCodeExchangeDoesNotFollowRedirects(t *testing.T) {
 		}
 		source.Close()
 		target.Close()
+	}
+}
+
+func TestOIDCIdentityBootstrapTableName(t *testing.T) {
+	parsed, err := schema.Parse(&dbmodel.OIDCIdentity{}, &sync.Map{}, schema.NamingStrategy{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if parsed.Table != "oidc_identities" {
+		t.Fatalf("bootstrap table mismatch: %s", parsed.Table)
+	}
+	indexes := parsed.ParseIndexes()
+	for _, name := range []string{"oidc_issuer_subject", "idx_oidc_identities_user_id"} {
+		if _, ok := indexes[name]; !ok {
+			t.Fatalf("missing bootstrap index %s", name)
+		}
 	}
 }
