@@ -212,10 +212,10 @@ type integrationScheduleRoutePreviewResponse struct {
 
 type integrationScheduleResponse struct {
 	model.Schedule
-	Testing            bool                                    `json:"testing"`
+	Testing            bool                                     `json:"testing"`
 	RoutePreview       *integrationScheduleRoutePreviewResponse `json:"route_preview,omitempty"`
-	Warnings           []string                                `json:"warnings,omitempty"`
-	TravelPlanItemLink *integrationTravelPlanItemLinkResponse  `json:"travel_plan_item_link,omitempty"`
+	Warnings           []string                                 `json:"warnings,omitempty"`
+	TravelPlanItemLink *integrationTravelPlanItemLinkResponse   `json:"travel_plan_item_link,omitempty"`
 }
 
 type integrationScheduleItemInput struct {
@@ -290,22 +290,22 @@ type integrationUserReminderTimeResponse struct {
 }
 
 type integrationDueReminderResponse struct {
-	ScheduleID       uint    `json:"schedule_id"`
-	ScheduleLabel    string  `json:"schedule_label"`
-	ScheduleStatus   string  `json:"schedule_status"`
-	ScheduleTime     string  `json:"schedule_time"`
+	ScheduleID       uint         `json:"schedule_id"`
+	ScheduleLabel    string       `json:"schedule_label"`
+	ScheduleStatus   string       `json:"schedule_status"`
+	ScheduleTime     string       `json:"schedule_time"`
 	Marker           model.Marker `json:"marker"`
-	MarkerID         uint    `json:"marker_id"`
-	MarkerLabel      string  `json:"marker_label"`
-	MarkerLatitude   float64 `json:"marker_latitude"`
-	MarkerLongitude  float64 `json:"marker_longitude"`
-	MarkerTimezone   string  `json:"marker_timezone"`
-	LocalDate        string  `json:"local_date"`
-	LocalNow         string  `json:"local_now"`
-	ReminderTime     string  `json:"reminder_time"`
-	ReminderAtLocal  string  `json:"reminder_at_local"`
-	RelationID       uint    `json:"relation_id"`
-	ReminderUsername string  `json:"username"`
+	MarkerID         uint         `json:"marker_id"`
+	MarkerLabel      string       `json:"marker_label"`
+	MarkerLatitude   float64      `json:"marker_latitude"`
+	MarkerLongitude  float64      `json:"marker_longitude"`
+	MarkerTimezone   string       `json:"marker_timezone"`
+	LocalDate        string       `json:"local_date"`
+	LocalNow         string       `json:"local_now"`
+	ReminderTime     string       `json:"reminder_time"`
+	ReminderAtLocal  string       `json:"reminder_at_local"`
+	RelationID       uint         `json:"relation_id"`
+	ReminderUsername string       `json:"username"`
 }
 
 type integrationStaticPreviewRequest struct {
@@ -849,7 +849,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.markers.list", constant.APIKeyScopeMarkersRead, queryContextString(queryOption))
+	apiKey, ok := authenticateIntegrationPrincipal(w, r, "integration.markers.list", constant.APIKeyScopeMarkersRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -864,7 +864,7 @@ func IntegrationListMarkersHandler(w http.ResponseWriter, r *http.Request) {
 		`type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)`,
 	)
 
-	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	canAccessTesting := canAccessTestingEntities(apiKey.ActorRole())
 	if value, ok := queryOption.Filters["testing"]; ok {
 		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
 		if requestTesting && !canAccessTesting {
@@ -1007,7 +1007,7 @@ func parseIntegrationSearchTerms(raw string) []string {
 
 func IntegrationListMarkerCountriesHandler(w http.ResponseWriter, r *http.Request) {
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
-	apiKey, ok := authenticateIntegrationRequest(
+	apiKey, ok := authenticateIntegrationPrincipal(
 		w,
 		r,
 		"integration.markers.countries.list",
@@ -1022,7 +1022,7 @@ func IntegrationListMarkerCountriesHandler(w http.ResponseWriter, r *http.Reques
 	query = query.Where("relation_id = ?", apiKey.Relation.ID)
 	// Country discovery should reflect all marker data for the relation instead of only active/visible subsets.
 
-	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
+	if !canAccessTestingEntities(apiKey.ActorRole()) {
 		query = query.Where("testing = ?", false)
 	}
 	if search != "" {
@@ -1048,7 +1048,7 @@ func IntegrationListMarkerCountryPartsHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 	search := strings.TrimSpace(r.URL.Query().Get("search"))
-	apiKey, ok := authenticateIntegrationRequest(
+	apiKey, ok := authenticateIntegrationPrincipal(
 		w,
 		r,
 		"integration.markers.country_parts.list",
@@ -1064,7 +1064,7 @@ func IntegrationListMarkerCountryPartsHandler(w http.ResponseWriter, r *http.Req
 	// Country-part discovery should reflect all marker data for the relation instead of only active/visible subsets.
 	query = query.Where("country = ?", country)
 
-	if !canAccessTestingEntities(APIKeyActorRole(apiKey)) {
+	if !canAccessTestingEntities(apiKey.ActorRole()) {
 		query = query.Where("testing = ?", false)
 	}
 	if search != "" {
@@ -1085,7 +1085,7 @@ func IntegrationListMarkerCountryPartsHandler(w http.ResponseWriter, r *http.Req
 }
 
 func IntegrationListMarkerHashtagsHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := authenticateIntegrationRequest(
+	apiKey, ok := authenticateIntegrationPrincipal(
 		w,
 		r,
 		"integration.markers.hashtags.list",
@@ -1096,7 +1096,7 @@ func IntegrationListMarkerHashtagsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	includeTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	includeTesting := canAccessTestingEntities(apiKey.ActorRole())
 	items, err := getIntegrationHashtagItems(apiKey.Relation.ID, includeTesting)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -1117,12 +1117,12 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	queryContext := fmt.Sprintf("lat=%.6f;lon=%.6f;radius=%.2f;limit=%d", searchQuery.Latitude, searchQuery.Longitude, searchQuery.RadiusMeters, searchQuery.Limit)
-	apiKey, ok := integrationAuthenticateNearbyRequestFn(w, r, "integration.markers.nearby_search", constant.APIKeyScopeMarkersRead, queryContext)
+	apiKey, ok := authenticateIntegrationNearbyPrincipal(w, r, "integration.markers.nearby_search", constant.APIKeyScopeMarkersRead, queryContext)
 	if !ok {
 		return
 	}
 
-	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery, canAccessTestingEntities(APIKeyActorRole(apiKey)))
+	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery, canAccessTestingEntities(apiKey.ActorRole()))
 	if err != nil {
 		writeIntegrationError(w, http.StatusInternalServerError, "nearby_search_failed", "failed to retrieve nearby markers")
 		return
@@ -1412,7 +1412,7 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.schedules.list", constant.APIKeyScopeSchedulesRead, queryContextString(queryOption))
+	apiKey, ok := authenticateIntegrationPrincipal(w, r, "integration.schedules.list", constant.APIKeyScopeSchedulesRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -1430,7 +1430,7 @@ func IntegrationListSchedulesHandler(w http.ResponseWriter, r *http.Request) {
 
 	query := database.Connection.Model(&dbmodel.Schedule{}).Preload("SelectedMarker.RestaurantInfo").Where("relation_id = ?", apiKey.Relation.ID)
 	query = query.Where("selected_date >= ?", baseDay.Format(time.RFC3339))
-	canAccessTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	canAccessTesting := canAccessTestingEntities(apiKey.ActorRole())
 	if value, ok := queryOption.Filters["testing"]; ok {
 		requestTesting := strings.EqualFold(strings.TrimSpace(value), "true")
 		if requestTesting && !canAccessTesting {
@@ -1699,11 +1699,11 @@ func IntegrationUpdateScheduleHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.schedules.overwrite_by_date", constant.APIKeyScopeSchedulesWrite, "")
+	apiKey, ok := authenticateIntegrationPrincipalHook(w, r, "integration.schedules.overwrite_by_date", constant.APIKeyScopeSchedulesWrite, "")
 	if !ok {
 		return
 	}
-	canModifyTesting := canAccessTestingEntities(APIKeyActorRole(apiKey))
+	canModifyTesting := canAccessTestingEntities(apiKey.ActorRole())
 
 	requestPayload, err := readJSONBody(r)
 	if err != nil {
@@ -1756,6 +1756,17 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	// A whole-day replacement must not let ordinary integrations erase testing
+	// data they cannot read or edit. Validate the complete set before any reset
+	// or deletion so a mixed date cannot be partially modified.
+	if !canModifyTesting {
+		for _, existing := range existingSchedules {
+			if existing.Testing || (existing.SelectedMarker != nil && existing.SelectedMarker.Testing) {
+				writeIntegrationError(w, http.StatusForbidden, "permission_denied", "permission denied")
+				return
+			}
+		}
+	}
 	resetMarkerIDs := map[uint]struct{}{}
 	for _, existing := range existingSchedules {
 		if existing.SelectedMarker == nil || existing.SelectedMarker.ID == 0 {
@@ -1807,7 +1818,7 @@ func IntegrationOverwriteSchedulesByDateHandler(w http.ResponseWriter, r *http.R
 			writeIntegrationError(w, http.StatusBadRequest, "invalid_schedule_item", "selected_time must be on the target date")
 			return
 		}
-		requestedTesting, err := resolveCreateTestingFlagForAPIKey(apiKey, item.Testing, canModifyTesting)
+		requestedTesting, err := resolveCreateTestingFlagForPrincipal(apiKey, item.Testing, canModifyTesting)
 		if err != nil {
 			writeIntegrationError(w, http.StatusForbidden, "permission_denied", err.Error())
 			return
@@ -1943,7 +1954,7 @@ func IntegrationListStationsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := authenticateIntegrationRequest(w, r, "integration.stations.list", constant.APIKeyScopeStationsRead, queryContextString(queryOption))
+	apiKey, ok := authenticateIntegrationPrincipal(w, r, "integration.stations.list", constant.APIKeyScopeStationsRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -2206,7 +2217,7 @@ func IntegrationListSettingsMarkerTypesHandler(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	_, ok := authenticateIntegrationRequest(w, r, "integration.settings.marker_types.list", constant.APIKeyScopeSettingsRead, queryContextString(queryOption))
+	_, ok := authenticateIntegrationPrincipal(w, r, "integration.settings.marker_types.list", constant.APIKeyScopeSettingsRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -2730,7 +2741,7 @@ func IntegrationGenerateStaticMapPreviewHandler(w http.ResponseWriter, r *http.R
 }
 
 func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := integrationAuthenticateRequestFn(w, r, "integration.static_preview.geocode", constant.APIKeyScopeStaticPreview, "")
+	apiKey, ok := authenticateIntegrationPrincipalHook(w, r, "integration.static_preview.geocode", constant.APIKeyScopeStaticPreview, "")
 	if !ok {
 		return
 	}
@@ -2756,8 +2767,8 @@ func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Re
 	}
 	log.Printf(
 		"integration geocode request key_id=%d key_name=%s source_ip=%s street_number=%q street_name=%q country=%q",
-		apiKey.ID,
-		apiKey.Name,
+		apiKey.AuditID(),
+		apiKey.AuditName(),
 		requestSourceIP(r),
 		request.StreetNumber,
 		request.StreetName,
@@ -2768,12 +2779,12 @@ func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Re
 	if geocodeErr != nil {
 		log.Printf(
 			"integration geocode failure key_id=%d key_name=%s source_ip=%s error=%v",
-			apiKey.ID,
-			apiKey.Name,
+			apiKey.AuditID(),
+			apiKey.AuditName(),
 			requestSourceIP(r),
 			geocodeErr,
 		)
-		_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+		_ = apiKey.RecordAudit(APIKeyAuditEvent{
 			Operation: "integration.static_preview.geocode.result",
 			SourceIP:  requestSourceIP(r),
 			Success:   false,
@@ -2784,14 +2795,14 @@ func IntegrationGeocodeStaticMapPreviewHandler(w http.ResponseWriter, r *http.Re
 	}
 	log.Printf(
 		"integration geocode result key_id=%d key_name=%s source_ip=%s lat=%f lon=%f",
-		apiKey.ID,
-		apiKey.Name,
+		apiKey.AuditID(),
+		apiKey.AuditName(),
 		requestSourceIP(r),
 		lat,
 		lon,
 	)
 
-	_ = integrationCreateAuditLogFn(&apiKey.ID, apiKey.Name, APIKeyAuditEvent{
+	_ = apiKey.RecordAudit(APIKeyAuditEvent{
 		Operation: "integration.static_preview.geocode.result",
 		SourceIP:  requestSourceIP(r),
 		Success:   true,
@@ -2932,8 +2943,8 @@ func humanizeRFC3339Duration(timestamp string, now time.Time) string {
 func buildIntegrationScheduleResponse(schedule dbmodel.Schedule, warnings []string, link *integrationTravelPlanItemLinkResponse) integrationScheduleResponse {
 	modelSchedule := helper.ConvertSchedule(schedule)
 	response := integrationScheduleResponse{
-		Schedule:            modelSchedule,
-		Testing:             schedule.Testing,
+		Schedule:           modelSchedule,
+		Testing:            schedule.Testing,
 		TravelPlanItemLink: link,
 	}
 	if len(warnings) > 0 {

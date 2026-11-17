@@ -28,6 +28,12 @@ func AutoMigration() {
 	database.Connection.AutoMigrate(&ReleaseNote{})
 	database.Connection.AutoMigrate(&DataRecord{})
 	database.Connection.AutoMigrate(&User{})
+	if err := database.Connection.AutoMigrate(&OIDCIdentity{}); err != nil {
+		log.Fatalf("OIDC identity migration failed: %v", err)
+	}
+	if err := database.Connection.AutoMigrate(&MCPOAuthClient{}, &MCPOAuthRequest{}, &MCPOAuthGrant{}, &MCPOAuthToken{}); err != nil {
+		log.Fatalf("MCP OAuth migration failed: %v", err)
+	}
 	database.Connection.AutoMigrate(&ServiceAccount{})
 	database.Connection.AutoMigrate(&APIKey{})
 	database.Connection.AutoMigrate(&APIKeyAuditLog{})

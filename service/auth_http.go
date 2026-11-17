@@ -1,9 +1,14 @@
 package service
 
 import (
+	"context"
+	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"io"
 	"io/ioutil"
 	"log"
 	"mapmarker/backend/config"
@@ -26,12 +31,17 @@ type oidcTokenResponse struct {
 }
 
 type oidcStateValue struct {
-	ExpireAt time.Time
+	ExpireAt      time.Time
+	Nonce         string
+	Verifier      string
+	BrowserSecret string
+	MCPRequestID  string
 }
 
 var oidcStateStore sync.Map
-var oidcUpsertUserFn = upsertUserAndGenerateToken
-var oidcHTTPClient = &http.Client{Timeout: 10 * time.Second}
+var oidcResolveUserFn = resolveVerifiedOIDCUser
+var oidcIssueTokenFn = issueTokenForUser
+var oidcHTTPClient = &http.Client{Timeout: 10 * time.Second, CheckRedirect: func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }}
 
 func AuthModeHandler(w http.ResponseWriter, _ *http.Request) {
 	mode, err := config.ResolveAuthMode()
@@ -90,7 +100,25 @@ func AuthHealthHandler(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
-func OIDCStartHandler(w http.ResponseWriter, r *http.Request) {
+func OIDCStartHandler(w http.ResponseWriter, r *http.Request) { startOIDCLogin(w, r, "") }
+
+// StartMCPOIDCLogin starts a fresh provider authentication for an OAuth consent request.
+func StartMCPOIDCLogin(w http.ResponseWriter, r *http.Request, requestID string) {
+	startOIDCLogin(w, r, requestID)
+}
+
+func startOIDCLogin(w http.ResponseWriter, r *http.Request, requestID string) {
+	w.Header().Set("Cache-Control", "no-store")
+	if err := validateOIDCIssuer(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	oidcStateStore.Range(func(key, value interface{}) bool {
+		if state, ok := value.(oidcStateValue); !ok || !state.ExpireAt.After(time.Now()) {
+			oidcStateStore.Delete(key)
+		}
+		return true
+	})
 	mode, err := config.ResolveAuthMode()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -108,7 +136,9 @@ func OIDCStartHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state := GenerateOIDCState()
-	oidcStateStore.Store(state, oidcStateValue{ExpireAt: time.Now().Add(5 * time.Minute)})
+	nonce, verifier, browserSecret := GenerateOIDCState(), GenerateOIDCState(), GenerateOIDCState()
+	oidcStateStore.Store(state, oidcStateValue{ExpireAt: time.Now().Add(5 * time.Minute), Nonce: nonce, Verifier: verifier, BrowserSecret: browserSecret, MCPRequestID: requestID})
+	http.SetCookie(w, &http.Cookie{Name: "oidc_login_state", Value: browserSecret, Path: "/auth/oidc", HttpOnly: true, Secure: !config.IsLocalEnvironment(config.Data.App.Environment), SameSite: http.SameSiteLaxMode, MaxAge: 300})
 
 	params := url.Values{}
 	params.Set("response_type", "code")
@@ -116,12 +146,26 @@ func OIDCStartHandler(w http.ResponseWriter, r *http.Request) {
 	params.Set("redirect_uri", config.Data.OIDC.RedirectURL)
 	params.Set("scope", strings.Join(config.Data.OIDC.Scopes, " "))
 	params.Set("state", state)
+	params.Set("nonce", nonce)
+	challenge := sha256.Sum256([]byte(verifier))
+	params.Set("code_challenge", base64.RawURLEncoding.EncodeToString(challenge[:]))
+	params.Set("code_challenge_method", "S256")
 
+	if err := validateOIDCTransportURL(discovery.AuthorizationEndpoint); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	target := discovery.AuthorizationEndpoint + "?" + params.Encode()
 	http.Redirect(w, r, target, http.StatusFound)
 }
 
 func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	if err := validateOIDCIssuer(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	mode, err := config.ResolveAuthMode()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -140,7 +184,9 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !validateOIDCState(state) {
+	loginState, valid := consumeOIDCState(state)
+	cookie, cookieErr := r.Cookie("oidc_login_state")
+	if !valid || cookieErr != nil || subtle.ConstantTimeCompare([]byte(cookie.Value), []byte(loginState.BrowserSecret)) != 1 {
 		http.Error(w, "invalid oidc state", http.StatusBadRequest)
 		return
 	}
@@ -151,35 +197,35 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenResponse, err := exchangeOIDCCode(discovery.TokenEndpoint, code)
+	http.SetCookie(w, &http.Cookie{Name: "oidc_login_state", Path: "/auth/oidc", MaxAge: -1, HttpOnly: true, Secure: !config.IsLocalEnvironment(config.Data.App.Environment), SameSite: http.SameSiteLaxMode})
+	tokenResponse, err := exchangeOIDCCode(discovery.TokenEndpoint, code, loginState.Verifier)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return
 	}
 
-	claims := map[string]interface{}{}
-	if tokenResponse.IDToken != "" {
-		if parsedClaims, parseErr := parseIDTokenClaims(tokenResponse.IDToken); parseErr == nil {
-			claims = mergeClaims(claims, parsedClaims)
-		}
-	}
-	if tokenResponse.AccessToken != "" && discovery.UserInfoEndpoint != "" {
-		if parsedClaims, userInfoErr := fetchOIDCUserInfo(discovery.UserInfoEndpoint, tokenResponse.AccessToken); userInfoErr == nil {
-			claims = mergeClaims(claims, parsedClaims)
-		}
-	}
-
-	username := pickOIDCUsername(claims)
-	if strings.TrimSpace(username) == "" {
-		http.Error(w, "unable to resolve username from oidc claims", http.StatusBadGateway)
-		return
-	}
-
-	jwtToken, err := oidcUpsertUserFn(username, config.Data.OIDC.DefaultRole)
+	ctx := oidc.ClientContext(r.Context(), safeOIDCHTTPClient())
+	claims, err := verifiedOIDCClaims(ctx, tokenResponse.IDToken, loginState.Nonce)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, "oidc identity verification failed", http.StatusUnauthorized)
 		return
 	}
+	subject, _ := claims["sub"].(string)
+	user, err := oidcResolveUserFn(config.Data.OIDC.Issuer, subject, pickOIDCUsername(claims))
+	if err != nil {
+		http.Error(w, "OIDC identity is not linked to an active account; contact your administrator", http.StatusForbidden)
+		return
+	}
+	if loginState.MCPRequestID != "" {
+		completeMCPOIDCLogin(w, r, user, loginState.MCPRequestID)
+		return
+	}
+	jwtToken, err := oidcIssueTokenFn(user)
+	if err != nil {
+		http.Error(w, "unable to create session", http.StatusInternalServerError)
+		return
+	}
+	username := user.Username
 
 	redirectURL := config.Data.OIDC.FrontendRedirectURL
 	if strings.TrimSpace(redirectURL) == "" {
@@ -199,19 +245,52 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, nextURL.String(), http.StatusFound)
 }
 
-func GenerateOIDCState() string {
-	return fmt.Sprintf("%s%d", strings.ToLower(config.Data.OIDC.ClientID), time.Now().UnixNano())
+func GenerateOIDCState() string { return newOIDCSecureToken() }
+
+func consumeOIDCState(state string) (oidcStateValue, bool) {
+	raw, ok := oidcStateStore.LoadAndDelete(state)
+	if !ok {
+		return oidcStateValue{}, false
+	}
+	value, ok := raw.(oidcStateValue)
+	return value, ok && value.ExpireAt.After(time.Now()) && value.BrowserSecret != "" && value.Nonce != "" && value.Verifier != ""
 }
 
-func validateOIDCState(state string) bool {
-	raw, ok := oidcStateStore.Load(state)
-	if !ok {
-		return false
+func verifiedOIDCClaims(ctx context.Context, raw, nonce string) (map[string]interface{}, error) {
+	if raw == "" || nonce == "" {
+		return nil, fmt.Errorf("missing ID token or nonce")
 	}
-	oidcStateStore.Delete(state)
+	provider, err := oidc.NewProvider(ctx, config.Data.OIDC.Issuer)
+	if err != nil {
+		return nil, err
+	}
+	token, err := provider.Verifier(&oidc.Config{ClientID: config.Data.OIDC.ClientID}).Verify(ctx, raw)
+	if err != nil {
+		return nil, err
+	}
+	if token.Subject == "" || subtle.ConstantTimeCompare([]byte(token.Nonce), []byte(nonce)) != 1 {
+		return nil, fmt.Errorf("invalid subject or nonce")
+	}
+	claims := map[string]interface{}{}
+	if err := token.Claims(&claims); err != nil {
+		return nil, err
+	}
+	azp, _ := claims["azp"].(string)
+	if (len(token.Audience) > 1 && azp != config.Data.OIDC.ClientID) || (azp != "" && azp != config.Data.OIDC.ClientID) {
+		return nil, fmt.Errorf("invalid authorized party")
+	}
+	return claims, nil
+}
 
-	stateValue := raw.(oidcStateValue)
-	return stateValue.ExpireAt.After(time.Now())
+func validateOIDCIssuer() error {
+	u, err := url.Parse(config.Data.OIDC.Issuer)
+	if err != nil || u.Host == "" || u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		return fmt.Errorf("invalid OIDC issuer")
+	}
+	if u.Scheme != "https" && !(u.Scheme == "http" && config.IsLocalEnvironment(config.Data.App.Environment)) {
+		return fmt.Errorf("OIDC issuer requires HTTPS")
+	}
+	return nil
 }
 
 func getOIDCDiscovery() (*oidcDiscoveryDocument, error) {
@@ -227,7 +306,19 @@ func getOIDCDiscovery() (*oidcDiscoveryDocument, error) {
 
 	issuer := strings.TrimSuffix(config.Data.OIDC.Issuer, "/")
 	discoveryURL := issuer + "/.well-known/openid-configuration"
-	body, err := GetRequest(discoveryURL)
+	request, err := http.NewRequest(http.MethodGet, discoveryURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	response, err := safeOIDCHTTPClient().Do(request)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("OIDC discovery failed")
+	}
+	body, err := ioutil.ReadAll(io.LimitReader(response.Body, 1<<20))
 	if err != nil {
 		return nil, err
 	}
@@ -242,10 +333,14 @@ func getOIDCDiscovery() (*oidcDiscoveryDocument, error) {
 	return discovery, nil
 }
 
-func exchangeOIDCCode(tokenEndpoint string, code string) (*oidcTokenResponse, error) {
+func exchangeOIDCCode(tokenEndpoint string, code string, verifier string) (*oidcTokenResponse, error) {
+	if err := validateOIDCTransportURL(tokenEndpoint); err != nil {
+		return nil, err
+	}
 	form := url.Values{}
 	form.Set("grant_type", "authorization_code")
 	form.Set("code", code)
+	form.Set("code_verifier", verifier)
 	form.Set("client_id", config.Data.OIDC.ClientID)
 	form.Set("client_secret", config.Data.OIDC.ClientSecret)
 	form.Set("redirect_uri", config.Data.OIDC.RedirectURL)
@@ -256,13 +351,13 @@ func exchangeOIDCCode(tokenEndpoint string, code string) (*oidcTokenResponse, er
 	}
 	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	response, err := oidcHTTPClient.Do(request)
+	response, err := safeOIDCHTTPClient().Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(io.LimitReader(response.Body, 1<<20))
 	if err != nil {
 		return nil, err
 	}
@@ -288,13 +383,13 @@ func fetchOIDCUserInfo(userInfoEndpoint string, accessToken string) (map[string]
 	}
 	request.Header.Set("Authorization", "Bearer "+accessToken)
 
-	response, err := oidcHTTPClient.Do(request)
+	response, err := safeOIDCHTTPClient().Do(request)
 	if err != nil {
 		return nil, err
 	}
 	defer response.Body.Close()
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := ioutil.ReadAll(io.LimitReader(response.Body, 1<<20))
 	if err != nil {
 		return nil, err
 	}
@@ -307,32 +402,6 @@ func fetchOIDCUserInfo(userInfoEndpoint string, accessToken string) (map[string]
 		return nil, err
 	}
 	return claims, nil
-}
-
-func parseIDTokenClaims(idToken string) (map[string]interface{}, error) {
-	parts := strings.Split(idToken, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid id token format")
-	}
-
-	decoded, err := base64.RawURLEncoding.DecodeString(parts[1])
-	if err != nil {
-		return nil, err
-	}
-
-	claims := map[string]interface{}{}
-	if err := json.Unmarshal(decoded, &claims); err != nil {
-		return nil, err
-	}
-
-	return claims, nil
-}
-
-func mergeClaims(base map[string]interface{}, update map[string]interface{}) map[string]interface{} {
-	for key, value := range update {
-		base[key] = value
-	}
-	return base
 }
 
 func pickOIDCUsername(claims map[string]interface{}) string {
@@ -368,4 +437,35 @@ func respondJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
 	if err := json.NewEncoder(w).Encode(payload); err != nil {
 		log.Printf("failed to write json response: %v", err)
 	}
+}
+
+// Protect discovery/JWKS and exchanges against transport downgrade. Endpoint
+// overrides may change locations, but must not send codes or secrets over HTTP.
+type oidcSecureTransport struct{ base http.RoundTripper }
+
+func (t oidcSecureTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if err := validateOIDCTransportURL(r.URL.String()); err != nil {
+		return nil, err
+	}
+	return t.base.RoundTrip(r)
+}
+func validateOIDCTransportURL(raw string) error {
+	u, err := url.Parse(raw)
+	if err != nil || u.Host == "" || u.User != nil || u.Fragment != "" {
+		return fmt.Errorf("invalid OIDC endpoint")
+	}
+	if u.Scheme != "https" && !(u.Scheme == "http" && config.IsLocalEnvironment(config.Data.App.Environment)) {
+		return fmt.Errorf("OIDC endpoints require HTTPS")
+	}
+	return nil
+}
+func safeOIDCHTTPClient() *http.Client {
+	client := *oidcHTTPClient
+	transport := client.Transport
+	if transport == nil {
+		transport = http.DefaultTransport
+	}
+	client.Transport = oidcSecureTransport{base: transport}
+	client.CheckRedirect = func(_ *http.Request, _ []*http.Request) error { return http.ErrUseLastResponse }
+	return &client
 }

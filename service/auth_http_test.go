@@ -1,12 +1,14 @@
 package service
 
 import (
-	"bytes"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
+	"github.com/golang-jwt/jwt"
 	"mapmarker/backend/config"
+	"mapmarker/backend/database/dbmodel"
+	"math/big"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,120 +19,136 @@ import (
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
-func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
-	return f(req)
-}
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
 
-func TestOIDCStartHandlerRedirectsToProvider(t *testing.T) {
+func TestOIDCVerifiedCallback(t *testing.T) {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatal(err)
+	}
 	original := config.Data
-	defer func() { config.Data = original }()
-
-	config.Data.App.Environment = "production"
+	oldClient := oidcHTTPClient
+	oldResolve := oidcResolveUserFn
+	oldIssue := oidcIssueTokenFn
+	defer func() {
+		config.Data = original
+		oidcHTTPClient = oldClient
+		oidcResolveUserFn = oldResolve
+		oidcIssueTokenFn = oldIssue
+	}()
+	var issuer, rawToken, receivedVerifier string
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/.well-known/openid-configuration":
+			json.NewEncoder(w).Encode(map[string]interface{}{"issuer": issuer, "authorization_endpoint": issuer + "/auth", "token_endpoint": issuer + "/token", "jwks_uri": issuer + "/keys", "id_token_signing_alg_values_supported": []string{"RS256"}})
+		case "/keys":
+			json.NewEncoder(w).Encode(map[string]interface{}{"keys": []interface{}{map[string]interface{}{"kty": "RSA", "kid": "test", "alg": "RS256", "use": "sig", "n": base64.RawURLEncoding.EncodeToString(key.N.Bytes()), "e": base64.RawURLEncoding.EncodeToString(big.NewInt(int64(key.E)).Bytes())}}})
+		case "/token":
+			r.ParseForm()
+			receivedVerifier = r.Form.Get("code_verifier")
+			json.NewEncoder(w).Encode(map[string]string{"id_token": rawToken})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	issuer = srv.URL
+	oidcHTTPClient = srv.Client()
+	config.Data.App.Environment = "test"
 	config.Data.App.AuthMode = config.AuthModeOIDC
 	config.Data.OIDC.Enable = true
-	config.Data.OIDC.ClientID = "client-id"
-	config.Data.OIDC.ClientSecret = "secret"
-	config.Data.OIDC.Issuer = "http://issuer.example"
-	config.Data.OIDC.RedirectURL = "http://localhost:1998/auth/oidc/callback"
-	config.Data.OIDC.AuthEndpoint = "http://issuer.example/auth"
-	config.Data.OIDC.TokenEndpoint = "http://issuer.example/token"
-	config.Data.OIDC.Scopes = []string{"openid", "profile"}
-
-	request := httptest.NewRequest(http.MethodGet, "/auth/oidc/start", nil)
-	recorder := httptest.NewRecorder()
-
-	OIDCStartHandler(recorder, request)
-
-	if recorder.Code != http.StatusFound {
-		t.Fatalf("expected status %d, got %d", http.StatusFound, recorder.Code)
+	config.Data.OIDC.Issuer = issuer
+	config.Data.OIDC.ClientID = "client"
+	config.Data.OIDC.RedirectURL = "http://localhost/auth/oidc/callback"
+	config.Data.OIDC.FrontendRedirectURL = "http://localhost/login"
+	config.Data.OIDC.AuthEndpoint = issuer + "/auth"
+	config.Data.OIDC.TokenEndpoint = issuer + "/token"
+	config.Data.OIDC.Scopes = []string{"openid"}
+	called := false
+	oidcResolveUserFn = func(iss, sub, name string) (*dbmodel.User, error) {
+		called = true
+		if iss != issuer || sub != "subject" {
+			t.Fatal("bad verified identity")
+		}
+		return &dbmodel.User{Username: "existing-user", IsActivated: true}, nil
 	}
-	location := recorder.Header().Get("Location")
-	if !strings.HasPrefix(location, config.Data.OIDC.AuthEndpoint) {
-		t.Fatalf("expected redirect to auth endpoint, got %s", location)
-	}
-}
-
-func TestOIDCCallbackHandlerCreatesSessionRedirect(t *testing.T) {
-	original := config.Data
-	defer func() { config.Data = original }()
-	originalUpsert := oidcUpsertUserFn
-	defer func() { oidcUpsertUserFn = originalUpsert }()
-	originalClient := oidcHTTPClient
-	defer func() { oidcHTTPClient = originalClient }()
-
-	oidcHTTPClient = &http.Client{
-		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
-			switch req.URL.Path {
-			case "/token":
-				claims := map[string]string{
-					"preferred_username": "authentik-user",
+	oidcIssueTokenFn = func(*dbmodel.User) (string, error) { return "session", nil }
+	for _, environment := range []string{"production", "test"} {
+		config.Data.App.Environment = environment
+		for _, tc := range []string{"valid", "bad-signature", "wrong-audience", "wrong-azp", "missing-azp", "wrong-issuer", "expired", "wrong-nonce", "no-cookie"} {
+			t.Run(environment+"/"+tc, func(t *testing.T) {
+				called = false
+				start := httptest.NewRecorder()
+				OIDCStartHandler(start, httptest.NewRequest("GET", "/auth/oidc/start", nil))
+				if start.Code != 302 {
+					t.Fatalf("start: %d", start.Code)
 				}
-				payload, _ := json.Marshal(claims)
-				idToken := "header." + base64.RawURLEncoding.EncodeToString(payload) + ".signature"
-				body := []byte(fmt.Sprintf(`{"access_token":"access-token","id_token":"%s"}`, idToken))
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader(body)),
-					Header:     make(http.Header),
-				}, nil
-			case "/userinfo":
-				body := []byte(`{"preferred_username":"authentik-user"}`)
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(bytes.NewReader(body)),
-					Header:     make(http.Header),
-				}, nil
-			default:
-				return &http.Response{
-					StatusCode: http.StatusNotFound,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte("{}"))),
-					Header:     make(http.Header),
-				}, nil
-			}
-		}),
-	}
-
-	config.Data.App.Environment = "production"
-	config.Data.App.AuthMode = config.AuthModeOIDC
-	config.Data.OIDC.Enable = true
-	config.Data.OIDC.ClientID = "client-id"
-	config.Data.OIDC.ClientSecret = "secret"
-	config.Data.OIDC.Issuer = "http://provider.example"
-	config.Data.OIDC.RedirectURL = "http://localhost:1998/auth/oidc/callback"
-	config.Data.OIDC.FrontendRedirectURL = "http://localhost:3000/login"
-	config.Data.OIDC.AuthEndpoint = "http://provider.example/auth"
-	config.Data.OIDC.TokenEndpoint = "http://provider.example/token"
-	config.Data.OIDC.UserInfoEndpoint = "http://provider.example/userinfo"
-	config.Data.OIDC.UsernameClaim = "preferred_username"
-	config.Data.OIDC.DefaultRole = "user"
-
-	oidcUpsertUserFn = func(username string, defaultRole string) (string, error) {
-		if username != "authentik-user" {
-			t.Fatalf("unexpected username: %s", username)
+				cookies := start.Result().Cookies()
+				if len(cookies) != 1 {
+					t.Fatalf("expected login cookie, got %d", len(cookies))
+				}
+				loginCookie := cookies[0]
+				wantSecure := environment == "production"
+				if loginCookie.Name != "oidc_login_state" || loginCookie.Secure != wantSecure || !loginCookie.HttpOnly || loginCookie.SameSite != http.SameSiteLaxMode || loginCookie.Path != "/auth/oidc" || loginCookie.MaxAge != 300 || loginCookie.Value == "" {
+					t.Fatalf("incorrect %s login cookie flags: %#v", environment, loginCookie)
+				}
+				location, _ := url.Parse(start.Header().Get("Location"))
+				q := location.Query()
+				if q.Get("code_challenge_method") != "S256" || q.Get("nonce") == "" {
+					t.Fatal("missing nonce/PKCE")
+				}
+				claims := jwt.MapClaims{"iss": issuer, "sub": "subject", "aud": "client", "exp": time.Now().Add(time.Minute).Unix(), "iat": time.Now().Unix(), "nonce": q.Get("nonce")}
+				switch tc {
+				case "wrong-audience":
+					claims["aud"] = "other"
+				case "wrong-azp":
+					claims["azp"] = "other"
+				case "missing-azp":
+					claims["aud"] = []string{"client", "other"}
+				case "wrong-issuer":
+					claims["iss"] = "https://other.example"
+				case "expired":
+					claims["exp"] = time.Now().Add(-time.Minute).Unix()
+				case "wrong-nonce":
+					claims["nonce"] = "other"
+				}
+				token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+				token.Header["kid"] = "test"
+				signingKey := key
+				if tc == "bad-signature" {
+					signingKey, _ = rsa.GenerateKey(rand.Reader, 2048)
+				}
+				rawToken, _ = token.SignedString(signingKey)
+				req := httptest.NewRequest("GET", "/auth/oidc/callback?code=code&state="+q.Get("state"), nil)
+				if tc != "no-cookie" {
+					req.AddCookie(start.Result().Cookies()[0])
+				}
+				result := httptest.NewRecorder()
+				OIDCCallbackHandler(result, req)
+				if tc != "no-cookie" {
+					cleared := result.Result().Cookies()
+					if len(cleared) != 1 {
+						t.Fatalf("expected clearing cookie, got %d", len(cleared))
+					}
+					cookie := cleared[0]
+					if cookie.Name != loginCookie.Name || cookie.Secure != wantSecure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != loginCookie.Path || cookie.MaxAge != -1 || cookie.Value != "" {
+						t.Fatalf("incorrect %s clearing cookie flags: %#v", environment, cookie)
+					}
+				}
+				if tc == "valid" {
+					if result.Code != 302 || !called || receivedVerifier == "" || !strings.Contains(result.Header().Get("Location"), "username=existing-user") {
+						t.Fatalf("valid callback failed %d", result.Code)
+					}
+				} else if result.Code == 302 || called {
+					t.Fatalf("accepted invalid identity %s", tc)
+				}
+				replay := httptest.NewRecorder()
+				OIDCCallbackHandler(replay, req)
+				if replay.Code != 400 {
+					t.Fatal("state replay accepted")
+				}
+			})
 		}
-		if defaultRole != "user" {
-			t.Fatalf("unexpected default role: %s", defaultRole)
-		}
-		return "jwt-token", nil
-	}
-
-	state := "test-state"
-	oidcStateStore.Store(state, oidcStateValue{ExpireAt: time.Now().Add(2 * time.Minute)})
-
-	request := httptest.NewRequest(http.MethodGet, "/auth/oidc/callback?code=abc&state="+url.QueryEscape(state), nil)
-	recorder := httptest.NewRecorder()
-
-	OIDCCallbackHandler(recorder, request)
-
-	if recorder.Code != http.StatusFound {
-		t.Fatalf("expected status %d, got %d", http.StatusFound, recorder.Code)
-	}
-
-	location := recorder.Header().Get("Location")
-	if !strings.Contains(location, "token=jwt-token") {
-		t.Fatalf("expected jwt token in redirect, got %s", location)
-	}
-	if !strings.Contains(location, "username=authentik-user") {
-		t.Fatalf("expected username in redirect, got %s", location)
 	}
 }

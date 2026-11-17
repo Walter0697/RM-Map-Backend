@@ -33,6 +33,20 @@ func main() {
 	database.Init()
 	service.InitAuthStateManager()
 	dbmodel.AutoMigration()
+	if len(os.Args) > 1 && os.Args[1] == "bind-oidc" {
+		if len(os.Args) != 5 {
+			log.Fatal("usage: backend bind-oidc <existing-user-id> <verified-issuer> <verified-subject>")
+		}
+		id, err := strconv.ParseUint(os.Args[2], 10, 32)
+		if err != nil || id == 0 {
+			log.Fatal("invalid existing user ID")
+		}
+		if err := service.BindOIDCIdentity(uint(id), os.Args[3], os.Args[4]); err != nil {
+			log.Fatalf("identity enrollment failed: %v", err)
+		}
+		log.Println("identity enrolled; existing user data and permissions preserved")
+		return
+	}
 	service.StartAPIKeyCleanupWorker()
 	service.StartExternalAPIAuditCleanupWorker()
 	service.StartCalendarSyncWorker()
@@ -109,6 +123,18 @@ func startServer() {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 	router.Use(middleware.Middleware())
+
+	// Native MCP is opt-in and uses its own OAuth audience, never browser JWTs.
+	router.Get("/.well-known/oauth-protected-resource/mcp", service.MCPResourceMetadata)
+	router.Get("/.well-known/oauth-authorization-server", service.MCPAuthorizationMetadata)
+	router.Post("/mcp/oauth/register", service.MCPRegister)
+	router.Get("/mcp/oauth/authorize", service.MCPAuthorize)
+	router.Post("/mcp/oauth/consent", service.MCPConsent)
+	router.Post("/mcp/oauth/token", service.MCPToken)
+	router.Post("/mcp/oauth/revoke", service.MCPRevoke)
+	router.Get("/mcp/connections", service.MCPConnections)
+	router.Delete("/mcp/connections", service.MCPConnections)
+	router.Handle("/mcp", service.MCPAuthenticate(http.HandlerFunc(service.MCPHandler)))
 
 	server := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 

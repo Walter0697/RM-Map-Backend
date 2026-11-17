@@ -127,7 +127,7 @@ func IntegrationListTravelPlansHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	apiKey, ok := integrationAuthenticateTravelPlanRequestFn(w, r, "integration.travel-plans.list", constant.APIKeyScopeTravelPlansRead, queryContextString(queryOption))
+	apiKey, ok := authenticateTravelPlanPrincipal(w, r, "integration.travel-plans.list", constant.APIKeyScopeTravelPlansRead, queryContextString(queryOption))
 	if !ok {
 		return
 	}
@@ -212,7 +212,7 @@ func IntegrationCreateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.create", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := authenticateTravelPlanPrincipalJSON(w, r, "integration.travel-plans.create", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -227,7 +227,7 @@ func IntegrationCreateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func IntegrationGetTravelPlanHandler(w http.ResponseWriter, r *http.Request) {
-	apiKey, ok := integrationAuthenticateTravelPlanRequestFn(w, r, "integration.travel-plans.get", constant.APIKeyScopeTravelPlansRead, "")
+	apiKey, ok := authenticateTravelPlanPrincipal(w, r, "integration.travel-plans.get", constant.APIKeyScopeTravelPlansRead, "")
 	if !ok {
 		return
 	}
@@ -262,7 +262,7 @@ func IntegrationUpdateTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.update", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := authenticateTravelPlanPrincipalJSON(w, r, "integration.travel-plans.update", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -302,7 +302,7 @@ func IntegrationDeleteTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.delete", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := authenticateTravelPlanPrincipalJSON(w, r, "integration.travel-plans.delete", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -321,7 +321,7 @@ func IntegrationDeleteTravelPlanHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := integrationDeleteTravelPlanFn(plan, actorUserFromAPIKey(apiKey)); err != nil {
+	if err := integrationDeleteTravelPlanFn(plan, apiKey.Actor()); err != nil {
 		writeTravelPlanError(w, err)
 		return
 	}
@@ -345,7 +345,7 @@ func IntegrationDeleteTravelPlanDailyPlanHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	apiKey, ok := integrationAuthenticateTravelPlanRequestJSONFn(w, r, "integration.travel-plans.daily.delete", constant.APIKeyScopeTravelPlansWrite, "")
+	apiKey, ok := authenticateTravelPlanPrincipalJSON(w, r, "integration.travel-plans.daily.delete", constant.APIKeyScopeTravelPlansWrite, "")
 	if !ok {
 		return
 	}
@@ -386,7 +386,7 @@ func IntegrationDeleteTravelPlanDailyPlanHandler(w http.ResponseWriter, r *http.
 	})
 }
 
-func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanRequest) (*dbmodel.TravelPlan, error) {
+func createTravelPlan(apiKey *IntegrationPrincipal, req integrationCreateTravelPlanRequest) (*dbmodel.TravelPlan, error) {
 	trimmedTitle := strings.TrimSpace(req.Title)
 	if trimmedTitle == "" {
 		return nil, validationError{message: "title is required"}
@@ -419,7 +419,7 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 		EndDate:     endDate,
 		Status:      defaultTravelPlanStatus,
 	}
-	if operator := actorUserFromAPIKey(apiKey); operator != nil {
+	if operator := apiKey.Actor(); operator != nil {
 		plan.CreatedBy = operator
 		plan.UpdatedBy = operator
 	}
@@ -443,7 +443,7 @@ func createTravelPlan(apiKey *dbmodel.APIKey, req integrationCreateTravelPlanReq
 	return plan, nil
 }
 
-func applyTravelPlanUpdates(plan *dbmodel.TravelPlan, req integrationUpdateTravelPlanRequest, apiKey *dbmodel.APIKey) error {
+func applyTravelPlanUpdates(plan *dbmodel.TravelPlan, req integrationUpdateTravelPlanRequest, apiKey *IntegrationPrincipal) error {
 	if req.Title != nil {
 		trimmed := strings.TrimSpace(*req.Title)
 		if trimmed == "" {
@@ -471,7 +471,7 @@ func applyTravelPlanUpdates(plan *dbmodel.TravelPlan, req integrationUpdateTrave
 	if req.Status != nil {
 		plan.Status = strings.TrimSpace(*req.Status)
 	}
-	if operator := actorUserFromAPIKey(apiKey); operator != nil {
+	if operator := apiKey.Actor(); operator != nil {
 		plan.UpdatedBy = operator
 	}
 

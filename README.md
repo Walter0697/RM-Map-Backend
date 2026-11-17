@@ -95,6 +95,7 @@ AUTH_SESSION_LIFETIME_SECONDS=31536000 AUTH_STATE_MIGRATION_MODE=redis-primary A
 4. Roll back quickly by setting `AUTH_STATE_MIGRATION_MODE=dual-write`.
 
 ### Auth Docs
+- Native OAuth MCP (including required identity migration): `docs/native-mcp-oauth.md`
 - Migration checklist: `docs/auth-migration-checklist.md`
 - Token state runbook: `docs/auth-token-state-runbook.md`
 - Local Authentik guide: `docs/local-authentik-oidc.md`
@@ -117,3 +118,4 @@ run `go run -mod=mod github.com/99designs/gqlgen generate` if schema changed
 - Required repository permissions for delivery workflow job:
   - `contents: read`
   - `packages: write`
+
