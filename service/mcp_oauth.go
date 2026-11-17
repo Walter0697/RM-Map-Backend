@@ -110,7 +110,7 @@ func MCPAuthorizationMetadata(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	mcpJSON(w, 200, map[string]interface{}{"issuer": o, "authorization_endpoint": o + "/mcp/oauth/authorize", "token_endpoint": o + "/mcp/oauth/token", "registration_endpoint": o + "/mcp/oauth/register", "revocation_endpoint": o + "/mcp/oauth/revoke", "response_types_supported": []string{"code"}, "grant_types_supported": []string{"authorization_code", "refresh_token"}, "token_endpoint_auth_methods_supported": []string{"none"}, "code_challenge_methods_supported": []string{"S256"}, "scopes_supported": mcpScopes})
+	mcpJSON(w, 200, map[string]interface{}{"issuer": o, "authorization_endpoint": o + "/mcp/oauth/authorize", "token_endpoint": o + "/mcp/oauth/token", "registration_endpoint": o + "/mcp/oauth/register", "revocation_endpoint": o + "/mcp/oauth/revoke", "response_types_supported": []string{"code"}, "response_modes_supported": []string{"query"}, "grant_types_supported": []string{"authorization_code", "refresh_token"}, "token_endpoint_auth_methods_supported": []string{"none"}, "revocation_endpoint_auth_methods_supported": []string{"none"}, "code_challenge_methods_supported": []string{"S256"}, "scopes_supported": mcpScopes, "authorization_response_iss_parameter_supported": true})
 }
 func MCPRegister(w http.ResponseWriter, r *http.Request) {
 	if !mcpRateLimit(w, r, "register", 10) {

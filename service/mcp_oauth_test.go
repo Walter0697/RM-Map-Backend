@@ -87,6 +87,31 @@ func TestMCPMetadataAndOriginRejection(t *testing.T) {
 		t.Fatal("missing OAuth challenge")
 	}
 }
+
+func TestMCPAuthorizationMetadataAdvertisesAutomaticClientRegistration(t *testing.T) {
+	t.Setenv("MCP_ENABLED", "true")
+	t.Setenv("MCP_PUBLIC_ORIGIN", "https://rm.example")
+
+	w := httptest.NewRecorder()
+	MCPAuthorizationMetadata(w, httptest.NewRequest("GET", "https://rm.example/.well-known/oauth-authorization-server", nil))
+	if w.Code != http.StatusOK {
+		t.Fatalf("metadata status = %d, body=%s", w.Code, w.Body.String())
+	}
+
+	var metadata map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &metadata); err != nil {
+		t.Fatalf("decode metadata: %v", err)
+	}
+	if metadata["registration_endpoint"] != "https://rm.example/mcp/oauth/register" {
+		t.Fatalf("unexpected registration endpoint: %v", metadata["registration_endpoint"])
+	}
+	if metadata["authorization_response_iss_parameter_supported"] != true {
+		t.Fatalf("automatic OAuth client registration metadata must advertise issuer responses: %v", metadata)
+	}
+	if metadata["token_endpoint_auth_methods_supported"].([]any)[0] != "none" {
+		t.Fatalf("expected public OAuth clients: %v", metadata["token_endpoint_auth_methods_supported"])
+	}
+}
 func TestMCPOpaqueHash(t *testing.T) {
 	a, b := mcpRandom(), mcpRandom()
 	if a == b || len(a) != 43 || !mcpEqualHash(a, mcpHash(a)) || mcpEqualHash(b, mcpHash(a)) {
