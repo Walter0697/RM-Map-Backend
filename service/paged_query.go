@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 const (
@@ -75,6 +77,13 @@ func parseCursor(cursor *string) (uint, error) {
 	return uint(parsed), nil
 }
 
+func orderViewportMarkersLatestFirst(query *gorm.DB, cursor uint) *gorm.DB {
+	if cursor > 0 {
+		query = query.Where("id < ?", cursor)
+	}
+	return query.Order("id desc")
+}
+
 func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, relation dbmodel.UserRelation, includeTesting bool) (*markerViewportPage, error) {
 	if params.South > params.North {
 		return nil, fmt.Errorf("south cannot be greater than north")
@@ -124,12 +133,8 @@ func GetViewportMarkersPage(params MarkerViewportFilter, requested []string, rel
 	} else {
 		query = query.Where("(longitude >= ? OR longitude <= ?)", params.West, params.East)
 	}
-	if cursor > 0 {
-		query = query.Where("id > ?", cursor)
-	}
-
 	items := make([]dbmodel.Marker, 0)
-	if err := query.Order("id asc").Limit(limit).Find(&items).Error; err != nil {
+	if err := orderViewportMarkersLatestFirst(query, cursor).Limit(limit).Find(&items).Error; err != nil {
 		return nil, err
 	}
 
