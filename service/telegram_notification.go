@@ -9,6 +9,7 @@ import (
 	"mapmarker/backend/database/dbmodel"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 )
@@ -58,19 +59,60 @@ func NotifyTelegramMessage(user dbmodel.User, message string) error {
 	return notifyTelegramMessage(user, message, "message")
 }
 
+func resolveTelegramNotificationSecrets(ctx context.Context, settings config.TelegramNotificationSetting, resolver SecretResolver) (string, string, error) {
+	resolve := func(name, configured string) (string, error) {
+		value := strings.TrimSpace(configured)
+		if resolver != nil {
+			resolved, err := resolver.Resolve(ctx, name)
+			if err != nil {
+				return "", err
+			}
+			if strings.TrimSpace(resolved) != "" {
+				value = strings.TrimSpace(resolved)
+			}
+		}
+		if value == "" {
+			value = strings.TrimSpace(os.Getenv(name))
+		}
+		return value, nil
+	}
+
+	accessToken, err := resolve("TELEGRAM_ACCESS_TOKEN", settings.AccessToken)
+	if err != nil {
+		return "", "", err
+	}
+	botToken, err := resolve("TELEGRAM_BOT_TOKEN", settings.BotToken)
+	if err != nil {
+		return "", "", err
+	}
+	return accessToken, botToken, nil
+}
+
 func notifyTelegramMessage(user dbmodel.User, message string, event string) error {
 	settings := config.Data.TelegramNotification
 	if !settings.Enable {
 		return nil
 	}
 	return traceTelegramNotification(event, user, func() error {
-		if strings.TrimSpace(settings.AccessURL) == "" || strings.TrimSpace(settings.AccessToken) == "" || strings.TrimSpace(settings.BotToken) == "" {
+		var secretResolver SecretResolver
+		if config.Data.Infisical.Enable {
+			secretResolver = NewSecretResolver(config.Data.Infisical, http.DefaultClient)
+		}
+		accessToken, botToken, err := resolveTelegramNotificationSecrets(
+			context.Background(),
+			settings,
+			secretResolver,
+		)
+		if err != nil {
+			return err
+		}
+		if strings.TrimSpace(settings.AccessURL) == "" || accessToken == "" || botToken == "" {
 			return fmt.Errorf("telegram notification configuration is incomplete")
 		}
 		notifier := newTelegramNotifier(
 			settings.AccessURL,
-			settings.AccessToken,
-			settings.BotToken,
+			accessToken,
+			botToken,
 			defaultTelegramBotAPIBaseURL,
 			settings.TimeoutMS,
 		)

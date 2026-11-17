@@ -16,6 +16,10 @@ import (
 
 var markerCreatedNotificationFn = NotifyMarkerCreated
 
+func orderActiveMarkersLatestFirst(query *gorm.DB) *gorm.DB {
+	return query.Order("created_at desc").Order("id desc")
+}
+
 func notifyMarkerCreator(marker *dbmodel.Marker, user dbmodel.User) {
 	if err := markerCreatedNotificationFn(*marker, user); err != nil {
 		log.Printf("marker notification failed marker_id=%d actor=%s err=%v", marker.ID, strings.TrimSpace(user.Username), err)
@@ -424,7 +428,7 @@ func GetAllActiveMarker(requested []string, relation dbmodel.UserRelation, inclu
 	query = query.Where("status != ?", constant.Arrived)
 	query = query.Where("to_time IS NULL OR (to_time IS NOT NULL AND to_time >= ?)", current.Format(time.RFC3339))
 
-	if err := query.Find(&markers).Error; err != nil {
+	if err := orderActiveMarkersLatestFirst(query).Find(&markers).Error; err != nil {
 		return markers, err
 	}
 	return markers, nil

@@ -4,12 +4,31 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/graph/model"
 	"reflect"
 	"strings"
 	"testing"
+
+	"mapmarker/backend/database/dbmodel"
 )
+
+func TestSocialMediaAnalysisMarkerCreatorUsesJobCreator(t *testing.T) {
+	creatorID := uint(2)
+	relation := dbmodel.UserRelation{
+		UserOneUID: 1,
+		UserOne:    dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 1}, Username: "rosarychan"},
+		UserTwoUID: 2,
+		UserTwo:    dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 2}, Username: "waltercheng"},
+	}
+
+	creator, err := socialMediaAnalysisMarkerCreator(relation, &creatorID)
+	if err != nil {
+		t.Fatalf("socialMediaAnalysisMarkerCreator returned error: %v", err)
+	}
+	if creator.ID != creatorID || creator.Username != "waltercheng" {
+		t.Fatalf("expected job creator waltercheng, got id=%d username=%q", creator.ID, creator.Username)
+	}
+}
 
 type fakeSocialMediaRunnerClient struct {
 	submitted []RunnerSubmitRequest

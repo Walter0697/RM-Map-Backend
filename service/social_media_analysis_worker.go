@@ -657,6 +657,19 @@ func imageCandidatesForSocialMediaMarker(job *dbmodel.SocialMediaAnalysisJob, re
 	return unique
 }
 
+func socialMediaAnalysisMarkerCreator(relation dbmodel.UserRelation, creatorUserID *uint) (dbmodel.User, error) {
+	if creatorUserID == nil || *creatorUserID == 0 {
+		return relation.UserOne, nil
+	}
+	if relation.UserOne.ID == *creatorUserID {
+		return relation.UserOne, nil
+	}
+	if relation.UserTwo.ID == *creatorUserID {
+		return relation.UserTwo, nil
+	}
+	return dbmodel.User{}, fmt.Errorf("analysis creator user %d is not part of relation %d", *creatorUserID, relation.ID)
+}
+
 func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) (*dbmodel.Marker, error) {
 	if job == nil || result.Location == nil {
 		return nil, fmt.Errorf("marker location is required")
@@ -675,6 +688,10 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	relation := dbmodel.UserRelation{BaseModel: dbmodel.BaseModel{ID: job.RelationID}}
 	if err := relation.GetWithUserById(database.Connection); err != nil {
 		return nil, fmt.Errorf("load marker relation: %w", err)
+	}
+	creator, err := socialMediaAnalysisMarkerCreator(relation, job.CreatorUserID)
+	if err != nil {
+		return nil, err
 	}
 	link := job.SourceURL
 	socialLink := job.SourceURL
@@ -695,6 +712,6 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	markerInput.SocialMediaLink = &socialLink
 	markerInput.Permanent = &permanent
 	return createMarkerWithImageCandidates(markerInput, imageCandidates, func(input model.NewMarker) (*dbmodel.Marker, error) {
-		return CreateMarker(input, nil, relation.UserOne, relation, false)
+		return CreateMarker(input, nil, creator, relation, false)
 	})
 }
