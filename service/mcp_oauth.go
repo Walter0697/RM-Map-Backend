@@ -285,6 +285,7 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	target, _ := url.Parse(req.RedirectURI)
 	q := target.Query()
 	q.Set("state", req.State)
+	q.Set("iss", o)
 	if r.PostForm.Get("decision") != "allow" {
 		database.Connection.Model(&req).Update("used", true)
 		q.Set("error", "access_denied")

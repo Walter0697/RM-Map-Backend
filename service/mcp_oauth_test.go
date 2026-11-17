@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -201,6 +202,13 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 	}
 	if w = consentCall(csrfMatch[1], "99999"); w.Code != 403 {
 		t.Fatal("cross-relation consent accepted")
+	}
+	if w = consentCall(csrfMatch[1], strconv.FormatUint(uint64(rel.ID), 10)); w.Code != http.StatusSeeOther {
+		t.Fatalf("valid consent status = %d, body=%s", w.Code, w.Body.String())
+	}
+	location, e := url.Parse(w.Header().Get("Location"))
+	if e != nil || location.Query().Get("iss") != "https://rm.example" {
+		t.Fatalf("authorization response missing issuer: %q", w.Header().Get("Location"))
 	}
 	verifier := strings.Repeat("a", 43)
 	digest := sha256.Sum256([]byte(verifier))
