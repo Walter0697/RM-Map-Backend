@@ -37,7 +37,7 @@ func TestOIDCVerifiedCallback(t *testing.T) {
 		oidcIssueTokenFn = oldIssue
 	}()
 	var issuer, rawToken, receivedVerifier string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		switch r.URL.Path {
 		case "/.well-known/openid-configuration":
@@ -74,59 +74,81 @@ func TestOIDCVerifiedCallback(t *testing.T) {
 		return &dbmodel.User{Username: "existing-user", IsActivated: true}, nil
 	}
 	oidcIssueTokenFn = func(*dbmodel.User) (string, error) { return "session", nil }
-	for _, tc := range []string{"valid", "bad-signature", "wrong-audience", "wrong-azp", "missing-azp", "wrong-issuer", "expired", "wrong-nonce", "no-cookie"} {
-		t.Run(tc, func(t *testing.T) {
-			called = false
-			start := httptest.NewRecorder()
-			OIDCStartHandler(start, httptest.NewRequest("GET", "/auth/oidc/start", nil))
-			if start.Code != 302 {
-				t.Fatalf("start: %d", start.Code)
-			}
-			location, _ := url.Parse(start.Header().Get("Location"))
-			q := location.Query()
-			if q.Get("code_challenge_method") != "S256" || q.Get("nonce") == "" {
-				t.Fatal("missing nonce/PKCE")
-			}
-			claims := jwt.MapClaims{"iss": issuer, "sub": "subject", "aud": "client", "exp": time.Now().Add(time.Minute).Unix(), "iat": time.Now().Unix(), "nonce": q.Get("nonce")}
-			switch tc {
-			case "wrong-audience":
-				claims["aud"] = "other"
-			case "wrong-azp":
-				claims["azp"] = "other"
-			case "missing-azp":
-				claims["aud"] = []string{"client", "other"}
-			case "wrong-issuer":
-				claims["iss"] = "https://other.example"
-			case "expired":
-				claims["exp"] = time.Now().Add(-time.Minute).Unix()
-			case "wrong-nonce":
-				claims["nonce"] = "other"
-			}
-			token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-			token.Header["kid"] = "test"
-			signingKey := key
-			if tc == "bad-signature" {
-				signingKey, _ = rsa.GenerateKey(rand.Reader, 2048)
-			}
-			rawToken, _ = token.SignedString(signingKey)
-			req := httptest.NewRequest("GET", "/auth/oidc/callback?code=code&state="+q.Get("state"), nil)
-			if tc != "no-cookie" {
-				req.AddCookie(start.Result().Cookies()[0])
-			}
-			result := httptest.NewRecorder()
-			OIDCCallbackHandler(result, req)
-			if tc == "valid" {
-				if result.Code != 302 || !called || receivedVerifier == "" || !strings.Contains(result.Header().Get("Location"), "username=existing-user") {
-					t.Fatalf("valid callback failed %d", result.Code)
+	for _, environment := range []string{"production", "test"} {
+		config.Data.App.Environment = environment
+		for _, tc := range []string{"valid", "bad-signature", "wrong-audience", "wrong-azp", "missing-azp", "wrong-issuer", "expired", "wrong-nonce", "no-cookie"} {
+			t.Run(environment+"/"+tc, func(t *testing.T) {
+				called = false
+				start := httptest.NewRecorder()
+				OIDCStartHandler(start, httptest.NewRequest("GET", "/auth/oidc/start", nil))
+				if start.Code != 302 {
+					t.Fatalf("start: %d", start.Code)
 				}
-			} else if result.Code == 302 || called {
-				t.Fatalf("accepted invalid identity %s", tc)
-			}
-			replay := httptest.NewRecorder()
-			OIDCCallbackHandler(replay, req)
-			if replay.Code != 400 {
-				t.Fatal("state replay accepted")
-			}
-		})
+				cookies := start.Result().Cookies()
+				if len(cookies) != 1 {
+					t.Fatalf("expected login cookie, got %d", len(cookies))
+				}
+				loginCookie := cookies[0]
+				wantSecure := environment == "production"
+				if loginCookie.Name != "oidc_login_state" || loginCookie.Secure != wantSecure || !loginCookie.HttpOnly || loginCookie.SameSite != http.SameSiteLaxMode || loginCookie.Path != "/auth/oidc" || loginCookie.MaxAge != 300 || loginCookie.Value == "" {
+					t.Fatalf("incorrect %s login cookie flags: %#v", environment, loginCookie)
+				}
+				location, _ := url.Parse(start.Header().Get("Location"))
+				q := location.Query()
+				if q.Get("code_challenge_method") != "S256" || q.Get("nonce") == "" {
+					t.Fatal("missing nonce/PKCE")
+				}
+				claims := jwt.MapClaims{"iss": issuer, "sub": "subject", "aud": "client", "exp": time.Now().Add(time.Minute).Unix(), "iat": time.Now().Unix(), "nonce": q.Get("nonce")}
+				switch tc {
+				case "wrong-audience":
+					claims["aud"] = "other"
+				case "wrong-azp":
+					claims["azp"] = "other"
+				case "missing-azp":
+					claims["aud"] = []string{"client", "other"}
+				case "wrong-issuer":
+					claims["iss"] = "https://other.example"
+				case "expired":
+					claims["exp"] = time.Now().Add(-time.Minute).Unix()
+				case "wrong-nonce":
+					claims["nonce"] = "other"
+				}
+				token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+				token.Header["kid"] = "test"
+				signingKey := key
+				if tc == "bad-signature" {
+					signingKey, _ = rsa.GenerateKey(rand.Reader, 2048)
+				}
+				rawToken, _ = token.SignedString(signingKey)
+				req := httptest.NewRequest("GET", "/auth/oidc/callback?code=code&state="+q.Get("state"), nil)
+				if tc != "no-cookie" {
+					req.AddCookie(start.Result().Cookies()[0])
+				}
+				result := httptest.NewRecorder()
+				OIDCCallbackHandler(result, req)
+				if tc != "no-cookie" {
+					cleared := result.Result().Cookies()
+					if len(cleared) != 1 {
+						t.Fatalf("expected clearing cookie, got %d", len(cleared))
+					}
+					cookie := cleared[0]
+					if cookie.Name != loginCookie.Name || cookie.Secure != wantSecure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != loginCookie.Path || cookie.MaxAge != -1 || cookie.Value != "" {
+						t.Fatalf("incorrect %s clearing cookie flags: %#v", environment, cookie)
+					}
+				}
+				if tc == "valid" {
+					if result.Code != 302 || !called || receivedVerifier == "" || !strings.Contains(result.Header().Get("Location"), "username=existing-user") {
+						t.Fatalf("valid callback failed %d", result.Code)
+					}
+				} else if result.Code == 302 || called {
+					t.Fatalf("accepted invalid identity %s", tc)
+				}
+				replay := httptest.NewRecorder()
+				OIDCCallbackHandler(replay, req)
+				if replay.Code != 400 {
+					t.Fatal("state replay accepted")
+				}
+			})
+		}
 	}
 }
