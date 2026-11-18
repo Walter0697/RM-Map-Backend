@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,79 @@ const (
 
 type GooglePlacesProvider interface {
 	Search(context.Context, string) ([]GooglePlaceCandidate, error)
+}
+
+const (
+	googlePlacesOutcomeQuota     = "quota_or_rate_limit"
+	googlePlacesOutcomeBilling   = "billing_or_api_key"
+	googlePlacesOutcomeHTTP      = "http_error"
+	googlePlacesOutcomeTransport = "transport_error"
+	googlePlacesOutcomeDecode    = "decode_error"
+	googlePlacesOutcomeConfig    = "configuration_error"
+)
+
+type googlePlacesError struct {
+	outcome    string
+	apiStatus  string
+	httpStatus int
+	err        error
+}
+
+func (err *googlePlacesError) Error() string {
+	if err.err != nil {
+		return err.err.Error()
+	}
+	if err.httpStatus > 0 {
+		return fmt.Sprintf("Google Places returned HTTP %d", err.httpStatus)
+	}
+	return "Google Places request failed"
+}
+
+func (err *googlePlacesError) Unwrap() error { return err.err }
+
+func googlePlacesOutcome(err error) string {
+	if err == nil {
+		return ""
+	}
+	var providerErr *googlePlacesError
+	if errors.As(err, &providerErr) && providerErr.outcome != "" {
+		return providerErr.outcome
+	}
+	message := strings.ToLower(err.Error())
+	if strings.Contains(message, "429") || strings.Contains(message, "resource_exhausted") || strings.Contains(message, "rate_limit") || strings.Contains(message, "dailylimitexceeded") {
+		return googlePlacesOutcomeQuota
+	}
+	if strings.Contains(message, "permission_denied") || strings.Contains(message, "request_denied") || strings.Contains(message, "api key") || strings.Contains(message, "billing") {
+		return googlePlacesOutcomeBilling
+	}
+	return googlePlacesOutcomeHTTP
+}
+
+func googlePlacesFailureAttributes(err error) (string, string, string) {
+	var providerErr *googlePlacesError
+	if errors.As(err, &providerErr) {
+		status := ""
+		if providerErr.httpStatus > 0 {
+			status = strconv.Itoa(providerErr.httpStatus)
+		}
+		return providerErr.outcome, status, providerErr.apiStatus
+	}
+	return googlePlacesOutcome(err), "", ""
+}
+
+func recordGooglePlacesFailure(span SpanHandle, err error, message string) {
+	outcome, httpStatus, apiStatus := googlePlacesFailureAttributes(err)
+	if outcome != "" {
+		span.SetAttribute("google.places.outcome", outcome)
+	}
+	if httpStatus != "" {
+		span.SetAttribute("google.places.http_status", httpStatus)
+	}
+	if apiStatus != "" {
+		span.SetAttribute("google.places.api_status", apiStatus)
+	}
+	span.RecordError(err)
+	span.SetStatus(false, message)
 }
 
 type GooglePlaceCandidate struct {
@@ -65,15 +139,6 @@ func NewGooglePlacesProvider(setting config.GoogleMapsSetting, secrets SecretRes
 
 func (provider googlePlacesProvider) Search(ctx context.Context, query string) ([]GooglePlaceCandidate, error) {
 	query = strings.TrimSpace(query)
-	if query == "" {
-		return nil, fmt.Errorf("Google Places query is required")
-	}
-	if provider.baseURL == "" {
-		return nil, fmt.Errorf("Google Places configuration is incomplete")
-	}
-	if provider.secrets == nil {
-		return nil, fmt.Errorf("Google Places secret resolver is required")
-	}
 	tracer := socialAnalysisTracerFn()
 	queryDigest := sha256.Sum256([]byte(query))
 	traceCtx, span := tracer.Start(ctx, "google_places.search", map[string]string{
@@ -82,16 +147,30 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 		"provider.query_sha256": fmt.Sprintf("%x", queryDigest[:]),
 	})
 	defer span.End()
+	if query == "" {
+		err := &googlePlacesError{outcome: googlePlacesOutcomeConfig, err: fmt.Errorf("Google Places query is required")}
+		recordGooglePlacesFailure(span, err, "Google Places query is required")
+		return nil, err
+	}
+	if provider.baseURL == "" {
+		err := &googlePlacesError{outcome: googlePlacesOutcomeConfig, err: fmt.Errorf("Google Places configuration is incomplete")}
+		recordGooglePlacesFailure(span, err, "Google Places configuration is incomplete")
+		return nil, err
+	}
+	if provider.secrets == nil {
+		err := &googlePlacesError{outcome: googlePlacesOutcomeConfig, err: fmt.Errorf("Google Places secret resolver is required")}
+		recordGooglePlacesFailure(span, err, "Google Places secret resolver is required")
+		return nil, err
+	}
 	apiKey, err := provider.secrets.Resolve(ctx, "GOOGLE_MAPS_API_KEY")
 	if err != nil {
-		span.RecordError(err)
-		span.SetStatus(false, "Google Maps API key unavailable")
-		return nil, err
+		providerErr := &googlePlacesError{outcome: googlePlacesOutcomeBilling, err: fmt.Errorf("Google Maps API key unavailable: %w", err)}
+		recordGooglePlacesFailure(span, providerErr, "Google Maps API key unavailable")
+		return nil, providerErr
 	}
 	if strings.TrimSpace(apiKey) == "" {
 		err := fmt.Errorf("Google Maps API key is not configured")
-		span.RecordError(err)
-		span.SetStatus(false, "Google Maps API key is not configured")
+		recordGooglePlacesFailure(span, &googlePlacesError{outcome: googlePlacesOutcomeBilling, err: err}, "Google Maps API key is not configured")
 		return nil, err
 	}
 
@@ -114,29 +193,36 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 
 	response, err := provider.http.Do(request)
 	if err != nil {
-		err = fmt.Errorf("Google Places request failed: %w", err)
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places request failed")
-		return nil, err
+		providerErr := &googlePlacesError{outcome: googlePlacesOutcomeTransport, err: fmt.Errorf("Google Places request failed: %w", err)}
+		recordGooglePlacesFailure(span, providerErr, "Google Places request failed")
+		return nil, providerErr
 	}
 	defer response.Body.Close()
 	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		err := fmt.Errorf("Google Places returned HTTP %d", response.StatusCode)
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places returned an error")
-		return nil, err
+		payload, readErr := io.ReadAll(io.LimitReader(response.Body, googlePlacesMaxBytes+1))
+		apiStatus := googlePlacesAPIStatus(payload)
+		outcome := classifyGooglePlacesHTTPError(response.StatusCode, apiStatus)
+		providerErr := &googlePlacesError{
+			outcome:    outcome,
+			apiStatus:  apiStatus,
+			httpStatus: response.StatusCode,
+			err:        fmt.Errorf("Google Places returned HTTP %d", response.StatusCode),
+		}
+		if readErr != nil {
+			providerErr.err = fmt.Errorf("Google Places returned HTTP %d; read error response: %w", response.StatusCode, readErr)
+		}
+		recordGooglePlacesFailure(span, providerErr, "Google Places returned an error")
+		return nil, providerErr
 	}
 	payload, err := io.ReadAll(io.LimitReader(response.Body, googlePlacesMaxBytes+1))
 	if err != nil {
-		err = fmt.Errorf("read Google Places response: %w", err)
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places response read failed")
-		return nil, err
+		providerErr := &googlePlacesError{outcome: googlePlacesOutcomeTransport, err: fmt.Errorf("read Google Places response: %w", err)}
+		recordGooglePlacesFailure(span, providerErr, "Google Places response read failed")
+		return nil, providerErr
 	}
 	if len(payload) > googlePlacesMaxBytes {
 		err := fmt.Errorf("Google Places response exceeds size limit")
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places response exceeded size limit")
+		recordGooglePlacesFailure(span, &googlePlacesError{outcome: googlePlacesOutcomeDecode, err: err}, "Google Places response exceeded size limit")
 		return nil, err
 	}
 	var decoded struct {
@@ -156,8 +242,7 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 	}
 	if len(payload) == 0 || json.Unmarshal(payload, &decoded) != nil {
 		err := fmt.Errorf("decode Google Places response")
-		span.RecordError(err)
-		span.SetStatus(false, "Google Places response decode failed")
+		recordGooglePlacesFailure(span, &googlePlacesError{outcome: googlePlacesOutcomeDecode, err: err}, "Google Places response decode failed")
 		return nil, err
 	}
 	places := make([]GooglePlaceCandidate, 0, len(decoded.Places))
@@ -176,6 +261,30 @@ func (provider googlePlacesProvider) Search(ctx context.Context, query string) (
 		})
 	}
 	span.SetAttribute("result.candidate_count", strconv.Itoa(len(places)))
+	span.SetAttribute("google.places.outcome", "success")
 	span.SetStatus(true, "Google Places search completed")
 	return places, nil
+}
+
+func googlePlacesAPIStatus(payload []byte) string {
+	var decoded struct {
+		Error struct {
+			Status string `json:"status"`
+		} `json:"error"`
+	}
+	if json.Unmarshal(payload, &decoded) != nil {
+		return ""
+	}
+	return strings.TrimSpace(decoded.Error.Status)
+}
+
+func classifyGooglePlacesHTTPError(httpStatus int, apiStatus string) string {
+	status := strings.ToLower(strings.TrimSpace(apiStatus))
+	if httpStatus == http.StatusTooManyRequests || status == "resource_exhausted" || strings.Contains(status, "rate_limit") || strings.Contains(status, "dailylimitexceeded") || strings.Contains(status, "quota") {
+		return googlePlacesOutcomeQuota
+	}
+	if httpStatus == http.StatusForbidden || status == "permission_denied" || status == "request_denied" || strings.Contains(status, "api_key") || strings.Contains(status, "billing") {
+		return googlePlacesOutcomeBilling
+	}
+	return googlePlacesOutcomeHTTP
 }

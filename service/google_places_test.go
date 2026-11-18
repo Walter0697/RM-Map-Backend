@@ -132,3 +132,70 @@ func TestGooglePlacesSearchRecordsProviderSpanWithoutRawQueryOrKey(t *testing.T)
 		t.Fatalf("expected query fingerprint: %#v", span.attributes)
 	}
 }
+
+func TestGooglePlacesSearchClassifiesQuotaError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"error":{"status":"RESOURCE_EXHAUSTED","message":"quota exceeded"}}`))
+	}))
+	defer server.Close()
+
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := socialAnalysisTracerFn
+	socialAnalysisTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { socialAnalysisTracerFn = previousTracer })
+
+	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
+	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err == nil {
+		t.Fatal("expected quota error")
+	}
+	if got := tracer.spans[0].attributes["google.places.outcome"]; got != "quota_or_rate_limit" {
+		t.Fatalf("expected quota outcome, got %q; attributes=%#v", got, tracer.spans[0].attributes)
+	}
+	if got := tracer.spans[0].attributes["google.places.http_status"]; got != "429" {
+		t.Fatalf("expected HTTP status 429, got %q", got)
+	}
+}
+
+func TestGooglePlacesSearchClassifiesBillingError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":{"status":"PERMISSION_DENIED","message":"API key not authorized"}}`))
+	}))
+	defer server.Close()
+
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := socialAnalysisTracerFn
+	socialAnalysisTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { socialAnalysisTracerFn = previousTracer })
+
+	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
+	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err == nil {
+		t.Fatal("expected billing error")
+	}
+	if got := tracer.spans[0].attributes["google.places.outcome"]; got != "billing_or_api_key" {
+		t.Fatalf("expected billing outcome, got %q; attributes=%#v", got, tracer.spans[0].attributes)
+	}
+}
+
+func TestGooglePlacesSearchClassifiesGenericHTTPError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "provider failed", http.StatusBadGateway)
+	}))
+	defer server.Close()
+
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := socialAnalysisTracerFn
+	socialAnalysisTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { socialAnalysisTracerFn = previousTracer })
+
+	provider := NewGooglePlacesProvider(config.GoogleMapsSetting{BaseURL: server.URL, TimeoutMS: 1000, MaxResults: 5}, googlePlacesTestSecrets{"GOOGLE_MAPS_API_KEY": "google-key"}, server.Client())
+	if _, err := provider.Search(context.Background(), "IFC Hong Kong"); err == nil {
+		t.Fatal("expected provider error")
+	}
+	if got := tracer.spans[0].attributes["google.places.outcome"]; got != "http_error" {
+		t.Fatalf("expected generic HTTP outcome, got %q; attributes=%#v", got, tracer.spans[0].attributes)
+	}
+}

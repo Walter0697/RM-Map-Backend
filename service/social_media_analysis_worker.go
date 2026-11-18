@@ -312,6 +312,26 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	places, err := provider.Search(ctx, query)
 	if err != nil {
+		tracer := socialAnalysisTracerFn()
+		_, fallbackSpan := tracer.Start(ctx, "analysis.google_places_fallback", map[string]string{
+			"analysis.job_id":        jobID(job),
+			"provider.name":          "google_places",
+			"provider.operation":     "search",
+			"google.places.fallback": "true",
+		})
+		outcome, httpStatus, apiStatus := googlePlacesFailureAttributes(err)
+		if outcome != "" {
+			fallbackSpan.SetAttribute("google.places.outcome", outcome)
+		}
+		if httpStatus != "" {
+			fallbackSpan.SetAttribute("google.places.http_status", httpStatus)
+		}
+		if apiStatus != "" {
+			fallbackSpan.SetAttribute("google.places.api_status", apiStatus)
+		}
+		fallbackSpan.RecordError(err)
+		fallbackSpan.SetStatus(false, "Google Places unavailable; kept agent-only result")
+		fallbackSpan.End()
 		log.Printf("[social-media-analysis] Google Places unavailable, keeping Agent 1 result: %v", err)
 		return RunnerJob{}, false, nil
 	}
@@ -344,6 +364,13 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 		return RunnerJob{}, false, err
 	}
 	return runnerJob, true, nil
+}
+
+func jobID(job *dbmodel.SocialMediaAnalysisJob) string {
+	if job == nil {
+		return ""
+	}
+	return job.JobID
 }
 
 func submitSocialAnalysisRunnerJob(ctx context.Context, client socialMediaRunnerClient, request RunnerSubmitRequest, analysisJobID, operation, stage string) (RunnerJob, error) {
