@@ -96,8 +96,13 @@ func TestOIDCPreStagedPostgresMigration(t *testing.T) {
 	if err != nil || got.ID != user.ID || got.Username != user.Username || got.Role != user.Role {
 		t.Fatalf("binding changed identity: %#v %v", got, err)
 	}
-	if _, err := resolveVerifiedOIDCUser(config.Data.OIDC.Issuer, "unbound-subject", user.Username); err == nil {
-		t.Fatal("username collision auto-linked")
+	linked, err := resolveVerifiedOIDCUser(config.Data.OIDC.Issuer, "unbound-subject", user.Username)
+	if err != nil || linked.ID != user.ID {
+		t.Fatalf("configured Authentik username did not link existing account: %#v %v", linked, err)
+	}
+	var compatibilityBinding dbmodel.OIDCIdentity
+	if err := db.Where("issuer = ? AND subject = ?", config.Data.OIDC.Issuer, "unbound-subject").First(&compatibilityBinding).Error; err != nil || compatibilityBinding.UserID != user.ID {
+		t.Fatalf("username compatibility binding was not persisted: %#v %v", compatibilityBinding, err)
 	}
 	if err := BindOIDCIdentity(user.ID, config.Data.OIDC.Issuer, "verified-subject"); err != nil {
 		t.Fatal("idempotent enrollment", err)

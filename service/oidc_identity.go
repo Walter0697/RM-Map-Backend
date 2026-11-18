@@ -29,7 +29,27 @@ func resolveVerifiedOIDCUser(issuer, subject, username string) (*dbmodel.User, e
 		return nil, fmt.Errorf("missing verified identity")
 	}
 	var binding dbmodel.OIDCIdentity
-	if err := database.Connection.Where("issuer = ? AND subject = ?", issuer, subject).First(&binding).Error; err != nil {
+	err := database.Connection.Where("issuer = ? AND subject = ?", issuer, subject).First(&binding).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// Preserve the established login contract: a verified Authentik
+		// preferred_username identifies the existing local account. Persist the
+		// immutable subject after the compatibility match for future logins.
+		if strings.TrimSpace(username) == "" {
+			return nil, err
+		}
+		var user dbmodel.User
+		if err := database.Connection.Where("username = ?", username).First(&user).Error; err != nil {
+			return nil, err
+		}
+		if !user.IsActivated {
+			return nil, fmt.Errorf("account disabled")
+		}
+		if err := database.Connection.Create(&dbmodel.OIDCIdentity{Issuer: issuer, Subject: subject, UserID: user.ID}).Error; err != nil {
+			return nil, err
+		}
+		return &user, nil
+	}
+	if err != nil {
 		return nil, err
 	}
 	var user dbmodel.User
