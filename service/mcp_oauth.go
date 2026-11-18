@@ -26,6 +26,7 @@ import (
 )
 
 const mcpBrowserCookie = "__Host-rm-mcp-consent"
+const mcpBrowserSessionCookie = "rm-browser-session"
 
 var mcpScopes = []string{"markers:read", "schedules:read", "stations:read", "settings:read", "travel-plans:read", "schedules:write", "travel-plans:write", "static-preview:generate"}
 
@@ -48,6 +49,17 @@ func mcpRandom() string {
 func mcpHash(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
 func mcpEqualHash(raw, hash string) bool {
 	return subtle.ConstantTimeCompare([]byte(mcpHash(raw)), []byte(hash)) == 1
+}
+func mcpBrowserSessionUser(r *http.Request) *dbmodel.User {
+	cookie, err := r.Cookie(mcpBrowserSessionCookie)
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		return nil
+	}
+	user, err := ValidateToken(cookie.Value)
+	if err != nil || user == nil || !user.IsActivated {
+		return nil
+	}
+	return user
 }
 func mcpJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Cache-Control", "no-store")
@@ -216,6 +228,12 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, &http.Cookie{Name: mcpBrowserCookie, Value: browser, Path: "/", Secure: true, HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: 600})
+	if user := mcpBrowserSessionUser(r); user != nil {
+		bound := r.Clone(r.Context())
+		bound.AddCookie(&http.Cookie{Name: mcpBrowserCookie, Value: browser})
+		completeMCPOIDCLogin(w, bound, user, request.ID)
+		return
+	}
 	StartMCPOIDCLogin(w, r, request.ID)
 }
 func mcpBoundRequest(r *http.Request, id string) (dbmodel.MCPOAuthRequest, error) {

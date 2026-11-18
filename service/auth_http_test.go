@@ -128,17 +128,31 @@ func TestOIDCVerifiedCallback(t *testing.T) {
 				OIDCCallbackHandler(result, req)
 				if tc != "no-cookie" {
 					cleared := result.Result().Cookies()
-					if len(cleared) != 1 {
-						t.Fatalf("expected clearing cookie, got %d", len(cleared))
+					foundCleared := false
+					for _, cookie := range cleared {
+						if cookie.Name == loginCookie.Name {
+							if cookie.Secure != wantSecure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != loginCookie.Path || cookie.MaxAge != -1 || cookie.Value != "" {
+								t.Fatalf("incorrect %s clearing cookie flags: %#v", environment, cookie)
+							}
+							foundCleared = true
+						}
 					}
-					cookie := cleared[0]
-					if cookie.Name != loginCookie.Name || cookie.Secure != wantSecure || !cookie.HttpOnly || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != loginCookie.Path || cookie.MaxAge != -1 || cookie.Value != "" {
-						t.Fatalf("incorrect %s clearing cookie flags: %#v", environment, cookie)
+					if !foundCleared {
+						t.Fatalf("expected clearing cookie, got %d", len(cleared))
 					}
 				}
 				if tc == "valid" {
 					if result.Code != 302 || !called || receivedVerifier == "" || !strings.Contains(result.Header().Get("Location"), "username=existing-user") {
 						t.Fatalf("valid callback failed %d", result.Code)
+					}
+					foundSession := false
+					for _, cookie := range result.Result().Cookies() {
+						if cookie.Name == mcpBrowserSessionCookie && cookie.Value == "session" && cookie.HttpOnly && cookie.SameSite == http.SameSiteLaxMode && cookie.Path == "/" {
+							foundSession = true
+						}
+					}
+					if !foundSession {
+						t.Fatal("OIDC login did not establish the reusable browser session")
 					}
 				} else if result.Code == 302 || called {
 					t.Fatalf("accepted invalid identity %s", tc)

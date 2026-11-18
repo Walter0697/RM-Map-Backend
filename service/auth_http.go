@@ -217,6 +217,12 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if loginState.MCPRequestID != "" {
+		jwtToken, err := oidcIssueTokenFn(user)
+		if err != nil {
+			http.Error(w, "unable to create session", http.StatusInternalServerError)
+			return
+		}
+		setMCPBrowserSessionCookie(w, jwtToken)
 		completeMCPOIDCLogin(w, r, user, loginState.MCPRequestID)
 		return
 	}
@@ -225,6 +231,7 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to create session", http.StatusInternalServerError)
 		return
 	}
+	setMCPBrowserSessionCookie(w, jwtToken)
 	username := user.Username
 
 	redirectURL := config.Data.OIDC.FrontendRedirectURL
@@ -243,6 +250,18 @@ func OIDCCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	nextURL.RawQuery = values.Encode()
 
 	http.Redirect(w, r, nextURL.String(), http.StatusFound)
+}
+
+func setMCPBrowserSessionCookie(w http.ResponseWriter, jwtToken string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     mcpBrowserSessionCookie,
+		Value:    jwtToken,
+		Path:     "/",
+		Secure:   !config.IsLocalEnvironment(config.Data.App.Environment),
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   config.Data.AuthState.SessionTTLSeconds,
+	})
 }
 
 func GenerateOIDCState() string { return newOIDCSecureToken() }
