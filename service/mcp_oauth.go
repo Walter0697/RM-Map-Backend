@@ -329,10 +329,11 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	requestID := r.PostForm.Get("request_id")
 	sessionUser := mcpBrowserSessionUser(r)
 	req, e := mcpBoundRequest(r, requestID)
+	boundByBrowserCookie := e == nil
 	if e != nil && sessionUser != nil {
 		req, e = mcpRequestByID(requestID)
 	}
-	if e != nil || req.UserID == 0 || sessionUser == nil || req.UserID != sessionUser.ID || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
+	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && sessionUser == nil) || (sessionUser != nil && req.UserID != sessionUser.ID) || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
 		mcpError(w, 403, "access_denied")
 		return
 	}
