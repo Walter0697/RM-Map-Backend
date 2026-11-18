@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"log"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
@@ -14,19 +15,25 @@ import (
 	"gorm.io/gorm"
 )
 
-var markerCreatedNotificationFn = NotifyMarkerCreated
+var markerCreatedNotificationFn = func(ctx context.Context, marker dbmodel.Marker, user dbmodel.User) error {
+	return notifyTelegramMarkerCreatedContext(ctx, marker, user)
+}
 
 func orderActiveMarkersLatestFirst(query *gorm.DB) *gorm.DB {
 	return query.Order("created_at desc").Order("id desc")
 }
 
-func notifyMarkerCreator(marker *dbmodel.Marker, user dbmodel.User) {
-	if err := markerCreatedNotificationFn(*marker, user); err != nil {
+func notifyMarkerCreator(ctx context.Context, marker *dbmodel.Marker, user dbmodel.User) {
+	if err := markerCreatedNotificationFn(ctx, *marker, user); err != nil {
 		log.Printf("marker notification failed marker_id=%d actor=%s err=%v", marker.ID, strings.TrimSpace(user.Username), err)
 	}
 }
 
 func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Marker, error) {
+	return CreateMarkerWithContext(context.Background(), input, restaurant, user, relation, testing)
+}
+
+func CreateMarkerWithContext(ctx context.Context, input model.NewMarker, restaurant *dbmodel.Restaurant, user dbmodel.User, relation dbmodel.UserRelation, testing bool) (*dbmodel.Marker, error) {
 	var fromTime time.Time
 	var toTime time.Time
 	var err error
@@ -188,7 +195,7 @@ func CreateMarker(input model.NewMarker, restaurant *dbmodel.Restaurant, user db
 		return nil, err
 	}
 	invalidateIntegrationHashtagCacheForRelation(relation.ID)
-	notifyMarkerCreator(&marker, user)
+	notifyMarkerCreator(ctx, &marker, user)
 
 	return &marker, nil
 }

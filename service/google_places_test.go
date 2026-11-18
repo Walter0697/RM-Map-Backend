@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/otel/trace"
 	"mapmarker/backend/config"
 )
 
@@ -28,12 +29,14 @@ func (span *recordingObservabilitySpan) SetStatus(ok bool, _ string) { span.ok =
 func (span *recordingObservabilitySpan) End()                        {}
 
 type recordingObservabilityTracer struct {
-	spans []*recordingObservabilitySpan
+	spans       []*recordingObservabilitySpan
+	parentTrace []trace.TraceID
 }
 
 func (tracer *recordingObservabilityTracer) Start(ctx context.Context, name string, attributes map[string]string) (context.Context, SpanHandle) {
 	span := &recordingObservabilitySpan{name: name, attributes: attributes, ok: true}
 	tracer.spans = append(tracer.spans, span)
+	tracer.parentTrace = append(tracer.parentTrace, trace.SpanContextFromContext(ctx).TraceID())
 	return ctx, span
 }
 

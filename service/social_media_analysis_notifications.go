@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"mapmarker/backend/config"
@@ -16,7 +17,7 @@ const (
 	socialMediaAnalysisNotificationFailed   = "failed"
 )
 
-func notifySocialMediaAnalysisEvent(job *dbmodel.SocialMediaAnalysisJob, event string) {
+func notifySocialMediaAnalysisEvent(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, event string) {
 	if job == nil || job.CreatorUserID == nil || database.Connection == nil {
 		return
 	}
@@ -30,7 +31,7 @@ func notifySocialMediaAnalysisEvent(job *dbmodel.SocialMediaAnalysisJob, event s
 	if !ok {
 		return
 	}
-	if err := notifyTelegramMessage(user, message, event); err != nil {
+	if err := notifyTelegramMessageContext(ctx, user, message, event); err != nil {
 		log.Printf("social_media_analysis notification failed job_id=%s event=%s actor=%s err=%v", job.JobID, event, strings.TrimSpace(user.Username), err)
 	}
 }
