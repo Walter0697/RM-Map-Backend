@@ -373,10 +373,14 @@ type integrationErrorResponse struct {
 }
 
 type integrationNearbySearchQuery struct {
-	Latitude     float64
-	Longitude    float64
-	RadiusMeters float64
-	Limit        int
+	Latitude          float64
+	Longitude         float64
+	RadiusMeters      float64
+	Limit             int
+	Place             string
+	PlaceCountryCode  string
+	MarkerType        string
+	ExcludeMarkerType string
 }
 
 type integrationNearbyMarkerRow struct {
@@ -1122,6 +1126,32 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	var place *nearbyPlaceCandidate
+	if searchQuery.Place != "" {
+		if !apiKey.HasScope(constant.APIKeyScopeStaticPreview) {
+			writeIntegrationError(w, http.StatusForbidden, "scope_denied", "place lookup requires the static preview scope; use latitude and longitude instead")
+			return
+		}
+		candidates, err := integrationResolveNearbyPlaceFn(r.Context(), searchQuery.Place, searchQuery.PlaceCountryCode)
+		if err != nil {
+			writeIntegrationError(w, http.StatusBadGateway, "place_lookup_failed", "place lookup unavailable; use latitude and longitude instead")
+			return
+		}
+		if len(candidates) != 1 {
+			result := nearbySearchResponse([]integrationNearbyMarkerResponse{}, searchQuery, nil)
+			result["status"] = "place_not_found"
+			if len(candidates) > 1 {
+				result["status"] = "place_ambiguous"
+			}
+			result["place"] = searchQuery.Place
+			result["candidates"] = candidates
+			respondJSON(w, http.StatusOK, result)
+			return
+		}
+		place = &candidates[0]
+		searchQuery.Latitude, searchQuery.Longitude = place.Latitude, place.Longitude
+	}
+
 	rows, err := integrationFindNearbyMarkersFn(apiKey.Relation, searchQuery, canAccessTestingEntities(apiKey.ActorRole()))
 	if err != nil {
 		writeIntegrationError(w, http.StatusInternalServerError, "nearby_search_failed", "failed to retrieve nearby markers")
@@ -1137,6 +1167,10 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 		})
 	}
 
+	respondJSON(w, http.StatusOK, nearbySearchResponse(items, searchQuery, place))
+}
+
+func nearbySearchResponse(items []integrationNearbyMarkerResponse, searchQuery integrationNearbySearchQuery, place *nearbyPlaceCandidate) map[string]interface{} {
 	responseQuery := integrationListQuery{
 		Limit:   searchQuery.Limit,
 		Offset:  0,
@@ -1145,7 +1179,26 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 		Order:   "asc",
 		Filters: map[string]string{},
 	}
-	respondJSON(w, http.StatusOK, integrationListResponse(items, int64(len(items)), responseQuery, ""))
+	result := integrationListResponse(items, int64(len(items)), responseQuery, "")
+	result["status"] = "ok"
+	result["radius_meters"] = searchQuery.RadiusMeters
+	filters := map[string]string{}
+	if searchQuery.MarkerType != "" {
+		filters["type"] = searchQuery.MarkerType
+	}
+	if searchQuery.ExcludeMarkerType != "" {
+		filters["exclude_type"] = searchQuery.ExcludeMarkerType
+	}
+	if searchQuery.PlaceCountryCode != "" {
+		filters["place_country_code"] = searchQuery.PlaceCountryCode
+	}
+	result["filters"] = filters
+	if place != nil {
+		result["origin"] = place
+	} else if searchQuery.Place == "" {
+		result["origin"] = nearbyPlaceCandidate{Latitude: searchQuery.Latitude, Longitude: searchQuery.Longitude}
+	}
+	return result
 }
 
 func IntegrationCreateMarkerHandler(w http.ResponseWriter, r *http.Request) {
@@ -3303,36 +3356,49 @@ func parseIntegrationNearbySearchQuery(r *http.Request) (integrationNearbySearch
 		Limit: integrationNearbyDefaultLimit,
 	}
 
-	latitudeRaw := strings.TrimSpace(r.URL.Query().Get("latitude"))
-	if latitudeRaw == "" {
-		return query, fmt.Errorf("latitude is required")
-	}
-	latitude, err := strconv.ParseFloat(latitudeRaw, 64)
-	if err != nil || latitude < -90 || latitude > 90 {
-		return query, fmt.Errorf("latitude must be within -90 to 90")
-	}
-	query.Latitude = latitude
+	params := r.URL.Query()
+	query.Place = strings.TrimSpace(params.Get("place"))
+	query.PlaceCountryCode = strings.ToUpper(strings.TrimSpace(params.Get("place_country_code")))
+	query.MarkerType = strings.TrimSpace(params.Get("type"))
+	query.ExcludeMarkerType = strings.TrimSpace(params.Get("exclude_type"))
+	latitudeRaw := strings.TrimSpace(params.Get("latitude"))
+	longitudeRaw := strings.TrimSpace(params.Get("longitude"))
 
-	longitudeRaw := strings.TrimSpace(r.URL.Query().Get("longitude"))
-	if longitudeRaw == "" {
-		return query, fmt.Errorf("longitude is required")
+	if query.Place != "" {
+		if len(query.Place) > 256 {
+			return query, fmt.Errorf("place must be at most 256 bytes")
+		}
+		if latitudeRaw != "" || longitudeRaw != "" {
+			return query, fmt.Errorf("provide either place or latitude and longitude, not both")
+		}
+	} else {
+		if query.PlaceCountryCode != "" {
+			return query, fmt.Errorf("place_country_code requires place")
+		}
+		if latitudeRaw == "" || longitudeRaw == "" {
+			return query, fmt.Errorf("latitude and longitude are required unless place is supplied")
+		}
+		latitude, latErr := strconv.ParseFloat(latitudeRaw, 64)
+		longitude, lonErr := strconv.ParseFloat(longitudeRaw, 64)
+		if latErr != nil || !nearbyCoordinateInRange(latitude, 90) {
+			return query, fmt.Errorf("latitude must be within -90 to 90")
+		}
+		if lonErr != nil || !nearbyCoordinateInRange(longitude, 180) {
+			return query, fmt.Errorf("longitude must be within -180 to 180")
+		}
+		query.Latitude, query.Longitude = latitude, longitude
 	}
-	longitude, err := strconv.ParseFloat(longitudeRaw, 64)
-	if err != nil || longitude < -180 || longitude > 180 {
-		return query, fmt.Errorf("longitude must be within -180 to 180")
+	if cc := query.PlaceCountryCode; cc != "" && (len(cc) != 2 || cc[0] < 'A' || cc[0] > 'Z' || cc[1] < 'A' || cc[1] > 'Z') {
+		return query, fmt.Errorf("place_country_code must be a two-letter country code")
 	}
-	query.Longitude = longitude
 
-	radiusRaw := strings.TrimSpace(r.URL.Query().Get("radius"))
+	radiusRaw := firstNonEmptyString(params.Get("radius_meters"), params.Get("radius"), params.Get("area"))
 	if radiusRaw == "" {
-		radiusRaw = strings.TrimSpace(r.URL.Query().Get("area"))
-	}
-	if radiusRaw == "" {
-		return query, fmt.Errorf("radius or area is required")
+		return query, fmt.Errorf("radius_meters is required (e.g. 3000 for 3 km; legacy radius and area are accepted)")
 	}
 	radius, err := strconv.ParseFloat(radiusRaw, 64)
-	if err != nil || radius <= 0 {
-		return query, fmt.Errorf("radius must be a positive number")
+	if err != nil || math.IsNaN(radius) || radius <= 0 {
+		return query, fmt.Errorf("radius_meters must be a positive number")
 	}
 	if radius > integrationNearbyMaxRadiusMeters {
 		return query, fmt.Errorf("radius exceeds maximum allowed (%.0f meters)", integrationNearbyMaxRadiusMeters)
@@ -3363,6 +3429,13 @@ func findNearbyMarkersByDistance(relation dbmodel.UserRelation, params integrati
 		Where("type IN (SELECT value FROM marker_types WHERE hidden IS DISTINCT FROM TRUE)")
 	if !includeTesting {
 		baseQuery = baseQuery.Where("testing = ?", false)
+	}
+
+	if params.MarkerType != "" {
+		baseQuery = baseQuery.Where("markers.type = ?", params.MarkerType)
+	}
+	if params.ExcludeMarkerType != "" {
+		baseQuery = baseQuery.Where("markers.type <> ?", params.ExcludeMarkerType)
 	}
 
 	latDelta := params.RadiusMeters / 111320.0
