@@ -66,7 +66,10 @@ func ApprovePendingSocialMediaAnalysis(ctx context.Context, jobID string, relati
 	if err := json.Unmarshal([]byte(job.ResultJSON), &result); err != nil {
 		return nil, fmt.Errorf("decode analysis result: %w", err)
 	}
-	marker, err := createSocialMediaAnalysisMarker(job, result)
+	tracer := socialAnalysisTracerFn()
+	analysisCtx, analysisSpan := startSocialAnalysisRun(ctx, job, tracer)
+	defer analysisSpan.End()
+	marker, err := createSocialMediaAnalysisMarker(analysisCtx, job, result)
 	if err != nil {
 		return nil, err
 	}
@@ -75,10 +78,10 @@ func ApprovePendingSocialMediaAnalysis(ctx context.Context, jobID string, relati
 	job.Stage = "marker_created"
 	now := time.Now().UTC()
 	job.CompletedAt = &now
-	if err := database.Connection.WithContext(ctx).Save(job).Error; err != nil {
+	if err := database.Connection.WithContext(analysisCtx).Save(job).Error; err != nil {
 		return nil, err
 	}
-	notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationCreated)
+	notifySocialMediaAnalysisEvent(analysisCtx, job, socialMediaAnalysisNotificationCreated)
 	return job, nil
 }
 

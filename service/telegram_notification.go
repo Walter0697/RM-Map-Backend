@@ -95,11 +95,15 @@ func resolveTelegramNotificationSecrets(ctx context.Context, settings config.Tel
 }
 
 func notifyTelegramMessage(user dbmodel.User, message string, event string) error {
+	return notifyTelegramMessageContext(context.Background(), user, message, event)
+}
+
+func notifyTelegramMessageContext(ctx context.Context, user dbmodel.User, message string, event string) error {
 	settings := config.Data.TelegramNotification
 	if !settings.Enable {
 		return nil
 	}
-	return traceTelegramNotification(event, user, func() error {
+	return traceTelegramNotificationContext(ctx, event, user, func() error {
 		notifier, err := configuredTelegramNotifier(settings)
 		if err != nil {
 			return err
@@ -109,11 +113,15 @@ func notifyTelegramMessage(user dbmodel.User, message string, event string) erro
 }
 
 func notifyTelegramMarkerCreated(marker dbmodel.Marker, user dbmodel.User) error {
+	return notifyTelegramMarkerCreatedContext(context.Background(), marker, user)
+}
+
+func notifyTelegramMarkerCreatedContext(ctx context.Context, marker dbmodel.Marker, user dbmodel.User) error {
 	settings := config.Data.TelegramNotification
 	if !settings.Enable {
 		return nil
 	}
-	return traceTelegramNotification("marker_created", user, func() error {
+	return traceTelegramNotificationContext(ctx, "marker_created", user, func() error {
 		notifier, err := configuredTelegramNotifier(settings)
 		if err != nil {
 			return err
@@ -148,8 +156,15 @@ func configuredTelegramNotifier(settings config.TelegramNotificationSetting) (*t
 }
 
 func traceTelegramNotification(event string, user dbmodel.User, operation func() error) error {
+	return traceTelegramNotificationContext(context.Background(), event, user, operation)
+}
+
+func traceTelegramNotificationContext(ctx context.Context, event string, user dbmodel.User, operation func() error) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
 	tracer := telegramNotificationTracerFn()
-	_, span := tracer.Start(context.Background(), "telegram.notification", map[string]string{
+	_, span := tracer.Start(ctx, "telegram.notification", map[string]string{
 		"notification.channel": "telegram",
 		"notification.event":   strings.TrimSpace(event),
 		"telegram.user_id":     strings.TrimSpace(user.Username),

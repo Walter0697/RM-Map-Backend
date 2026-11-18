@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/otel/trace"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database/dbmodel"
 )
@@ -223,5 +224,28 @@ func TestTelegramNotificationPhoenixSpanRecordsFailure(t *testing.T) {
 	}
 	if len(tracer.spans) != 1 || tracer.spans[0].attributes["notification.outcome"] != "failed" || tracer.spans[0].ok {
 		t.Fatalf("expected failed Telegram span: %#v", tracer.spans)
+	}
+}
+
+func TestTelegramNotificationUsesAnalysisTraceContext(t *testing.T) {
+	tracer := &recordingObservabilityTracer{}
+	previousTracer := telegramNotificationTracerFn
+	telegramNotificationTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() { telegramNotificationTracerFn = previousTracer })
+
+	parent := trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    trace.TraceID{41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56},
+		SpanID:     trace.SpanID{56, 55, 54, 53, 52, 51, 50, 49},
+		TraceFlags: trace.FlagsSampled,
+	})
+	ctx := trace.ContextWithSpanContext(context.Background(), parent)
+
+	if err := traceTelegramNotificationContext(ctx, "created", dbmodel.User{Username: "walter"}, func() error {
+		return nil
+	}); err != nil {
+		t.Fatalf("traceTelegramNotificationContext returned error: %v", err)
+	}
+	if len(tracer.parentTrace) != 1 || tracer.parentTrace[0] != parent.TraceID() {
+		t.Fatalf("expected Telegram span to preserve analysis trace %s, got %v", parent.TraceID(), tracer.parentTrace)
 	}
 }

@@ -31,3 +31,52 @@ func TestBuildSocialMediaAnalysisFailedNotificationIncludesSourceAndCode(t *test
 		t.Fatalf("message missing failure details: %s", message)
 	}
 }
+
+func TestSocialMediaAnalysisFailureRecipientsIncludeActiveAdminsWithoutDuplicates(t *testing.T) {
+	creator := dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 7}, Username: "walter", Role: "admin"}
+	previous := listActiveSocialAnalysisAdminsFn
+	previousCreator := loadSocialAnalysisCreatorFn
+	listActiveSocialAnalysisAdminsFn = func() ([]dbmodel.User, error) {
+		return []dbmodel.User{
+			creator,
+			{BaseModel: dbmodel.BaseModel{ID: 8}, Username: "rosary", Role: "admin"},
+		}, nil
+	}
+	loadSocialAnalysisCreatorFn = func(uint) (dbmodel.User, error) { return creator, nil }
+	t.Cleanup(func() {
+		listActiveSocialAnalysisAdminsFn = previous
+		loadSocialAnalysisCreatorFn = previousCreator
+	})
+
+	job := &dbmodel.SocialMediaAnalysisJob{CreatorUserID: &creator.ID}
+	recipients, err := socialMediaAnalysisNotificationRecipients(job, socialMediaAnalysisNotificationFailed)
+	if err != nil {
+		t.Fatalf("socialMediaAnalysisNotificationRecipients returned error: %v", err)
+	}
+	if len(recipients) != 2 || recipients[0].Username != "walter" || recipients[1].Username != "rosary" {
+		t.Fatalf("unexpected recipients: %#v", recipients)
+	}
+}
+
+func TestSocialMediaAnalysisSuccessRecipientsOnlyIncludeCreator(t *testing.T) {
+	creator := dbmodel.User{BaseModel: dbmodel.BaseModel{ID: 7}, Username: "walter", Role: "user"}
+	previous := listActiveSocialAnalysisAdminsFn
+	previousCreator := loadSocialAnalysisCreatorFn
+	listActiveSocialAnalysisAdminsFn = func() ([]dbmodel.User, error) {
+		return []dbmodel.User{{BaseModel: dbmodel.BaseModel{ID: 8}, Username: "rosary", Role: "admin"}}, nil
+	}
+	loadSocialAnalysisCreatorFn = func(uint) (dbmodel.User, error) { return creator, nil }
+	t.Cleanup(func() {
+		listActiveSocialAnalysisAdminsFn = previous
+		loadSocialAnalysisCreatorFn = previousCreator
+	})
+
+	job := &dbmodel.SocialMediaAnalysisJob{CreatorUserID: &creator.ID}
+	recipients, err := socialMediaAnalysisNotificationRecipients(job, socialMediaAnalysisNotificationCreated)
+	if err != nil {
+		t.Fatalf("socialMediaAnalysisNotificationRecipients returned error: %v", err)
+	}
+	if len(recipients) != 1 || recipients[0].Username != "walter" {
+		t.Fatalf("unexpected recipients: %#v", recipients)
+	}
+}

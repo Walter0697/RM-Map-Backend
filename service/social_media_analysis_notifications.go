@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"mapmarker/backend/config"
@@ -16,23 +17,80 @@ const (
 	socialMediaAnalysisNotificationFailed   = "failed"
 )
 
-func notifySocialMediaAnalysisEvent(job *dbmodel.SocialMediaAnalysisJob, event string) {
-	if job == nil || job.CreatorUserID == nil || database.Connection == nil {
-		return
-	}
+var listActiveSocialAnalysisAdminsFn = listActiveSocialAnalysisAdmins
+var loadSocialAnalysisCreatorFn = loadSocialAnalysisCreator
 
-	var user dbmodel.User
-	if err := database.Connection.First(&user, *job.CreatorUserID).Error; err != nil {
-		log.Printf("social_media_analysis notification user_lookup_failed job_id=%s err=%v", job.JobID, err)
+func notifySocialMediaAnalysisEvent(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, event string) {
+	if job == nil || database.Connection == nil {
 		return
 	}
 	message, ok := buildSocialMediaAnalysisNotification(job, event)
 	if !ok {
 		return
 	}
-	if err := notifyTelegramMessage(user, message, event); err != nil {
-		log.Printf("social_media_analysis notification failed job_id=%s event=%s actor=%s err=%v", job.JobID, event, strings.TrimSpace(user.Username), err)
+	recipients, err := socialMediaAnalysisNotificationRecipients(job, event)
+	if err != nil {
+		log.Printf("social_media_analysis notification user_lookup_failed job_id=%s err=%v", job.JobID, err)
+		return
 	}
+	for _, user := range recipients {
+		if err := notifyTelegramMessageContext(ctx, user, message, event); err != nil {
+			log.Printf("social_media_analysis notification failed job_id=%s event=%s actor=%s err=%v", job.JobID, event, strings.TrimSpace(user.Username), err)
+		}
+	}
+}
+
+func listActiveSocialAnalysisAdmins() ([]dbmodel.User, error) {
+	if database.Connection == nil {
+		return nil, fmt.Errorf("database connection is not initialized")
+	}
+	users := make([]dbmodel.User, 0)
+	if err := database.Connection.Where("is_activated = ? AND role = ?", true, "admin").Order("id asc").Find(&users).Error; err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func socialMediaAnalysisNotificationRecipients(job *dbmodel.SocialMediaAnalysisJob, event string) ([]dbmodel.User, error) {
+	if job == nil {
+		return nil, nil
+	}
+	recipients := make([]dbmodel.User, 0, 2)
+	if job.CreatorUserID != nil {
+		creator, err := loadSocialAnalysisCreatorFn(*job.CreatorUserID)
+		if err != nil {
+			return nil, err
+		}
+		recipients = append(recipients, creator)
+	}
+	if event != socialMediaAnalysisNotificationFailed {
+		return recipients, nil
+	}
+	admins, err := listActiveSocialAnalysisAdminsFn()
+	if err != nil {
+		return nil, err
+	}
+	for _, admin := range admins {
+		duplicate := false
+		for _, recipient := range recipients {
+			if recipient.ID != 0 && recipient.ID == admin.ID || recipient.ID == 0 && recipient.Username == admin.Username {
+				duplicate = true
+				break
+			}
+		}
+		if !duplicate {
+			recipients = append(recipients, admin)
+		}
+	}
+	return recipients, nil
+}
+
+func loadSocialAnalysisCreator(userID uint) (dbmodel.User, error) {
+	var user dbmodel.User
+	if err := database.Connection.First(&user, userID).Error; err != nil {
+		return dbmodel.User{}, err
+	}
+	return user, nil
 }
 
 func buildSocialMediaAnalysisNotification(job *dbmodel.SocialMediaAnalysisJob, event string) (string, bool) {

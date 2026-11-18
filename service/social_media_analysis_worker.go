@@ -157,7 +157,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	parsedURL, err := ValidatePublicSourceURL(job.SourceURL)
 	if err != nil {
-		return markSocialMediaAnalysisFailed(job, "invalid_source_url", err)
+		return markSocialMediaAnalysisFailed(analysisCtx, job, "invalid_source_url", err)
 	}
 	adapter := selectSocialMediaAnalysisSourceAdapter(parsedURL.String())
 	sourceCtx, sourceSpan := tracer.Start(analysisCtx, "source.fetch", map[string]string{
@@ -171,7 +171,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 		sourceSpan.RecordError(err)
 		sourceSpan.SetStatus(false, "source fetch failed")
 		sourceSpan.End()
-		return markSocialMediaAnalysisFailed(job, "source_fetch_failed", err)
+		return markSocialMediaAnalysisFailed(analysisCtx, job, "source_fetch_failed", err)
 	}
 	if post.Metadata != nil {
 		if runID := strings.TrimSpace(post.Metadata["apify_run_id"]); runID != "" {
@@ -182,7 +182,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	sourceSpan.End()
 	sourceJSON, err := json.Marshal(post)
 	if err != nil {
-		return markSocialMediaAnalysisFailed(job, "source_normalization_failed", err)
+		return markSocialMediaAnalysisFailed(analysisCtx, job, "source_normalization_failed", err)
 	}
 	job.SourceJSON = string(sourceJSON)
 	captureSocialAnalysisArtifacts(analysisCtx, job, post, sourceJSON, socialAnalysisAssetStoreFn())
@@ -192,7 +192,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	allowedMarkerTypes, err := socialMediaAnalysisMarkerTypeValues()
 	if err != nil {
-		return markSocialMediaAnalysisFailed(job, "marker_types_fetch_failed", err)
+		return markSocialMediaAnalysisFailed(analysisCtx, job, "marker_types_fetch_failed", err)
 	}
 	client := socialMediaRunnerClientFn()
 	prompt := buildSocialMediaAnalysisPrompt(post, allowedMarkerTypes)
@@ -206,7 +206,7 @@ func ProcessSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedia
 		TraceParent:   injectSocialAnalysisTraceParent(analysisCtx),
 	}, job.JobID, "social-media-analysis", "agent_1")
 	if err != nil {
-		return markSocialMediaAnalysisFailed(job, "runner_submit_failed", err)
+		return markSocialMediaAnalysisFailed(analysisCtx, job, "runner_submit_failed", err)
 	}
 	job.RunnerJobID = runnerJob.ID
 	job.Stage = "agent_submitted"
@@ -230,15 +230,15 @@ func reconcileRunnerJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob
 		job.Stage = "agent_running"
 		return database.Connection.Save(job).Error
 	case RunnerJobStatusFailed, RunnerJobStatusCancelled, RunnerJobStatusTimedOut:
-		return markSocialMediaAnalysisFailed(job, "runner_"+runnerJob.Status, fmt.Errorf("runner job ended with status %s: %s", runnerJob.Status, runnerJob.Error))
+		return markSocialMediaAnalysisFailed(ctx, job, "runner_"+runnerJob.Status, fmt.Errorf("runner job ended with status %s: %s", runnerJob.Status, runnerJob.Error))
 	case RunnerJobStatusDone:
 		result, err := decodeAgentAnalysisResult(runnerJob.Result)
 		if err != nil {
-			return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
+			return markSocialMediaAnalysisFailed(ctx, job, "invalid_agent_result", err)
 		}
 		if job.Stage != socialMediaLocationComparisonStage {
 			if comparisonResult, submitted, err := maybeSubmitLocationComparison(ctx, job, &result); err != nil {
-				return markSocialMediaAnalysisFailed(job, "location_comparison_failed", err)
+				return markSocialMediaAnalysisFailed(ctx, job, "location_comparison_failed", err)
 			} else if submitted {
 				job.RunnerJobID = comparisonResult.ID
 				job.Stage = socialMediaLocationComparisonStage
@@ -253,7 +253,7 @@ func reconcileRunnerJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob
 
 func finalizeSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) error {
 	if err := ApplyAgentAnalysisResult(job, result); err != nil {
-		return markSocialMediaAnalysisFailed(job, "invalid_agent_result", err)
+		return markSocialMediaAnalysisFailed(ctx, job, "invalid_agent_result", err)
 	}
 	if result.Recommendation == AgentRecommendationCreateMarker {
 		tracer := socialAnalysisTracerFn()
@@ -262,12 +262,12 @@ func finalizeSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedi
 			"provider.name":      "roroadmap_backend",
 			"provider.operation": "marker.create",
 		})
-		marker, err := createSocialMediaAnalysisMarker(job, result)
+		marker, err := createSocialMediaAnalysisMarker(ctx, job, result)
 		if err != nil {
 			markerSpan.RecordError(err)
 			markerSpan.SetStatus(false, "marker creation failed")
 			markerSpan.End()
-			return markSocialMediaAnalysisFailed(job, "marker_creation_failed", err)
+			return markSocialMediaAnalysisFailed(ctx, job, "marker_creation_failed", err)
 		}
 		markerSpan.SetStatus(true, "marker created")
 		markerSpan.End()
@@ -281,9 +281,9 @@ func finalizeSocialMediaAnalysisJob(ctx context.Context, job *dbmodel.SocialMedi
 		return err
 	}
 	if job.Status == dbmodel.SocialMediaAnalysisJobStatusAwaitingConfirmation || job.Status == dbmodel.SocialMediaAnalysisJobStatusNeedsInput {
-		notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationConflict)
+		notifySocialMediaAnalysisEvent(ctx, job, socialMediaAnalysisNotificationConflict)
 	} else if job.CreatedMarkerID != nil {
-		notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationCreated)
+		notifySocialMediaAnalysisEvent(ctx, job, socialMediaAnalysisNotificationCreated)
 	}
 	return nil
 }
@@ -312,6 +312,26 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 	}
 	places, err := provider.Search(ctx, query)
 	if err != nil {
+		tracer := socialAnalysisTracerFn()
+		_, fallbackSpan := tracer.Start(ctx, "analysis.google_places_fallback", map[string]string{
+			"analysis.job_id":        jobID(job),
+			"provider.name":          "google_places",
+			"provider.operation":     "search",
+			"google.places.fallback": "true",
+		})
+		outcome, httpStatus, apiStatus := googlePlacesFailureAttributes(err)
+		if outcome != "" {
+			fallbackSpan.SetAttribute("google.places.outcome", outcome)
+		}
+		if httpStatus != "" {
+			fallbackSpan.SetAttribute("google.places.http_status", httpStatus)
+		}
+		if apiStatus != "" {
+			fallbackSpan.SetAttribute("google.places.api_status", apiStatus)
+		}
+		fallbackSpan.RecordError(err)
+		fallbackSpan.SetStatus(false, "Google Places unavailable; kept agent-only result")
+		fallbackSpan.End()
 		log.Printf("[social-media-analysis] Google Places unavailable, keeping Agent 1 result: %v", err)
 		return RunnerJob{}, false, nil
 	}
@@ -344,6 +364,13 @@ func maybeSubmitLocationComparison(ctx context.Context, job *dbmodel.SocialMedia
 		return RunnerJob{}, false, err
 	}
 	return runnerJob, true, nil
+}
+
+func jobID(job *dbmodel.SocialMediaAnalysisJob) string {
+	if job == nil {
+		return ""
+	}
+	return job.JobID
 }
 
 func submitSocialAnalysisRunnerJob(ctx context.Context, client socialMediaRunnerClient, request RunnerSubmitRequest, analysisJobID, operation, stage string) (RunnerJob, error) {
@@ -403,7 +430,7 @@ func decodeAgentAnalysisResult(raw json.RawMessage) (AgentAnalysisResult, error)
 	return result, nil
 }
 
-func markSocialMediaAnalysisFailed(job *dbmodel.SocialMediaAnalysisJob, code string, err error) error {
+func markSocialMediaAnalysisFailed(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, code string, err error) error {
 	job.Status = dbmodel.SocialMediaAnalysisJobStatusFailed
 	job.Stage = "failed"
 	job.ErrorCode = code
@@ -413,7 +440,7 @@ func markSocialMediaAnalysisFailed(job *dbmodel.SocialMediaAnalysisJob, code str
 	if saveErr := database.Connection.Save(job).Error; saveErr != nil {
 		return saveErr
 	}
-	notifySocialMediaAnalysisEvent(job, socialMediaAnalysisNotificationFailed)
+	notifySocialMediaAnalysisEvent(ctx, job, socialMediaAnalysisNotificationFailed)
 	return nil
 }
 
@@ -670,7 +697,7 @@ func socialMediaAnalysisMarkerCreator(relation dbmodel.UserRelation, creatorUser
 	return dbmodel.User{}, fmt.Errorf("analysis creator user %d is not part of relation %d", *creatorUserID, relation.ID)
 }
 
-func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) (*dbmodel.Marker, error) {
+func createSocialMediaAnalysisMarker(ctx context.Context, job *dbmodel.SocialMediaAnalysisJob, result AgentAnalysisResult) (*dbmodel.Marker, error) {
 	if job == nil || result.Location == nil {
 		return nil, fmt.Errorf("marker location is required")
 	}
@@ -712,6 +739,6 @@ func createSocialMediaAnalysisMarker(job *dbmodel.SocialMediaAnalysisJob, result
 	markerInput.SocialMediaLink = &socialLink
 	markerInput.Permanent = &permanent
 	return createMarkerWithImageCandidates(markerInput, imageCandidates, func(input model.NewMarker) (*dbmodel.Marker, error) {
-		return CreateMarker(input, nil, creator, relation, false)
+		return CreateMarkerWithContext(ctx, input, nil, creator, relation, false)
 	})
 }

@@ -46,11 +46,38 @@ func (client *fakeSocialMediaRunnerClient) Get(context.Context, string) (RunnerJ
 type fakeGooglePlacesProvider struct {
 	places []GooglePlaceCandidate
 	query  string
+	err    error
 }
 
 func (provider *fakeGooglePlacesProvider) Search(_ context.Context, query string) ([]GooglePlaceCandidate, error) {
 	provider.query = query
-	return provider.places, nil
+	return provider.places, provider.err
+}
+
+func TestMaybeSubmitLocationComparisonTracesGoogleFallback(t *testing.T) {
+	provider := &fakeGooglePlacesProvider{err: fmt.Errorf("Google Places returned HTTP 429: RESOURCE_EXHAUSTED")}
+	previousProvider := googlePlacesProviderFn
+	previousTracer := socialAnalysisTracerFn
+	googlePlacesProviderFn = func() GooglePlacesProvider { return provider }
+	tracer := &recordingObservabilityTracer{}
+	socialAnalysisTracerFn = func() socialAnalysisTracerProvider { return tracer }
+	t.Cleanup(func() {
+		googlePlacesProviderFn = previousProvider
+		socialAnalysisTracerFn = previousTracer
+	})
+
+	result := AgentAnalysisResult{Recommendation: AgentRecommendationCreateMarker, Location: &LocationCandidate{Name: "Cafe", Address: "Central", Latitude: 22.285, Longitude: 114.155}}
+	_, submitted, err := maybeSubmitLocationComparison(context.Background(), &dbmodel.SocialMediaAnalysisJob{}, &result)
+	if err != nil || submitted {
+		t.Fatalf("expected agent-only fallback, submitted=%v err=%v", submitted, err)
+	}
+	if len(tracer.spans) != 1 || tracer.spans[0].name != "analysis.google_places_fallback" {
+		t.Fatalf("expected one Google fallback span, got %#v", tracer.spans)
+	}
+	span := tracer.spans[0]
+	if span.attributes["google.places.fallback"] != "true" || span.attributes["google.places.outcome"] != "quota_or_rate_limit" {
+		t.Fatalf("unexpected fallback span attributes: %#v", span.attributes)
+	}
 }
 
 func TestMaybeSubmitLocationComparisonKeepsVerifiedGoogleLocation(t *testing.T) {
