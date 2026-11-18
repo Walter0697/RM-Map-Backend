@@ -208,6 +208,11 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 	if w.Code != 200 {
 		t.Fatal("consent failed", w.Code, w.Body.String())
 	}
+	// no-referrer makes browsers send Origin: null on the form POST,
+	// which the consent endpoint correctly rejects as an untrusted origin.
+	if policy := w.Header().Get("Referrer-Policy"); policy != "same-origin" {
+		t.Fatalf("consent form must preserve same-origin POST Origin, got policy %q", policy)
+	}
 	csrfMatch := regexp.MustCompile(`name="csrf" value="([^"]+)"`).FindStringSubmatch(w.Body.String())
 	if len(csrfMatch) != 2 {
 		t.Fatal("consent CSRF missing")

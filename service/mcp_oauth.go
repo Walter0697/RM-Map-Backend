@@ -310,7 +310,9 @@ func completeMCPOIDCLogin(w http.ResponseWriter, r *http.Request, user *dbmodel.
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'")
-	w.Header().Set("Referrer-Policy", "no-referrer")
+	// Preserve Origin on same-origin form POSTs; no-referrer produces
+	// Origin: null in browsers and trips the consent origin check.
+	w.Header().Set("Referrer-Policy", "same-origin")
 	_ = mcpConsentTemplate.Execute(w, map[string]interface{}{"Client": c.Name, "Username": user.Username, "Scopes": strings.Fields(req.Scope), "ID": req.ID, "CSRF": csrf, "Relations": relations})
 }
 func MCPConsent(w http.ResponseWriter, r *http.Request) {
@@ -332,8 +334,8 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	sessionUser := mcpBrowserSessionUser(r)
 	req, e := mcpBoundRequest(r, requestID)
 	boundByBrowserCookie := e == nil
-	_, hasConsentCookie := r.Cookie(mcpBrowserCookie)
-	_, hasSessionCookie := r.Cookie(mcpBrowserSessionCookie)
+	_, consentCookieErr := r.Cookie(mcpBrowserCookie)
+	_, sessionCookieErr := r.Cookie(mcpBrowserSessionCookie)
 	if e != nil && sessionUser != nil {
 		req, e = mcpRequestByID(requestID)
 	}
@@ -343,7 +345,7 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 		if sessionUser != nil {
 			sessionUserID = sessionUser.ID
 		}
-		log.Printf("mcp consent denied reason= binding request_id=%q has_consent_cookie=%t has_session_cookie=%t bound_by_cookie=%t lookup_error=%v request_user_id=%d session_user_id=%d csrf_present=%t csrf_match=%t decision=%q relation_id=%q", requestID, hasConsentCookie, hasSessionCookie, boundByBrowserCookie, e, req.UserID, sessionUserID, r.PostForm.Get("csrf") != "", csrfMatch, r.PostForm.Get("decision"), r.PostForm.Get("relation_id"))
+		log.Printf("mcp consent denied reason=binding request_id=%q has_consent_cookie=%t has_session_cookie=%t bound_by_cookie=%t lookup_error=%v request_user_id=%d session_user_id=%d csrf_present=%t csrf_match=%t decision=%q relation_id=%q", requestID, consentCookieErr == nil, sessionCookieErr == nil, boundByBrowserCookie, e, req.UserID, sessionUserID, r.PostForm.Get("csrf") != "", csrfMatch, r.PostForm.Get("decision"), r.PostForm.Get("relation_id"))
 		mcpError(w, 403, "access_denied")
 		return
 	}
