@@ -174,6 +174,10 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 	other := dbmodel.User{Username: "other", IsActivated: true, Role: "user"}
 	db.Create(&u)
 	db.Create(&other)
+	sessionToken, err := issueTokenForUser(&u)
+	if err != nil {
+		t.Fatal(err)
+	}
 	rel := dbmodel.UserRelation{UserOneUID: u.ID, UserTwoUID: u.ID}
 	db.Create(&rel)
 	if _, _, e = mcpCurrentActor(db, other.ID, rel.ID); e == nil {
@@ -207,6 +211,7 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		r.Header.Set("Origin", "https://rm.example")
 		r.AddCookie(&http.Cookie{Name: mcpBrowserCookie, Value: browser})
+		r.AddCookie(&http.Cookie{Name: mcpBrowserSessionCookie, Value: sessionToken})
 		w := httptest.NewRecorder()
 		MCPConsent(w, r)
 		return w

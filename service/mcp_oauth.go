@@ -266,6 +266,11 @@ func mcpBoundRequest(r *http.Request, id string) (dbmodel.MCPOAuthRequest, error
 	}
 	return req, nil
 }
+func mcpRequestByID(id string) (dbmodel.MCPOAuthRequest, error) {
+	var req dbmodel.MCPOAuthRequest
+	err := database.Connection.First(&req, "id = ? AND used = ? AND expires_at > ?", id, false, time.Now()).Error
+	return req, err
+}
 
 var mcpConsentTemplate = template.Must(template.New("consent").Parse(`<!doctype html><html><head><meta charset="utf-8"><title>Connect Marker Map</title></head><body><h1>Connect {{.Client}}</h1><p>Signed in as {{.Username}}. This application requests the following access:</p><ul>{{range .Scopes}}<li>{{.}}</li>{{end}}</ul><form method="post" action="/mcp/oauth/consent"><input type="hidden" name="request_id" value="{{.ID}}"><input type="hidden" name="csrf" value="{{.CSRF}}"><label>Shared map <select name="relation_id" required>{{range .Relations}}<option value="{{.ID}}">{{.UserOne.Username}} / {{.UserTwo.Username}} ({{.ID}})</option>{{end}}</select></label><p>Only maps you currently belong to are available. Existing role and testing-data permissions still apply.</p><button name="decision" value="allow">Allow access</button><button name="decision" value="deny">Cancel</button></form></body></html>`))
 
@@ -274,6 +279,9 @@ func completeMCPOIDCLogin(w http.ResponseWriter, r *http.Request, user *dbmodel.
 		return
 	}
 	req, e := mcpBoundRequest(r, requestID)
+	if e != nil {
+		req, e = mcpRequestByID(requestID)
+	}
 	if e != nil || user == nil || !user.IsActivated {
 		mcpError(w, 403, "access_denied")
 		return
@@ -313,8 +321,13 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 		mcpError(w, 400, "invalid_request")
 		return
 	}
-	req, e := mcpBoundRequest(r, r.PostForm.Get("request_id"))
-	if e != nil || req.UserID == 0 || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
+	requestID := r.PostForm.Get("request_id")
+	sessionUser := mcpBrowserSessionUser(r)
+	req, e := mcpBoundRequest(r, requestID)
+	if e != nil && sessionUser != nil {
+		req, e = mcpRequestByID(requestID)
+	}
+	if e != nil || req.UserID == 0 || sessionUser == nil || req.UserID != sessionUser.ID || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
 		mcpError(w, 403, "access_denied")
 		return
 	}
