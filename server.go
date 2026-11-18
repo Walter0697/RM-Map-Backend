@@ -119,7 +119,7 @@ func startServer() {
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: false,
+		AllowCredentials: true,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 	router.Use(middleware.Middleware())
@@ -172,6 +172,7 @@ func startServer() {
 	router.Get("/auth/health", service.AuthHealthHandler)
 	router.Get("/auth/oidc/start", service.OIDCStartHandler)
 	router.Get("/auth/oidc/callback", service.OIDCCallbackHandler)
+	router.Post("/auth/mcp/session", service.MCPSessionBridge)
 	router.Get("/calendar/google/connect", service.CalendarGoogleConnectHandler)
 	router.Get("/calendar/google/callback", service.CalendarGoogleCallbackHandler)
 	router.Get("/calendar/providers/status", service.CalendarProviderStatusHandler)

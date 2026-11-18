@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"net"
@@ -60,6 +61,23 @@ func mcpBrowserSessionUser(r *http.Request) *dbmodel.User {
 		return nil
 	}
 	return user
+}
+func MCPSessionBridge(w http.ResponseWriter, r *http.Request) {
+	if _, ok := mcpReady(w); !ok {
+		return
+	}
+	user := currentUserFromRequest(r)
+	if user == nil || !user.IsActivated {
+		mcpError(w, http.StatusUnauthorized, "invalid_token")
+		return
+	}
+	token := normalizeAuthToken(r.Header.Get("Authorization"))
+	if token == "" {
+		mcpError(w, http.StatusUnauthorized, "invalid_token")
+		return
+	}
+	http.SetCookie(w, &http.Cookie{Name: mcpBrowserSessionCookie, Value: token, Path: "/", Secure: !config.IsLocalEnvironment(config.Data.App.Environment), HttpOnly: true, SameSite: http.SameSiteLaxMode, MaxAge: config.Data.AuthState.SessionTTLSeconds})
+	mcpJSON(w, http.StatusNoContent, nil)
 }
 func mcpJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Cache-Control", "no-store")
