@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
@@ -318,6 +319,7 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if r.Header.Get("Origin") != "" && r.Header.Get("Origin") != o {
+		log.Printf("mcp consent denied reason=origin request_origin=%q expected_origin=%q", r.Header.Get("Origin"), o)
 		mcpError(w, 403, "access_denied")
 		return
 	}
@@ -330,10 +332,18 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	sessionUser := mcpBrowserSessionUser(r)
 	req, e := mcpBoundRequest(r, requestID)
 	boundByBrowserCookie := e == nil
+	_, hasConsentCookie := r.Cookie(mcpBrowserCookie)
+	_, hasSessionCookie := r.Cookie(mcpBrowserSessionCookie)
 	if e != nil && sessionUser != nil {
 		req, e = mcpRequestByID(requestID)
 	}
-	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && (sessionUser == nil || req.UserID != sessionUser.ID)) || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
+	csrfMatch := req.CSRFHash != "" && mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash)
+	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && (sessionUser == nil || req.UserID != sessionUser.ID)) || !csrfMatch {
+		sessionUserID := uint(0)
+		if sessionUser != nil {
+			sessionUserID = sessionUser.ID
+		}
+		log.Printf("mcp consent denied reason= binding request_id=%q has_consent_cookie=%t has_session_cookie=%t bound_by_cookie=%t lookup_error=%v request_user_id=%d session_user_id=%d csrf_present=%t csrf_match=%t decision=%q relation_id=%q", requestID, hasConsentCookie, hasSessionCookie, boundByBrowserCookie, e, req.UserID, sessionUserID, r.PostForm.Get("csrf") != "", csrfMatch, r.PostForm.Get("decision"), r.PostForm.Get("relation_id"))
 		mcpError(w, 403, "access_denied")
 		return
 	}
@@ -354,6 +364,7 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, _, e = mcpCurrentActor(database.Connection, req.UserID, uint(relationID)); e != nil {
+		log.Printf("mcp consent denied reason=relation request_id=%q request_user_id=%d relation_id=%d error=%v", requestID, req.UserID, relationID, e)
 		mcpError(w, 403, "access_denied")
 		return
 	}
