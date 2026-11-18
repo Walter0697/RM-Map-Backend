@@ -2,8 +2,8 @@
 
 The backend can host the existing 22 Marker Map tools directly at `/mcp` using
 stateless Streamable HTTP. No Node sidecar, backend URL header, shared administrator
-key, or loopback HTTP call is involved. Tool names, input schemas and text-result
-envelopes match RM-Map-MCP. Existing `/integration` API keys, scripts and the
+key, or loopback HTTP call is involved. Existing tool names and arguments remain compatible with RM-Map-MCP. The native
+nearby tools also expose the new arguments documented below. Existing `/integration` API keys, scripts and the
 separate MCP service remain supported during migration.
 
 ## Deployment prerequisite: verified identities
@@ -84,6 +84,33 @@ The native tools fix the old MCP's missing marker/schedule detail endpoints by
 performing relation-scoped reads in-process. Travel-plan item tools preserve the
 old whole-plan read/replace behavior; avoid concurrent writers to the same plan
 until optimistic concurrency is introduced separately.
+
+## Find saved pins near a place
+
+For coordinates, call `list_markers_nearby` with
+`{"latitude":43.775,"longitude":-79.347,"radius_meters":3000,"exclude_type":"food","limit":10}`.
+The distance is straight-line, not walking distance. Use `radius_meters: 3000`
+for 3 km. Legacy `radius` and `area` still mean meters; when several are supplied,
+the first in `radius_meters`, `radius`, `area` order takes precedence.
+Both nearby tools support optional exact `type` and `exclude_type`, applied
+before the result limit. Use `list_marker_types` for values.
+
+To search by name in one call, use
+`{"place":"Don Mills Station, Toronto","place_country_code":"CA","radius_meters":3000}`.
+Named lookup sends the supplied place text and optional country code to the existing
+TomTom provider and requires the existing static preview scope and a configured
+TomTom key in addition to marker-read permission. Coordinates do not require
+geocoding permission. Do not provide a name and coordinates together.
+
+The response preserves the existing items and pagination fields and adds
+`origin`, `radius_meters`, and `filters` (even with no matching pins). The
+`status` is `ok` for a completed pin search. If the provider returns multiple
+candidates, the status is `place_ambiguous` and the response includes up to five
+candidates. Ask for the intended place or retry with known coordinates; no pins
+are queried until there is a single origin. `place_not_found` means the origin
+was not resolved, not that there are no saved pins nearby. If geocoding is
+unavailable, use coordinates. `search_nearby_markers`, the matching/deduplication
+tool, remains coordinate-based.
 
 ## Tests
 

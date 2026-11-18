@@ -142,10 +142,6 @@ func mcpExecuteTool(r *http.Request, name string, a map[string]interface{}) (int
 	case "list_schedules":
 		return list(IntegrationListSchedulesHandler)
 	case "list_markers_nearby", "search_nearby_markers":
-		if _, ok := a["radius"]; !ok {
-			a["radius"] = a["area"]
-		}
-		delete(a, "area")
 		return list(IntegrationNearbySearchMarkersHandler)
 	case "get_marker":
 		return get(mcpGetMarkerHandler, nil, id("id"))

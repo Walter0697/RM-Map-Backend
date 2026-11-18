@@ -102,7 +102,7 @@
   {
     "name": "list_markers_nearby",
     "title": "list_markers_nearby",
-    "description": "List markers near coordinates using radius/area and limit; use for general nearby browsing.",
+    "description": "Find saved pins near a named place or coordinates. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit. Named places require geocoding permission; give city/country and use returned coordinates if several match.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -122,34 +122,88 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 50000,
-          "description": "Search radius in meters (required if area is absent)."
+          "description": "Legacy alias for radius_meters (meters, not kilometers)."
         },
         "area": {
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 50000,
-          "description": "Alias for radius in meters (required if radius is absent)."
+          "description": "Legacy alias for radius_meters (meters, not square meters)."
         },
         "limit": {
           "type": "integer",
           "minimum": 1,
           "maximum": 50,
           "description": "Maximum nearby markers to return."
+        },
+        "radius_meters": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 50000,
+          "description": "Search radius in meters, e.g. 3000 for 3 km. Preferred over radius and area."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Include only this exact marker type value. Use list_marker_types for valid values."
+        },
+        "exclude_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exclude this exact marker type value. Use list_marker_types for valid values."
+        },
+        "place": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Place name with locality, e.g. Don Mills Station, Toronto. Use instead of latitude and longitude."
+        },
+        "place_country_code": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 2,
+          "description": "Optional two-letter country filter for place lookup, e.g. CA."
         }
       },
-      "required": [
-        "latitude",
-        "longitude"
-      ],
-      "description": "List markers near coordinates using radius/area distance filter.",
+      "required": [],
+      "description": "Find saved pins near a named place or coordinates. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit. Named places require geocoding permission; give city/country and use returned coordinates if several match.",
       "anyOf": [
         {
           "required": [
+            "latitude",
+            "longitude",
+            "radius_meters"
+          ]
+        },
+        {
+          "required": [
+            "latitude",
+            "longitude",
             "radius"
           ]
         },
         {
           "required": [
+            "latitude",
+            "longitude",
+            "area"
+          ]
+        },
+        {
+          "required": [
+            "place",
+            "radius_meters"
+          ]
+        },
+        {
+          "required": [
+            "place",
+            "radius"
+          ]
+        },
+        {
+          "required": [
+            "place",
             "area"
           ]
         }
@@ -818,7 +872,7 @@
   {
     "name": "search_nearby_markers",
     "title": "search_nearby_markers",
-    "description": "Search nearby markers for coordinate-based matching/dedup workflows; requires radius or area.",
+    "description": "Find saved pins near coordinates for matching or deduplication. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit.",
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -838,27 +892,48 @@
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 50000,
-          "description": "Search radius in meters (required if area is absent)."
+          "description": "Legacy alias for radius_meters (meters, not kilometers)."
         },
         "area": {
           "type": "number",
           "exclusiveMinimum": 0,
           "maximum": 50000,
-          "description": "Alias for radius in meters (required if radius is absent)."
+          "description": "Legacy alias for radius_meters (meters, not square meters)."
         },
         "limit": {
           "type": "integer",
           "minimum": 1,
           "maximum": 50,
           "description": "Maximum nearby markers to return."
+        },
+        "radius_meters": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 50000,
+          "description": "Search radius in meters, e.g. 3000 for 3 km. Preferred over radius and area."
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Include only this exact marker type value. Use list_marker_types for valid values."
+        },
+        "exclude_type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Exclude this exact marker type value. Use list_marker_types for valid values."
         }
       },
       "required": [
         "latitude",
         "longitude"
       ],
-      "description": "Search nearby markers for matching/dedup workflows.",
+      "description": "Find saved pins near coordinates for matching or deduplication. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit.",
       "anyOf": [
+        {
+          "required": [
+            "radius_meters"
+          ]
+        },
         {
           "required": [
             "radius"
