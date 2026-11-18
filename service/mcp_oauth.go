@@ -161,7 +161,7 @@ func MCPRegister(w http.ResponseWriter, r *http.Request) {
 		mcpError(w, 500, "server_error")
 		return
 	}
-	mcpJSON(w, 201, map[string]interface{}{"client_id": c.ID, "client_name": c.Name, "redirect_uris": in.Redirects, "token_endpoint_auth_method": "none", "grant_types": []string{"authorization_code", "refresh_token"}, "response_types": []string{"code"}})
+	mcpJSON(w, 201, map[string]interface{}{"client_id": c.ID, "client_id_issued_at": c.CreatedAt.Unix(), "client_name": c.Name, "redirect_uris": in.Redirects, "token_endpoint_auth_method": "none", "grant_types": []string{"authorization_code", "refresh_token"}, "response_types": []string{"code"}})
 }
 func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 	if !mcpRateLimit(w, r, "authorize", 60) {

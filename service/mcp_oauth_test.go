@@ -156,6 +156,20 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 	defer func() { database.Connection = old }()
 	t.Setenv("MCP_ENABLED", "true")
 	t.Setenv("MCP_PUBLIC_ORIGIN", "https://rm.example")
+	registration := httptest.NewRequest("POST", "https://rm.example/mcp/oauth/register", strings.NewReader(`{"client_name":"ChatGPT","redirect_uris":["https://chatgpt.com/connector_platform_oauth_redirect"]}`))
+	registration.Header.Set("Content-Type", "application/json")
+	registrationResponse := httptest.NewRecorder()
+	MCPRegister(registrationResponse, registration)
+	if registrationResponse.Code != http.StatusCreated {
+		t.Fatalf("DCR registration failed: %d %s", registrationResponse.Code, registrationResponse.Body.String())
+	}
+	var registrationBody map[string]any
+	if err := json.Unmarshal(registrationResponse.Body.Bytes(), &registrationBody); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := registrationBody["client_id_issued_at"]; !ok {
+		t.Fatalf("DCR response must include client_id_issued_at like Job Search: %s", registrationResponse.Body.String())
+	}
 	u := dbmodel.User{Username: "owner", IsActivated: true, Role: "admin"}
 	other := dbmodel.User{Username: "other", IsActivated: true, Role: "user"}
 	db.Create(&u)
