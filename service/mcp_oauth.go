@@ -333,7 +333,7 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	if e != nil && sessionUser != nil {
 		req, e = mcpRequestByID(requestID)
 	}
-	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && sessionUser == nil) || (sessionUser != nil && req.UserID != sessionUser.ID) || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
+	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && (sessionUser == nil || req.UserID != sessionUser.ID)) || req.CSRFHash == "" || !mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash) {
 		mcpError(w, 403, "access_denied")
 		return
 	}
