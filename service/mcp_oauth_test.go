@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"mapmarker/backend/config"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"net/http"
@@ -154,6 +155,12 @@ func TestMCPOAuthDatabaseSecurity(t *testing.T) {
 	old := database.Connection
 	database.Connection = db
 	defer func() { database.Connection = old }()
+	mgr := &defaultAuthStateManager{mode: config.AuthStateModeDualWrite, sessionTTL: time.Hour}
+	mgr.writePostgresFn = mgr.writePostgres
+	mgr.validatePostgresFn = mgr.validatePostgres
+	mgr.revokePostgresFn = mgr.revokePostgres
+	restoreAuthState := setAuthStateManagerForTest(mgr)
+	defer restoreAuthState()
 	t.Setenv("MCP_ENABLED", "true")
 	t.Setenv("MCP_PUBLIC_ORIGIN", "https://rm.example")
 	registration := httptest.NewRequest("POST", "https://rm.example/mcp/oauth/register", strings.NewReader(`{"client_name":"ChatGPT","redirect_uris":["https://chatgpt.com/connector_platform_oauth_redirect"]}`))

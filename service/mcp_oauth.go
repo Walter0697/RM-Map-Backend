@@ -280,6 +280,11 @@ func completeMCPOIDCLogin(w http.ResponseWriter, r *http.Request, user *dbmodel.
 	}
 	req, e := mcpBoundRequest(r, requestID)
 	if e != nil {
+		sessionUser := mcpBrowserSessionUser(r)
+		if sessionUser == nil || user == nil || sessionUser.ID != user.ID {
+			mcpError(w, 403, "access_denied")
+			return
+		}
 		req, e = mcpRequestByID(requestID)
 	}
 	if e != nil || user == nil || !user.IsActivated {
