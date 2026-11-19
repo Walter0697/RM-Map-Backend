@@ -112,6 +112,18 @@ was not resolved, not that there are no saved pins nearby. If geocoding is
 unavailable, use coordinates. `search_nearby_markers`, the matching/deduplication
 tool, remains coordinate-based.
 
+## Link back to saved markers
+
+Use each result's `roroadmap_url` as the primary link in marker listings.
+It opens the saved marker in RoroadMap and does not grant access by itself.
+If missing, show the marker name as text. The optional `source_url` is an
+external source (for example Instagram); show it separately only on request.
+The existing `link` and `social_media_link` fields remain unchanged.
+
+The backend uses the frontend origin from `oidc.frontendredirecturl`, then
+`telegramnotification.frontendurl` (or `TELEGRAM_FRONTEND_URL`), then a single
+literal `app.allowedorigin`. If none is usable, the map link is omitted.
+
 ## Tests
 
 ```sh
