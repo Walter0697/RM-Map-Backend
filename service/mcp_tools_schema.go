@@ -20,10 +20,11 @@ var mcpToolDefinitions = func() []mcpToolDefinition {
 }()
 
 type mcpToolDefinition struct {
-	Name        string                 `json:"name"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	InputSchema map[string]interface{} `json:"inputSchema"`
+	Name         string                 `json:"name"`
+	Title        string                 `json:"title"`
+	Description  string                 `json:"description"`
+	InputSchema  map[string]interface{} `json:"inputSchema"`
+	OutputSchema map[string]interface{} `json:"outputSchema,omitempty"`
 }
 type mcpToolError struct {
 	Code    string `json:"code"`

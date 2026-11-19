@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"mapmarker/backend/config"
 	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"mapmarker/backend/helper"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -136,15 +138,19 @@ func mcpExecuteTool(r *http.Request, name string, a map[string]interface{}) (int
 	}
 	switch name {
 	case "list_markers":
-		return list(IntegrationListMarkersHandler)
+		return mcpMarkerPageLinks(list(IntegrationListMarkersHandler))
 	case "list_stations":
 		return list(IntegrationListStationsHandler)
 	case "list_schedules":
 		return list(IntegrationListSchedulesHandler)
 	case "list_markers_nearby", "search_nearby_markers":
-		return list(IntegrationNearbySearchMarkersHandler)
+		return mcpMarkerPageLinks(list(IntegrationNearbySearchMarkersHandler))
 	case "get_marker":
-		return get(mcpGetMarkerHandler, nil, id("id"))
+		result, err := get(mcpGetMarkerHandler, nil, id("id"))
+		if err == nil {
+			mcpAddMarkerLinks(result, mcpMarkerFrontendOrigin())
+		}
+		return result, err
 	case "get_schedule":
 		return get(mcpGetScheduleHandler, nil, id("id"))
 	case "list_country", "get_country_part", "list_hashtags":
@@ -305,6 +311,66 @@ func mcpTravelPlanItem(r *http.Request, name string, a map[string]interface{}) (
 		return nil, &mcpToolError{Code: "upstream_not_found", Message: "Travel plan item not found", Status: 404}
 	}
 	return mcpInvoke(r, IntegrationUpdateTravelPlanHandler, http.MethodPut, nil, planID, map[string]interface{}{"daily_plans": next})
+}
+
+// Use configured frontend URLs, never the incoming MCP/API host or an external
+// URL on the marker. The frontend handles /markers/:id, including after login.
+func mcpMarkerFrontendOrigin() string {
+	return mcpSelectMarkerFrontendOrigin(config.Data.OIDC.FrontendRedirectURL, config.Data.TelegramNotification.FrontendURL, config.Data.App.AllowedOrigin)
+}
+
+func mcpSelectMarkerFrontendOrigin(loginURL, telegramURL, allowedOrigin string) string {
+	for i, value := range []string{loginURL, telegramURL, allowedOrigin} {
+		u := mcpMarkerHTTPURL(value)
+		if u == nil || strings.ContainsAny(u.Host, "*,") {
+			continue
+		}
+		// The CORS setting is a fallback only if it is one literal origin.
+		if i == 2 && ((u.Path != "" && u.Path != "/") || u.RawQuery != "" || u.ForceQuery || u.Fragment != "") {
+			continue
+		}
+		return (&url.URL{Scheme: u.Scheme, Host: u.Host}).String()
+	}
+	return ""
+}
+
+func mcpMarkerHTTPURL(value string) *url.URL {
+	u, err := url.Parse(strings.TrimSpace(value))
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Hostname() == "" || u.User != nil {
+		return nil
+	}
+	return u
+}
+
+func mcpMarkerPageLinks(result interface{}, err error) (interface{}, error) {
+	if err != nil {
+		return nil, err
+	}
+	page, _ := result.(map[string]interface{})
+	items, _ := page["items"].([]interface{})
+	origin := mcpMarkerFrontendOrigin()
+	for _, item := range items {
+		mcpAddMarkerLinks(item, origin)
+	}
+	return result, nil
+}
+
+func mcpAddMarkerLinks(value interface{}, frontendOrigin string) {
+	marker, ok := value.(map[string]interface{})
+	if !ok || marker == nil {
+		return
+	}
+	if id, ok := marker["id"].(float64); ok && id >= 1 && id <= 1<<53-1 && math.Trunc(id) == id && frontendOrigin != "" {
+		marker["roroadmap_url"] = frontendOrigin + "/markers/" + strconv.FormatFloat(id, 'f', 0, 64)
+	}
+	// Prefer the actual source post, but retain both existing fields unchanged.
+	for _, field := range []string{"social_media_link", "link"} {
+		value, _ := marker[field].(string)
+		if u := mcpMarkerHTTPURL(value); u != nil {
+			marker["source_url"] = strings.TrimSpace(value)
+			break
+		}
+	}
 }
 
 func mcpGetMarkerHandler(w http.ResponseWriter, r *http.Request) {

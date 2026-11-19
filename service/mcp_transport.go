@@ -117,6 +117,9 @@ func MCPHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			payload = map[string]interface{}{"ok": false, "error": e}
 			out["isError"] = true
+		} else if def.OutputSchema != nil {
+			// Leave text content untouched for existing MCP clients.
+			out["structuredContent"] = payload
 		}
 		encoded, _ := json.Marshal(payload)
 		out["content"] = []map[string]string{{"type": "text", "text": string(encoded)}}

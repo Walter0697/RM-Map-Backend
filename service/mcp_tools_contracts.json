@@ -2,7 +2,42 @@
   {
     "name": "list_markers",
     "title": "list_markers",
-    "description": "List markers with pagination and filters such as type, status, country, and country_part; use list_marker_types to get valid type values, and search (string or string[]) can match hashtag text from descriptions with OR logic for multiple terms.",
+    "description": "List markers with pagination and filters such as type, status, country, and country_part; use list_marker_types to get valid type values, and search (string or string[]) can match hashtag text from descriptions with OR logic for multiple terms. Link each saved marker's name to roroadmap_url first. source_url is the optional original source (such as Instagram), not the map link; show it separately only if requested. If roroadmap_url is absent, show the marker name without a link rather than substituting the source.",
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "roroadmap_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Primary link: opens this saved marker in RoroadMap. Omitted if a frontend link cannot be built; show the marker name without a link in that case."
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Secondary external source (such as the Instagram post). Only show if asked for the original source; never use as a substitute for roroadmap_url."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "result"
+      ]
+    },
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -102,7 +137,42 @@
   {
     "name": "list_markers_nearby",
     "title": "list_markers_nearby",
-    "description": "Find saved pins near a named place or coordinates. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit. Named places require geocoding permission; give city/country and use returned coordinates if several match.",
+    "description": "Find saved pins near a named place or coordinates. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit. Named places require geocoding permission; give city/country and use returned coordinates if several match. Link each saved marker's name to roroadmap_url first. source_url is the optional original source (such as Instagram), not the map link; show it separately only if requested. If roroadmap_url is absent, show the marker name without a link rather than substituting the source.",
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "roroadmap_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Primary link: opens this saved marker in RoroadMap. Omitted if a frontend link cannot be built; show the marker name without a link in that case."
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Secondary external source (such as the Instagram post). Only show if asked for the original source; never use as a substitute for roroadmap_url."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "result"
+      ]
+    },
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -213,7 +283,34 @@
   {
     "name": "get_marker",
     "title": "get_marker",
-    "description": "Get one marker by numeric ID.",
+    "description": "Get one marker by numeric ID. Link each saved marker's name to roroadmap_url first. source_url is the optional original source (such as Instagram), not the map link; show it separately only if requested. If roroadmap_url is absent, show the marker name without a link rather than substituting the source.",
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "roroadmap_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Primary link: opens this saved marker in RoroadMap. Omitted if a frontend link cannot be built; show the marker name without a link in that case."
+            },
+            "source_url": {
+              "type": "string",
+              "format": "uri",
+              "description": "Secondary external source (such as the Instagram post). Only show if asked for the original source; never use as a substitute for roroadmap_url."
+            }
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "result"
+      ]
+    },
     "inputSchema": {
       "type": "object",
       "properties": {
@@ -872,7 +969,42 @@
   {
     "name": "search_nearby_markers",
     "title": "search_nearby_markers",
-    "description": "Find saved pins near coordinates for matching or deduplication. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit.",
+    "description": "Find saved pins near coordinates for matching or deduplication. Set radius_meters to 3000 for 3 km. Optional type or exclude_type filters apply before the limit. Link each saved marker's name to roroadmap_url first. source_url is the optional original source (such as Instagram), not the map link; show it separately only if requested. If roroadmap_url is absent, show the marker name without a link rather than substituting the source.",
+    "outputSchema": {
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean"
+        },
+        "result": {
+          "type": "object",
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "roroadmap_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Primary link: opens this saved marker in RoroadMap. Omitted if a frontend link cannot be built; show the marker name without a link in that case."
+                  },
+                  "source_url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Secondary external source (such as the Instagram post). Only show if asked for the original source; never use as a substitute for roroadmap_url."
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "ok",
+        "result"
+      ]
+    },
     "inputSchema": {
       "type": "object",
       "properties": {

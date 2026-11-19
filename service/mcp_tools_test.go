@@ -1,6 +1,7 @@
 package service
 
 import (
+	"mapmarker/backend/config"
 	"net/http"
 	"testing"
 )
@@ -72,5 +73,74 @@ func TestMCPAllToolsDispatch(t *testing.T) {
 				t.Fatal("tool did not dispatch")
 			}
 		})
+	}
+}
+
+func TestMCPMarkerFrontendOrigin(t *testing.T) {
+	for _, tc := range []struct{ login, telegram, allowed, want string }{
+		{"https://maps.example/login?next=x", "https://notify.example", "https://fallback.example", "https://maps.example"},
+		{"javascript:bad", "https://notify.example/", "*", "https://notify.example"},
+		{"", "", "http://localhost:3000/", "http://localhost:3000"},
+		{"https://username:password@maps.example/login", "", "https://one.example,https://two.example", ""},
+		{"", "", "https://*.example.com", ""},
+		{"", "", "https://api.example/somepath", ""},
+	} {
+		if got := mcpSelectMarkerFrontendOrigin(tc.login, tc.telegram, tc.allowed); got != tc.want {
+			t.Errorf("origin: got %q, want %q", got, tc.want)
+		}
+	}
+}
+
+func TestMCPMarkerToolsReturnPrimaryMapLink(t *testing.T) {
+	oldInvoke, oldConfig := mcpInvoke, config.Data
+	defer func() { mcpInvoke, config.Data = oldInvoke, oldConfig }()
+	config.Data.OIDC.FrontendRedirectURL = "https://maps.example/login"
+	for _, tool := range []string{"list_markers", "list_markers_nearby", "search_nearby_markers", "get_marker"} {
+		t.Run(tool, func(t *testing.T) {
+			marker := map[string]interface{}{
+				"id": float64(12), "label": "Coffee shop", "distance_meters": float64(123),
+				"link": "https://cafe.example", "social_media_link": "https://www.instagram.com/p/post/",
+			}
+			mcpInvoke = func(*http.Request, http.HandlerFunc, string, map[string]interface{}, string, interface{}) (interface{}, error) {
+				if tool == "get_marker" {
+					return marker, nil
+				}
+				return map[string]interface{}{"items": []interface{}{marker}, "status": "ok", "total": float64(1)}, nil
+			}
+			payload, err := mcpExecuteTool(mcpTestRequest(`{}`), tool, map[string]interface{}{"id": float64(12)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			result := payload.(map[string]interface{})
+			if tool != "get_marker" {
+				if result["status"] != "ok" || result["total"] != float64(1) {
+					t.Fatalf("changed pagination or metadata: %v", result)
+				}
+				result = result["items"].([]interface{})[0].(map[string]interface{})
+			}
+			if result["roroadmap_url"] != "https://maps.example/markers/12" || result["source_url"] != result["social_media_link"] ||
+				result["link"] != "https://cafe.example" || result["distance_meters"] != float64(123) {
+				t.Fatalf("marker link or legacy fields mismatch: %v", result)
+			}
+		})
+	}
+}
+
+func TestMCPMarkerLinksOmitInvalidOrUnavailableLinks(t *testing.T) {
+	marker := map[string]interface{}{"id": float64(9), "social_media_link": "javascript:bad", "link": "https://cafe.example"}
+	mcpAddMarkerLinks(marker, "")
+	if _, ok := marker["roroadmap_url"]; ok {
+		t.Fatal("generated a map link without a configured origin")
+	}
+	if marker["source_url"] != "https://cafe.example" {
+		t.Fatalf("expected external fallback: %v", marker)
+	}
+
+	marker = map[string]interface{}{"id": float64(1.5), "link": "https://user:pass@cafe.example"}
+	mcpAddMarkerLinks(marker, "https://maps.example")
+	for _, key := range []string{"roroadmap_url", "source_url"} {
+		if _, ok := marker[key]; ok {
+			t.Fatalf("generated %q from invalid data: %v", key, marker)
+		}
 	}
 }
