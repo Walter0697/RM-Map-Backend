@@ -12,6 +12,7 @@ import (
 	"html/template"
 	"log"
 	"mapmarker/backend/config"
+	"mapmarker/backend/constant"
 	"mapmarker/backend/database"
 	"mapmarker/backend/database/dbmodel"
 	"net"
@@ -32,7 +33,21 @@ const mcpBrowserSessionCookie = "rm-browser-session"
 
 var mcpScopes = []string{"markers:read", "schedules:read", "stations:read", "settings:read", "travel-plans:read", "schedules:write", "travel-plans:write", "static-preview:generate"}
 
-func MCPEnabled() bool { return strings.EqualFold(os.Getenv("MCP_ENABLED"), "true") }
+func MCPEnabled() bool       { return strings.EqualFold(os.Getenv("MCP_ENABLED"), "true") }
+func MCPAPIKeyEnabled() bool { return strings.EqualFold(os.Getenv("MCP_API_KEY_ENABLED"), "true") }
+
+func mcpAPIKeyCredentialPresent(r *http.Request) bool {
+	if strings.TrimSpace(r.Header.Get("X-API-Key")) != "" {
+		return true
+	}
+	parts := strings.Fields(r.Header.Get("Authorization"))
+	return len(parts) == 2 && strings.EqualFold(parts[0], "ApiKey") && strings.TrimSpace(parts[1]) != ""
+}
+
+var mcpAPIKeyPrincipalFn = func(w http.ResponseWriter, r *http.Request) (*IntegrationPrincipal, bool) {
+	return authenticateIntegrationPrincipal(w, r, "mcp.request", constant.APIKeyScopeMCPAccess, "")
+}
+
 func mcpOrigin() (string, error) {
 	raw := strings.TrimSuffix(strings.TrimSpace(os.Getenv("MCP_PUBLIC_ORIGIN")), "/")
 	u, err := url.Parse(raw)
@@ -523,6 +538,14 @@ func MCPAuthenticate(next http.Handler) http.Handler {
 		}
 		if origin := r.Header.Get("Origin"); origin != "" && origin != o {
 			mcpError(w, 403, "access_denied")
+			return
+		}
+		if MCPAPIKeyEnabled() && mcpAPIKeyCredentialPresent(r) {
+			principal, authenticated := mcpAPIKeyPrincipalFn(w, r)
+			if !authenticated || principal == nil {
+				return
+			}
+			next.ServeHTTP(w, r.WithContext(ContextWithMCPPrincipal(r.Context(), principal)))
 			return
 		}
 		g, u, rel, e := mcpAccess(r)
