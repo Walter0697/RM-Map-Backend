@@ -105,7 +105,7 @@ func validMCPRedirect(raw string) bool {
 		return true
 	}
 	ip := net.ParseIP(u.Hostname())
-	return u.Scheme == "http" && ip != nil && ip.IsLoopback()
+	return u.Scheme == "http" && (ip != nil && ip.IsLoopback() || strings.EqualFold(u.Hostname(), "localhost"))
 }
 func normalizeMCPScope(raw string) (string, error) {
 	if raw == "" {

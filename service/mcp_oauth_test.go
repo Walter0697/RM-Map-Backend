@@ -25,7 +25,7 @@ func TestMCPRedirectPolicy(t *testing.T) {
 	for _, tc := range []struct {
 		url string
 		ok  bool
-	}{{"https://client.example/callback", true}, {"http://127.0.0.1:4567/cb", true}, {"http://[::1]:4567/cb", true}, {"http://localhost/cb", false}, {"https://u:p@client.example/cb", false}, {"https://client.example/cb#fragment", false}, {"javascript:alert(1)", false}, {"http://client.example/cb", false}, {"/relative", false}} {
+	}{{"https://client.example/callback", true}, {"http://127.0.0.1:4567/cb", true}, {"http://[::1]:4567/cb", true}, {"http://localhost/cb", true}, {"http://localhost:4567/cb", true}, {"http://localhost.evil/cb", false}, {"https://u:p@client.example/cb", false}, {"https://client.example/cb#fragment", false}, {"javascript:alert(1)", false}, {"http://client.example/cb", false}, {"/relative", false}} {
 		if got := validMCPRedirect(tc.url); got != tc.ok {
 			t.Errorf("%q got %v", tc.url, got)
 		}
