@@ -49,6 +49,18 @@ func mcpRandom() string {
 	return base64.RawURLEncoding.EncodeToString(b)
 }
 func mcpHash(s string) string { h := sha256.Sum256([]byte(s)); return hex.EncodeToString(h[:]) }
+func mcpDiagnosticHashPrefix(raw string) string {
+	if raw == "" {
+		return ""
+	}
+	return mcpHash(raw)[:12]
+}
+func mcpStoredHashPrefix(hash string) string {
+	if len(hash) < 12 {
+		return ""
+	}
+	return hash[:12]
+}
 func mcpEqualHash(raw, hash string) bool {
 	return subtle.ConstantTimeCompare([]byte(mcpHash(raw)), []byte(hash)) == 1
 }
@@ -339,13 +351,14 @@ func MCPConsent(w http.ResponseWriter, r *http.Request) {
 	if e != nil && sessionUser != nil {
 		req, e = mcpRequestByID(requestID)
 	}
-	csrfMatch := req.CSRFHash != "" && mcpEqualHash(r.PostForm.Get("csrf"), req.CSRFHash)
+	csrfValue := r.PostForm.Get("csrf")
+	csrfMatch := req.CSRFHash != "" && mcpEqualHash(csrfValue, req.CSRFHash)
 	if e != nil || req.UserID == 0 || (!boundByBrowserCookie && (sessionUser == nil || req.UserID != sessionUser.ID)) || !csrfMatch {
 		sessionUserID := uint(0)
 		if sessionUser != nil {
 			sessionUserID = sessionUser.ID
 		}
-		log.Printf("mcp consent denied reason=binding request_id=%q has_consent_cookie=%t has_session_cookie=%t bound_by_cookie=%t lookup_error=%v request_user_id=%d session_user_id=%d csrf_present=%t csrf_match=%t decision=%q relation_id=%q", requestID, consentCookieErr == nil, sessionCookieErr == nil, boundByBrowserCookie, e, req.UserID, sessionUserID, r.PostForm.Get("csrf") != "", csrfMatch, r.PostForm.Get("decision"), r.PostForm.Get("relation_id"))
+		log.Printf("mcp consent denied reason=binding request_id=%q has_consent_cookie=%t has_session_cookie=%t bound_by_cookie=%t lookup_error=%v request_user_id=%d session_user_id=%d csrf_present=%t csrf_match=%t csrf_submitted_hash_prefix=%q csrf_stored_hash_prefix=%q code_hash_present=%t request_used=%t request_expired=%t decision=%q relation_id=%q", requestID, consentCookieErr == nil, sessionCookieErr == nil, boundByBrowserCookie, e, req.UserID, sessionUserID, csrfValue != "", csrfMatch, mcpDiagnosticHashPrefix(csrfValue), mcpStoredHashPrefix(req.CSRFHash), req.CodeHash != "", req.Used, !req.ExpiresAt.After(time.Now()), r.PostForm.Get("decision"), r.PostForm.Get("relation_id"))
 		mcpError(w, 403, "access_denied")
 		return
 	}

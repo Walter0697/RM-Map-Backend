@@ -31,6 +31,16 @@ func TestMCPRedirectPolicy(t *testing.T) {
 		}
 	}
 }
+func TestMCPDiagnosticHashPrefixDoesNotExposeToken(t *testing.T) {
+	token := mcpRandom()
+	prefix := mcpDiagnosticHashPrefix(token)
+	if len(prefix) != 12 || prefix == token || prefix != mcpHash(token)[:12] {
+		t.Fatalf("unexpected diagnostic prefix %q", prefix)
+	}
+	if mcpDiagnosticHashPrefix("") != "" {
+		t.Fatal("empty token should not produce a diagnostic prefix")
+	}
+}
 func TestMCPPKCE(t *testing.T) {
 	verifier := "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
 	challenge := "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
