@@ -83,3 +83,29 @@ func TestLegacyIntegrationPrincipalPreservesKeySemantics(t *testing.T) {
 		t.Fatal("legacy semantics changed")
 	}
 }
+
+func TestMCPAPIKeyPrincipalCanAuthorizeToolScope(t *testing.T) {
+	originalAudit := integrationCreateAuditLogFn
+	integrationCreateAuditLogFn = func(*uint, string, APIKeyAuditEvent) error { return nil }
+	t.Cleanup(func() { integrationCreateAuditLogFn = originalAudit })
+
+	user := dbmodel.User{IsActivated: true, Role: "user"}
+	user.ID = 10
+	relation := dbmodel.UserRelation{UserOneUID: 10, UserTwoUID: 20}
+	relation.ID = 30
+	key := &dbmodel.APIKey{Scopes: "mcp:access,markers:read", Relation: relation, RelationID: relation.ID}
+	key.ID = 7
+	key.ActorUser = user
+	key.ActorUserID = &user.ID
+
+	r := httptest.NewRequest(http.MethodGet, "/mcp", nil).WithContext(ContextWithMCPPrincipal(context.Background(), principalFromAPIKey(key)))
+	w := httptest.NewRecorder()
+	legacy := func(http.ResponseWriter, *http.Request, string, string, string) (*dbmodel.APIKey, bool) {
+		t.Fatal("MCP API-key principal attempted to re-authenticate")
+		return nil, false
+	}
+	got, ok := authenticateIntegrationPrincipalWith(w, r, "mcp.list_markers", "markers:read", "", legacy, false)
+	if !ok || got != MCPPrincipalForContext(r.Context()) {
+		t.Fatalf("API-key MCP principal was rejected: principal=%v status=%d body=%s", got, w.Code, w.Body.String())
+	}
+}

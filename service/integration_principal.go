@@ -96,7 +96,12 @@ func authenticateIntegrationPrincipalWith(w http.ResponseWriter, r *http.Request
 	if p := MCPPrincipalForContext(r.Context()); p != nil {
 		// Defense in depth for in-process dispatch. The OAuth middleware additionally
 		// reloads the current user and relation from the database on every request.
-		valid := p.APIKey == nil && p.ActorUser.ID != 0 && p.ActorUser.IsActivated && p.Relation.ID != 0 && (p.Relation.UserOneUID == p.ActorUser.ID || p.Relation.UserTwoUID == p.ActorUser.ID) && p.Role == p.ActorUser.Role
+		valid := p.ActorUser.ID != 0 && p.ActorUser.IsActivated && p.Relation.ID != 0 && (p.Relation.UserOneUID == p.ActorUser.ID || p.Relation.UserTwoUID == p.ActorUser.ID)
+		if p.APIKey == nil {
+			// OAuth principals must retain the role loaded from the current user.
+			// API-key principals may intentionally use a service-account role.
+			valid = valid && p.Role == p.ActorUser.Role
+		}
 		if !valid || !p.HasScope(scope) {
 			if jsonError {
 				writeIntegrationError(w, http.StatusForbidden, "scope_denied", "permission denied")
