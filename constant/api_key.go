@@ -1,6 +1,7 @@
 package constant
 
 const (
+	APIKeyScopeMCPAccess           = "mcp:access"
 	APIKeyScopeMarkersRead         = "markers:read"
 	APIKeyScopeMarkersWrite        = "markers:write"
 	APIKeyScopeSchedulesRead       = "schedules:read"
@@ -18,6 +19,7 @@ const (
 
 func AllAPIKeyScopes() []string {
 	return []string{
+		APIKeyScopeMCPAccess,
 		APIKeyScopeMarkersRead,
 		APIKeyScopeMarkersWrite,
 		APIKeyScopeSchedulesRead,

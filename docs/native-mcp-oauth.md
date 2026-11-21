@@ -30,6 +30,8 @@ reassignment of an identity already owned by another user. It is not an HTTP API
 ```env
 MCP_ENABLED=true
 MCP_PUBLIC_ORIGIN=https://your-marker-backend.example
+# Optional fallback for MCP clients that cannot complete OAuth.
+MCP_API_KEY_ENABLED=false
 ```
 
 The public origin must be HTTPS, with no path, credentials, query or fragment.
@@ -54,6 +56,37 @@ schedule/travel-plan writes and geocoding require the requested additional scope
 Existing roles and testing-data visibility still constrain operations. Consent
 does not upgrade a role. Active user status and relation membership are rechecked
 for every request and refresh, so removing membership cuts off access immediately.
+
+## Optional API-key authentication
+
+Some hosted MCP clients cannot complete the OAuth callback/token exchange even
+though browser OAuth works. For those clients, operators may opt in to the
+existing API-key system without changing the OAuth flow:
+
+```env
+MCP_API_KEY_ENABLED=true
+```
+
+Create a dedicated API key through the existing API-key management flow and grant
+`mcp:access` plus only the tool scopes the client needs, such as `markers:read`.
+The key must belong to the user's relation/map and is still subject to normal
+expiry, revocation, audit, role and testing-data checks. Configure the client to
+send it as one of these headers:
+
+```http
+X-API-Key: rmk_...
+```
+
+or:
+
+```http
+Authorization: ApiKey rmk_...
+```
+
+API keys are never accepted as `Authorization: Bearer`, URL query parameters, or
+request-body credentials. Keep `MCP_API_KEY_ENABLED=false` unless this fallback is
+needed, and use a separate key per client so it can be revoked independently.
+OAuth remains available while API-key fallback is enabled.
 
 ## Tokens and disconnect
 
