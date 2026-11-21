@@ -1128,7 +1128,8 @@ func IntegrationNearbySearchMarkersHandler(w http.ResponseWriter, r *http.Reques
 
 	var place *nearbyPlaceCandidate
 	if searchQuery.Place != "" {
-		if !apiKey.HasScope(constant.APIKeyScopeStaticPreview) {
+		allowMCPMarkerReadPlaceLookup := MCPPrincipalForContext(r.Context()) != nil && apiKey.HasScope(constant.APIKeyScopeMarkersRead)
+		if !apiKey.HasScope(constant.APIKeyScopeStaticPreview) && !allowMCPMarkerReadPlaceLookup {
 			writeIntegrationError(w, http.StatusForbidden, "scope_denied", "place lookup requires the static preview scope; use latitude and longitude instead")
 			return
 		}

@@ -58,11 +58,12 @@ func TestNearbySearchMCPNamedPlace(t *testing.T) {
 		status    string
 		httpError int
 		search    bool
+		mcpPlace  bool
 	}{
 		{name: "unique empty nearby results", geocode: true, places: []nearbyPlaceCandidate{first}, status: "ok", search: true},
 		{name: "ambiguous", geocode: true, places: []nearbyPlaceCandidate{first, other}, status: "place_ambiguous"},
 		{name: "not found", geocode: true, places: []nearbyPlaceCandidate{}, status: "place_not_found"},
-		{name: "missing geocoding scope", httpError: http.StatusForbidden},
+		{name: "MCP marker read permits place lookup", places: []nearbyPlaceCandidate{first}, status: "ok", search: true, mcpPlace: true},
 		{name: "provider error", geocode: true, lookupErr: errors.New("private provider error"), httpError: http.StatusBadGateway},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -93,7 +94,7 @@ func TestNearbySearchMCPNamedPlace(t *testing.T) {
 				"place": "Don Mills Station, Toronto", "place_country_code": "ca", "radius_meters": float64(3000),
 				"type": "attraction", "exclude_type": "food", "limit": float64(10),
 			})
-			if searched != tc.search || resolved != tc.geocode {
+			if searched != tc.search || resolved != (tc.geocode || tc.mcpPlace) {
 				t.Fatalf("unexpected calls: searched=%t resolved=%t", searched, resolved)
 			}
 			if tc.httpError != 0 {
