@@ -159,6 +159,13 @@ geminitoken=""
 geminitokenenv="GEMINI_TOKEN"
 apifyactorid=""
 apifybaseurl="https://api.apify.com"
+# MCP OAuth secrets are resolved from Infisical by their exact secret names:
+# MCP_OAUTH_CONFIDENTIAL_CLIENT_ID
+# MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET
+# MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS
+# MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID
+# MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID
+# MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES
 
 [telegramnotification]
 enable=false

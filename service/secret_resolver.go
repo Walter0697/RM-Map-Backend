@@ -207,6 +207,18 @@ func (resolver *infisicalSecretResolver) environmentName(name string) string {
 		return resolver.setting.MinIOAccessKeyEnv
 	case "MINIO_SECRET_KEY":
 		return resolver.setting.MinIOSecretKeyEnv
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_ID":
+		return resolver.setting.MCPConfidentialClientIDEnv
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET":
+		return resolver.setting.MCPConfidentialClientSecretEnv
+	case "MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS":
+		return resolver.setting.MCPConfidentialRedirectURIsEnv
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID":
+		return resolver.setting.MCPConfidentialUserIDEnv
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID":
+		return resolver.setting.MCPConfidentialRelationIDEnv
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES":
+		return resolver.setting.MCPConfidentialScopesEnv
 	default:
 		return ""
 	}
@@ -228,6 +240,18 @@ func (resolver *infisicalSecretResolver) tomlValue(name string) string {
 		return resolver.setting.MinIOAccessKey
 	case "MINIO_SECRET_KEY":
 		return resolver.setting.MinIOSecretKey
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_ID":
+		return resolver.setting.MCPConfidentialClientID
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET":
+		return resolver.setting.MCPConfidentialClientSecret
+	case "MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS":
+		return resolver.setting.MCPConfidentialRedirectURIs
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID":
+		return resolver.setting.MCPConfidentialUserID
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID":
+		return resolver.setting.MCPConfidentialRelationID
+	case "MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES":
+		return resolver.setting.MCPConfidentialScopes
 	default:
 		return ""
 	}

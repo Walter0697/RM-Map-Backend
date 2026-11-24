@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
@@ -22,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"gorm.io/gorm"
@@ -45,15 +47,37 @@ type mcpPreauthorizedClientConfig struct {
 	Scopes     string
 }
 
+var (
+	mcpSecretResolverMu      sync.Mutex
+	mcpSecretResolver        SecretResolver
+	mcpSecretResolverSetting config.InfisicalSetting
+)
+
 func MCPEnabled() bool       { return strings.EqualFold(os.Getenv("MCP_ENABLED"), "true") }
 func MCPAPIKeyEnabled() bool { return strings.EqualFold(os.Getenv("MCP_API_KEY_ENABLED"), "true") }
 
+func mcpSecret(name string) string {
+	setting := config.Data.Infisical
+	mcpSecretResolverMu.Lock()
+	if mcpSecretResolver == nil || mcpSecretResolverSetting != setting {
+		mcpSecretResolver = NewSecretResolver(setting, http.DefaultClient)
+		mcpSecretResolverSetting = setting
+	}
+	resolver := mcpSecretResolver
+	mcpSecretResolverMu.Unlock()
+
+	if value, err := resolver.Resolve(context.Background(), name); err == nil && strings.TrimSpace(value) != "" {
+		return value
+	}
+	return os.Getenv(name)
+}
+
 func mcpConfidentialClient() (mcpConfiguredConfidentialClient, bool, error) {
 	client := mcpConfiguredConfidentialClient{
-		ID:     strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID")),
-		Secret: os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET"),
+		ID:     strings.TrimSpace(mcpSecret("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID")),
+		Secret: mcpSecret("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET"),
 	}
-	rawRedirects := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS"))
+	rawRedirects := strings.TrimSpace(mcpSecret("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS"))
 	if client.ID == "" && client.Secret == "" && rawRedirects == "" {
 		return client, false, nil
 	}
@@ -102,9 +126,9 @@ func mcpConfidentialClientAuthenticated(r *http.Request, clientID string) bool {
 }
 
 func mcpPreauthorizedClient() (mcpPreauthorizedClientConfig, bool, error) {
-	userRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID"))
-	relationRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID"))
-	scopesRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES"))
+	userRaw := strings.TrimSpace(mcpSecret("MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID"))
+	relationRaw := strings.TrimSpace(mcpSecret("MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID"))
+	scopesRaw := strings.TrimSpace(mcpSecret("MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES"))
 	if userRaw == "" && relationRaw == "" && scopesRaw == "" {
 		return mcpPreauthorizedClientConfig{}, false, nil
 	}
