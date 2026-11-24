@@ -124,6 +124,61 @@ func TestMCPAuthorizationMetadataAdvertisesAutomaticClientRegistration(t *testin
 		t.Fatalf("expected public OAuth clients: %v", metadata["token_endpoint_auth_methods_supported"])
 	}
 }
+
+func TestMCPConfidentialClientSupportsMultipleExactRedirectURIs(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://agent.meta.ai/callback,https://gemini.example/callback")
+
+	client, configured, err := mcpConfidentialClient()
+	if err != nil || !configured {
+		t.Fatalf("confidential client not configured: configured=%v error=%v", configured, err)
+	}
+	if client.ID != "gemini-client" || len(client.RedirectURIs) != 2 {
+		t.Fatalf("unexpected confidential client: %+v", client)
+	}
+	if !mcpConfidentialRedirectAllowed(client, "https://agent.meta.ai/callback") || mcpConfidentialRedirectAllowed(client, "https://agent.meta.ai/other") {
+		t.Fatalf("redirect allowlist is not exact: %+v", client.RedirectURIs)
+	}
+}
+
+func TestMCPConfidentialClientSecretSupportsBasicAndFormAuthentication(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://agent.meta.ai/callback")
+
+	form := httptest.NewRequest("POST", "https://rm.example/mcp/oauth/token", strings.NewReader("client_secret=gemini-secret"))
+	form.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if !mcpConfidentialClientAuthenticated(form, "gemini-client") {
+		t.Fatal("valid form client secret rejected")
+	}
+
+	basic := httptest.NewRequest("POST", "https://rm.example/mcp/oauth/token", nil)
+	basic.SetBasicAuth("gemini-client", "gemini-secret")
+	if !mcpConfidentialClientAuthenticated(basic, "gemini-client") {
+		t.Fatal("valid Basic client secret rejected")
+	}
+
+	wrong := httptest.NewRequest("POST", "https://rm.example/mcp/oauth/token", strings.NewReader("client_secret=wrong"))
+	wrong.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	if mcpConfidentialClientAuthenticated(wrong, "gemini-client") {
+		t.Fatal("invalid client secret accepted")
+	}
+}
+
+func TestMCPMetadataAdvertisesConfiguredConfidentialClientMethods(t *testing.T) {
+	t.Setenv("MCP_ENABLED", "true")
+	t.Setenv("MCP_PUBLIC_ORIGIN", "https://rm.example")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://agent.meta.ai/callback")
+
+	w := httptest.NewRecorder()
+	MCPAuthorizationMetadata(w, httptest.NewRequest("GET", "https://rm.example/.well-known/oauth-authorization-server", nil))
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), "client_secret_basic") || !strings.Contains(w.Body.String(), "client_secret_post") {
+		t.Fatalf("confidential methods missing from metadata: %d %s", w.Code, w.Body.String())
+	}
+}
 func TestMCPOpaqueHash(t *testing.T) {
 	a, b := mcpRandom(), mcpRandom()
 	if a == b || len(a) != 43 || !mcpEqualHash(a, mcpHash(a)) || mcpEqualHash(b, mcpHash(a)) {
