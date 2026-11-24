@@ -42,6 +42,12 @@ MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID=1
 MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES=markers:read schedules:read travel-plans:read
 ```
 
+When Infisical is enabled in `[infisical]`, store those six MCP values in the
+configured project/environment/path using the exact names above. The backend
+resolves them from Infisical at runtime; they do not need to be duplicated in
+the Docker Compose environment. Direct environment variables remain supported
+as a fallback for deployments that do not use Infisical.
+
 The public origin must be HTTPS, with no path, credentials, query or fragment.
 Configure the existing OIDC provider client and backend callback normally. Keep
 the same backend hostname throughout authorization and callback. Configure sticky
