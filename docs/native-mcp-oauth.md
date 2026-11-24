@@ -32,6 +32,10 @@ MCP_ENABLED=true
 MCP_PUBLIC_ORIGIN=https://your-marker-backend.example
 # Optional fallback for MCP clients that cannot complete OAuth.
 MCP_API_KEY_ENABLED=false
+# Optional confidential client for hosted clients such as Gemini.
+MCP_OAUTH_CONFIDENTIAL_CLIENT_ID=...
+MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET=...
+MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS=https://client.example/callback,https://other.example/callback
 ```
 
 The public origin must be HTTPS, with no path, credentials, query or fragment.
@@ -48,7 +52,14 @@ Add `https://your-marker-backend.example/mcp` to your MCP client. Discovery:
 The client registers exact redirect URIs, starts S256 authorization with
 `resource=https://your-marker-backend.example/mcp`, and sends that same resource
 on code exchange and refresh. HTTPS callbacks and literal loopback HTTP callbacks
-are supported. No wildcard redirects, implicit flow, passwords or client secrets.
+are supported. No wildcard redirects or implicit flow.
+
+For a hosted client that requires credentials, configure the optional confidential
+client through Infisical. The client ID and secret must be configured together;
+redirect URIs are an exact comma- or newline-separated allowlist. The token
+endpoint accepts either HTTP Basic authentication or the `client_secret` form
+field. Existing dynamic registrations remain public clients and continue to use
+`token_endpoint_auth_method=none`.
 
 Every connection requires fresh verified provider login and explicit consent.
 The person chooses an existing shared map/relation. Default scopes are read-only;
@@ -131,8 +142,9 @@ before the result limit. Use `list_marker_types` for values.
 To search by name in one call, use
 `{"place":"Don Mills Station, Toronto","place_country_code":"CA","radius_meters":3000}`.
 Named lookup sends the supplied place text and optional country code to the existing
-TomTom provider and requires the existing static preview scope and a configured
-TomTom key in addition to marker-read permission. Coordinates do not require
+TomTom provider and requires a configured TomTom key. Native MCP clients may use
+their `markers:read` permission for this lookup; direct legacy integration calls
+still require the `static-preview:generate` scope. Coordinates do not require
 geocoding permission. Do not provide a name and coordinates together.
 
 The response preserves the existing items and pagination fields and adds

@@ -33,8 +33,91 @@ const mcpBrowserSessionCookie = "rm-browser-session"
 
 var mcpScopes = []string{"markers:read", "schedules:read", "stations:read", "settings:read", "travel-plans:read", "schedules:write", "travel-plans:write", "static-preview:generate"}
 
+type mcpConfiguredConfidentialClient struct {
+	ID           string
+	Secret       string
+	RedirectURIs []string
+}
+
 func MCPEnabled() bool       { return strings.EqualFold(os.Getenv("MCP_ENABLED"), "true") }
 func MCPAPIKeyEnabled() bool { return strings.EqualFold(os.Getenv("MCP_API_KEY_ENABLED"), "true") }
+
+func mcpConfidentialClient() (mcpConfiguredConfidentialClient, bool, error) {
+	client := mcpConfiguredConfidentialClient{
+		ID:     strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID")),
+		Secret: os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET"),
+	}
+	rawRedirects := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS"))
+	if client.ID == "" && client.Secret == "" && rawRedirects == "" {
+		return client, false, nil
+	}
+	if client.ID == "" || client.Secret == "" || rawRedirects == "" {
+		return client, false, errors.New("MCP confidential client requires ID, secret, and redirect URIs")
+	}
+	for _, raw := range strings.FieldsFunc(rawRedirects, func(r rune) bool { return r == ',' || r == '\n' || r == '\r' }) {
+		redirect := strings.TrimSpace(raw)
+		if redirect == "" || !validMCPRedirect(redirect) {
+			return client, false, errors.New("MCP confidential client has an invalid redirect URI")
+		}
+		client.RedirectURIs = append(client.RedirectURIs, redirect)
+	}
+	if len(client.RedirectURIs) == 0 || len(client.RedirectURIs) > 10 {
+		return client, false, errors.New("MCP confidential client must have 1 to 10 redirect URIs")
+	}
+	return client, true, nil
+}
+
+func mcpConfidentialRedirectAllowed(client mcpConfiguredConfidentialClient, redirectURI string) bool {
+	for _, allowed := range client.RedirectURIs {
+		if allowed == redirectURI {
+			return true
+		}
+	}
+	return false
+}
+
+func mcpConfidentialClientAuthenticated(r *http.Request, clientID string) bool {
+	client, configured, err := mcpConfidentialClient()
+	if err != nil || !configured || client.ID != clientID {
+		return false
+	}
+	secret := ""
+	if username, password, ok := r.BasicAuth(); ok {
+		if username != clientID {
+			return false
+		}
+		secret = password
+	} else {
+		secret = r.PostFormValue("client_secret")
+	}
+	wantHash := sha256.Sum256([]byte(client.Secret))
+	gotHash := sha256.Sum256([]byte(secret))
+	return subtle.ConstantTimeCompare(wantHash[:], gotHash[:]) == 1
+}
+
+func mcpConfiguredClientModel() (dbmodel.MCPOAuthClient, bool, error) {
+	client, configured, err := mcpConfidentialClient()
+	if err != nil || !configured {
+		return dbmodel.MCPOAuthClient{}, configured, err
+	}
+	redirects, _ := json.Marshal(client.RedirectURIs)
+	return dbmodel.MCPOAuthClient{ID: client.ID, Name: "Configured MCP client", RedirectURIs: string(redirects)}, true, nil
+}
+
+func mcpFindClient(id string) (dbmodel.MCPOAuthClient, error) {
+	var client dbmodel.MCPOAuthClient
+	if err := database.Connection.First(&client, "id = ?", id).Error; err == nil {
+		return client, nil
+	}
+	configured, ok, err := mcpConfiguredClientModel()
+	if err != nil {
+		return client, err
+	}
+	if ok && configured.ID == id {
+		return configured, nil
+	}
+	return client, gorm.ErrRecordNotFound
+}
 
 func mcpAPIKeyCredentialPresent(r *http.Request) bool {
 	if strings.TrimSpace(r.Header.Get("X-API-Key")) != "" {
@@ -168,7 +251,14 @@ func MCPAuthorizationMetadata(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	mcpJSON(w, 200, map[string]interface{}{"issuer": o, "authorization_endpoint": o + "/mcp/oauth/authorize", "token_endpoint": o + "/mcp/oauth/token", "registration_endpoint": o + "/mcp/oauth/register", "revocation_endpoint": o + "/mcp/oauth/revoke", "response_types_supported": []string{"code"}, "response_modes_supported": []string{"query"}, "grant_types_supported": []string{"authorization_code", "refresh_token"}, "token_endpoint_auth_methods_supported": []string{"none"}, "revocation_endpoint_auth_methods_supported": []string{"none"}, "code_challenge_methods_supported": []string{"S256"}, "scopes_supported": mcpScopes, "authorization_response_iss_parameter_supported": true})
+	methods := []string{"none"}
+	if _, configured, err := mcpConfidentialClient(); err != nil {
+		mcpError(w, 503, "temporarily_unavailable")
+		return
+	} else if configured {
+		methods = append(methods, "client_secret_basic", "client_secret_post")
+	}
+	mcpJSON(w, 200, map[string]interface{}{"issuer": o, "authorization_endpoint": o + "/mcp/oauth/authorize", "token_endpoint": o + "/mcp/oauth/token", "registration_endpoint": o + "/mcp/oauth/register", "revocation_endpoint": o + "/mcp/oauth/revoke", "response_types_supported": []string{"code"}, "response_modes_supported": []string{"query"}, "grant_types_supported": []string{"authorization_code", "refresh_token"}, "token_endpoint_auth_methods_supported": methods, "revocation_endpoint_auth_methods_supported": []string{"none"}, "code_challenge_methods_supported": []string{"S256"}, "scopes_supported": mcpScopes, "authorization_response_iss_parameter_supported": true})
 }
 func MCPRegister(w http.ResponseWriter, r *http.Request) {
 	if !mcpRateLimit(w, r, "register", 10) {
@@ -240,8 +330,8 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 		mcpError(w, 400, "invalid_request")
 		return
 	}
-	var c dbmodel.MCPOAuthClient
-	if database.Connection.First(&c, "id = ?", q.Get("client_id")).Error != nil {
+	c, clientErr := mcpFindClient(q.Get("client_id"))
+	if clientErr != nil {
 		mcpError(w, 400, "invalid_client")
 		return
 	}
@@ -329,8 +419,8 @@ func completeMCPOIDCLogin(w http.ResponseWriter, r *http.Request, user *dbmodel.
 		mcpError(w, 500, "server_error")
 		return
 	}
-	var c dbmodel.MCPOAuthClient
-	if database.Connection.First(&c, "id = ?", req.ClientID).Error != nil {
+	c, clientErr := mcpFindClient(req.ClientID)
+	if clientErr != nil {
 		mcpError(w, 400, "invalid_client")
 		return
 	}
@@ -452,6 +542,13 @@ func MCPToken(w http.ResponseWriter, r *http.Request) {
 	f := r.PostForm
 	if f.Get("resource") != o+"/mcp" || f.Get("client_id") == "" {
 		mcpError(w, 400, "invalid_target")
+		return
+	}
+	if client, configured, configErr := mcpConfidentialClient(); configErr != nil {
+		mcpError(w, 503, "temporarily_unavailable")
+		return
+	} else if configured && client.ID == f.Get("client_id") && !mcpConfidentialClientAuthenticated(r, f.Get("client_id")) {
+		mcpError(w, 401, "invalid_client")
 		return
 	}
 	var result map[string]interface{}
