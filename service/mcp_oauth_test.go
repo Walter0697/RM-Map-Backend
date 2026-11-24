@@ -203,6 +203,27 @@ func TestMCPPreauthorizedClientConfigurationRequiresCompleteIdentity(t *testing.
 		t.Fatalf("incomplete preauthorized configuration accepted: configured=%v error=%v", configured, err)
 	}
 }
+
+func TestMCPRequestedResourceAllowsOmittedResourceForConfiguredClient(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://gemini.example/callback")
+
+	resource, ok := mcpRequestedResource("https://rm.example", "gemini-client", "")
+	if !ok || resource != "https://rm.example/mcp" {
+		t.Fatalf("configured client should default an omitted resource to the MCP resource: %q ok=%v", resource, ok)
+	}
+}
+
+func TestMCPRequestedResourceRejectsOmittedResourceForOtherClients(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://gemini.example/callback")
+
+	if _, ok := mcpRequestedResource("https://rm.example", "other-client", ""); ok {
+		t.Fatal("omitted resource accepted for an unconfigured client")
+	}
+}
 func TestMCPOpaqueHash(t *testing.T) {
 	a, b := mcpRandom(), mcpRandom()
 	if a == b || len(a) != 43 || !mcpEqualHash(a, mcpHash(a)) || mcpEqualHash(b, mcpHash(a)) {
