@@ -179,6 +179,30 @@ func TestMCPMetadataAdvertisesConfiguredConfidentialClientMethods(t *testing.T) 
 		t.Fatalf("confidential methods missing from metadata: %d %s", w.Code, w.Body.String())
 	}
 }
+
+func TestMCPPreauthorizedConfidentialClientConfiguration(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_ID", "gemini-client")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET", "gemini-secret")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS", "https://agent.meta.ai/callback")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID", "7")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID", "11")
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES", "markers:read schedules:read")
+
+	client, configured, err := mcpPreauthorizedClient()
+	if err != nil || !configured || client.UserID != 7 || client.RelationID != 11 {
+		t.Fatalf("preauthorized client configuration invalid: %+v configured=%v error=%v", client, configured, err)
+	}
+	if !mcpPreauthorizedScopesAllowed(client, "markers:read") || mcpPreauthorizedScopesAllowed(client, "travel-plans:write") {
+		t.Fatalf("preauthorized scope ceiling not enforced: %q", client.Scopes)
+	}
+}
+
+func TestMCPPreauthorizedClientConfigurationRequiresCompleteIdentity(t *testing.T) {
+	t.Setenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID", "7")
+	if _, configured, err := mcpPreauthorizedClient(); err == nil || configured {
+		t.Fatalf("incomplete preauthorized configuration accepted: configured=%v error=%v", configured, err)
+	}
+}
 func TestMCPOpaqueHash(t *testing.T) {
 	a, b := mcpRandom(), mcpRandom()
 	if a == b || len(a) != 43 || !mcpEqualHash(a, mcpHash(a)) || mcpEqualHash(b, mcpHash(a)) {

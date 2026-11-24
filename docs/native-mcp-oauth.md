@@ -36,6 +36,10 @@ MCP_API_KEY_ENABLED=false
 MCP_OAUTH_CONFIDENTIAL_CLIENT_ID=...
 MCP_OAUTH_CONFIDENTIAL_CLIENT_SECRET=...
 MCP_OAUTH_CONFIDENTIAL_REDIRECT_URIS=https://client.example/callback,https://other.example/callback
+# Optional: skip browser login/consent for this confidential client only.
+MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID=1
+MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID=1
+MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES=markers:read schedules:read travel-plans:read
 ```
 
 The public origin must be HTTPS, with no path, credentials, query or fragment.
@@ -60,6 +64,15 @@ redirect URIs are an exact comma- or newline-separated allowlist. The token
 endpoint accepts either HTTP Basic authentication or the `client_secret` form
 field. Existing dynamic registrations remain public clients and continue to use
 `token_endpoint_auth_method=none`.
+
+If the confidential client is for a single trusted personal integration, the
+optional user, relation, and scope settings make it pre-authorized. The backend
+then validates the active user/relation and PKCE request, issues the authorization
+code directly, and skips browser login and consent for that configured client.
+This is an app credential for the configured map, not a user login. Treat the
+client secret as equivalent to access to that account and keep the scopes
+read-only unless writes are explicitly required. Do not configure these settings
+for a shared or multi-user client.
 
 Every connection requires fresh verified provider login and explicit consent.
 The person chooses an existing shared map/relation. Default scopes are read-only;
