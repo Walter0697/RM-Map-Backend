@@ -133,6 +133,24 @@ func mcpPreauthorizedScopesAllowed(client mcpPreauthorizedClientConfig, requeste
 	return true
 }
 
+// Gemini's OAuth client does not always send the MCP resource indicator. Keep
+// the normal resource validation strict, but allow the configured confidential
+// client to use the server's only MCP resource when it is omitted.
+func mcpRequestedResource(origin, clientID, requested string) (string, bool) {
+	expected := origin + "/mcp"
+	if requested == expected {
+		return expected, true
+	}
+	if requested != "" {
+		return "", false
+	}
+	client, configured, err := mcpConfidentialClient()
+	if err != nil || !configured || client.ID != clientID {
+		return "", false
+	}
+	return expected, true
+}
+
 func mcpConfiguredClientModel() (dbmodel.MCPOAuthClient, bool, error) {
 	client, configured, err := mcpConfidentialClient()
 	if err != nil || !configured {
@@ -358,7 +376,8 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	if len(r.URL.RawQuery) > 8192 || q.Get("response_type") != "code" || q.Get("resource") != o+"/mcp" || len(q.Get("state")) > 1024 || q.Get("code_challenge_method") != "S256" {
+	resource, resourceOK := mcpRequestedResource(o, q.Get("client_id"), q.Get("resource"))
+	if len(r.URL.RawQuery) > 8192 || q.Get("response_type") != "code" || !resourceOK || len(q.Get("state")) > 1024 || q.Get("code_challenge_method") != "S256" {
 		mcpError(w, 400, "invalid_request")
 		return
 	}
@@ -405,7 +424,7 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		code := mcpRandom()
-		request := dbmodel.MCPOAuthRequest{ID: mcpRandom(), ClientID: c.ID, RedirectURI: q.Get("redirect_uri"), Resource: o + "/mcp", State: q.Get("state"), Scope: scope, Challenge: challenge, UserID: preauthorized.UserID, RelationID: preauthorized.RelationID, CodeHash: mcpHash(code), ExpiresAt: time.Now().Add(time.Minute)}
+		request := dbmodel.MCPOAuthRequest{ID: mcpRandom(), ClientID: c.ID, RedirectURI: q.Get("redirect_uri"), Resource: resource, State: q.Get("state"), Scope: scope, Challenge: challenge, UserID: preauthorized.UserID, RelationID: preauthorized.RelationID, CodeHash: mcpHash(code), ExpiresAt: time.Now().Add(time.Minute)}
 		if database.Connection.Create(&request).Error != nil {
 			mcpError(w, 500, "server_error")
 			return
@@ -425,7 +444,7 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	browser := mcpRandom()
-	request := dbmodel.MCPOAuthRequest{ID: mcpRandom(), ClientID: c.ID, RedirectURI: q.Get("redirect_uri"), Resource: o + "/mcp", State: q.Get("state"), Scope: scope, Challenge: challenge, BrowserHash: mcpHash(browser), CodeHash: mcpHash(mcpRandom()), ExpiresAt: time.Now().Add(10 * time.Minute)}
+	request := dbmodel.MCPOAuthRequest{ID: mcpRandom(), ClientID: c.ID, RedirectURI: q.Get("redirect_uri"), Resource: resource, State: q.Get("state"), Scope: scope, Challenge: challenge, BrowserHash: mcpHash(browser), CodeHash: mcpHash(mcpRandom()), ExpiresAt: time.Now().Add(10 * time.Minute)}
 	if database.Connection.Create(&request).Error != nil {
 		mcpError(w, 500, "server_error")
 		return
@@ -607,7 +626,8 @@ func MCPToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	f := r.PostForm
-	if f.Get("resource") != o+"/mcp" || f.Get("client_id") == "" {
+	resource, resourceOK := mcpRequestedResource(o, f.Get("client_id"), f.Get("resource"))
+	if !resourceOK || f.Get("client_id") == "" {
 		mcpError(w, 400, "invalid_target")
 		return
 	}
@@ -627,7 +647,7 @@ func MCPToken(w http.ResponseWriter, r *http.Request) {
 			if e := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&req, "code_hash = ?", mcpHash(f.Get("code"))).Error; e != nil {
 				return e
 			}
-			if req.Used || !req.ExpiresAt.After(time.Now()) || req.ClientID != f.Get("client_id") || req.RedirectURI != f.Get("redirect_uri") || req.Resource != f.Get("resource") || req.RelationID == 0 || req.CSRFHash != "" || !mcpPKCE(f.Get("code_verifier"), req.Challenge) {
+			if req.Used || !req.ExpiresAt.After(time.Now()) || req.ClientID != f.Get("client_id") || req.RedirectURI != f.Get("redirect_uri") || req.Resource != resource || req.RelationID == 0 || req.CSRFHash != "" || !mcpPKCE(f.Get("code_verifier"), req.Challenge) {
 				return errors.New("invalid grant")
 			}
 			if _, _, e := mcpCurrentActor(tx, req.UserID, req.RelationID); e != nil {
@@ -656,7 +676,7 @@ func MCPToken(w http.ResponseWriter, r *http.Request) {
 			if e := tx.First(&token, "hash = ?", token.Hash).Error; e != nil {
 				return e
 			}
-			if g.ClientID != f.Get("client_id") || g.Resource != f.Get("resource") {
+			if g.ClientID != f.Get("client_id") || g.Resource != resource {
 				return errors.New("invalid grant")
 			}
 			if token.Used {
