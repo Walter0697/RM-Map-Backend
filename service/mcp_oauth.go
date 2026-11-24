@@ -39,6 +39,12 @@ type mcpConfiguredConfidentialClient struct {
 	RedirectURIs []string
 }
 
+type mcpPreauthorizedClientConfig struct {
+	UserID     uint
+	RelationID uint
+	Scopes     string
+}
+
 func MCPEnabled() bool       { return strings.EqualFold(os.Getenv("MCP_ENABLED"), "true") }
 func MCPAPIKeyEnabled() bool { return strings.EqualFold(os.Getenv("MCP_API_KEY_ENABLED"), "true") }
 
@@ -93,6 +99,38 @@ func mcpConfidentialClientAuthenticated(r *http.Request, clientID string) bool {
 	wantHash := sha256.Sum256([]byte(client.Secret))
 	gotHash := sha256.Sum256([]byte(secret))
 	return subtle.ConstantTimeCompare(wantHash[:], gotHash[:]) == 1
+}
+
+func mcpPreauthorizedClient() (mcpPreauthorizedClientConfig, bool, error) {
+	userRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_USER_ID"))
+	relationRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_RELATION_ID"))
+	scopesRaw := strings.TrimSpace(os.Getenv("MCP_OAUTH_CONFIDENTIAL_CLIENT_SCOPES"))
+	if userRaw == "" && relationRaw == "" && scopesRaw == "" {
+		return mcpPreauthorizedClientConfig{}, false, nil
+	}
+	userID, userErr := strconv.ParseUint(userRaw, 10, 32)
+	relationID, relationErr := strconv.ParseUint(relationRaw, 10, 32)
+	if userErr != nil || relationErr != nil || userID == 0 || relationID == 0 {
+		return mcpPreauthorizedClientConfig{}, false, errors.New("preauthorized MCP client requires valid user and relation IDs")
+	}
+	scopes, err := normalizeMCPScope(scopesRaw)
+	if err != nil {
+		return mcpPreauthorizedClientConfig{}, false, errors.New("preauthorized MCP client has invalid scopes")
+	}
+	return mcpPreauthorizedClientConfig{UserID: uint(userID), RelationID: uint(relationID), Scopes: scopes}, true, nil
+}
+
+func mcpPreauthorizedScopesAllowed(client mcpPreauthorizedClientConfig, requested string) bool {
+	allowed := map[string]bool{}
+	for _, scope := range strings.Fields(client.Scopes) {
+		allowed[scope] = true
+	}
+	for _, scope := range strings.Fields(requested) {
+		if !allowed[scope] {
+			return false
+		}
+	}
+	return true
 }
 
 func mcpConfiguredClientModel() (dbmodel.MCPOAuthClient, bool, error) {
@@ -350,6 +388,35 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 	scope, e := normalizeMCPScope(q.Get("scope"))
 	if e != nil {
 		mcpError(w, 400, "invalid_scope")
+		return
+	}
+	preauthorized, preauthorizedConfigured, preauthorizedErr := mcpPreauthorizedClient()
+	if preauthorizedErr != nil {
+		mcpError(w, 503, "temporarily_unavailable")
+		return
+	}
+	if preauthorizedConfigured && c.ID == q.Get("client_id") {
+		if !mcpPreauthorizedScopesAllowed(preauthorized, scope) {
+			mcpError(w, 400, "invalid_scope")
+			return
+		}
+		if _, _, e = mcpCurrentActor(database.Connection, preauthorized.UserID, preauthorized.RelationID); e != nil {
+			mcpError(w, 403, "access_denied")
+			return
+		}
+		code := mcpRandom()
+		request := dbmodel.MCPOAuthRequest{ID: mcpRandom(), ClientID: c.ID, RedirectURI: q.Get("redirect_uri"), Resource: o + "/mcp", State: q.Get("state"), Scope: scope, Challenge: challenge, UserID: preauthorized.UserID, RelationID: preauthorized.RelationID, CodeHash: mcpHash(code), ExpiresAt: time.Now().Add(time.Minute)}
+		if database.Connection.Create(&request).Error != nil {
+			mcpError(w, 500, "server_error")
+			return
+		}
+		target, _ := url.Parse(request.RedirectURI)
+		redirectQuery := target.Query()
+		redirectQuery.Set("state", request.State)
+		redirectQuery.Set("iss", o)
+		redirectQuery.Set("code", code)
+		target.RawQuery = redirectQuery.Encode()
+		http.Redirect(w, r, target.String(), 303)
 		return
 	}
 	// Request records contain no long-lived credentials and are no longer useful after expiry.

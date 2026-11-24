@@ -30,6 +30,9 @@ returned by an endpoint.
   is in the configured allowlist.
 - Token exchange accepts the configured secret through HTTP Basic or the
   `client_secret` form field, using constant-time comparison.
+- When the configured user, relation, and scope ceiling are present, the
+  confidential client is pre-authorized: the backend validates that active
+  relation and issues the code without browser login or consent.
 - Dynamically registered clients remain public and continue to use PKCE without
   a secret.
 - Existing authorization-code, refresh-token, consent, scope, relation, and
