@@ -90,11 +90,7 @@ func (resolver *infisicalSecretResolver) resolveInfisical(ctx context.Context, n
 		return "", fmt.Errorf("build Infisical secrets URL: %w", err)
 	}
 	query := endpoint.Query()
-	projectSlug := strings.TrimSpace(resolver.setting.ProjectSlug)
-	if projectSlug == "" {
-		projectSlug = strings.TrimSpace(resolver.setting.ProjectID)
-	}
-	query.Set("workspaceSlug", projectSlug)
+	query.Set("workspaceId", resolver.setting.ProjectID)
 	query.Set("environment", resolver.setting.Environment)
 	query.Set("secretPath", resolver.setting.SecretPath)
 	endpoint.RawQuery = query.Encode()

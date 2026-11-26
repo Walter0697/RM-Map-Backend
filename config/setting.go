@@ -171,7 +171,6 @@ type InfisicalSetting struct {
 	Enable                         bool   `mapstructure:"enable"`
 	SiteURL                        string `mapstructure:"siteurl"`
 	ProjectID                      string `mapstructure:"projectid"`
-	ProjectSlug                    string `mapstructure:"projectslug"`
 	Environment                    string `mapstructure:"environment"`
 	SecretPath                     string `mapstructure:"secretpath"`
 	ClientID                       string `mapstructure:"clientid"`
@@ -341,9 +340,6 @@ func applyInfisicalEnvOverrides() error {
 	}
 	if value, exists := os.LookupEnv("INFISICAL_PROJECT_ID"); exists {
 		Data.Infisical.ProjectID = strings.TrimSpace(value)
-	}
-	if value, exists := os.LookupEnv("INFISICAL_PROJECT_SLUG"); exists {
-		Data.Infisical.ProjectSlug = strings.TrimSpace(value)
 	}
 	if value, exists := os.LookupEnv("INFISICAL_ENVIRONMENT"); exists {
 		Data.Infisical.Environment = strings.TrimSpace(value)

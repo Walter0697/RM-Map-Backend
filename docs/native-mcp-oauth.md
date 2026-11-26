@@ -48,10 +48,6 @@ resolves them from Infisical at runtime; they do not need to be duplicated in
 the Docker Compose environment. Direct environment variables remain supported
 as a fallback for deployments that do not use Infisical.
 
-For self-hosted Infisical, set `projectslug` to the Infisical project slug used
-by the secrets API (for example `roroadmap-d-xz-y`). Keep `projectid` as the
-project UUID for compatibility with existing deployments.
-
 The public origin must be HTTPS, with no path, credentials, query or fragment.
 Configure the existing OIDC provider client and backend callback normally. Keep
 the same backend hostname throughout authorization and callback. Configure sticky
