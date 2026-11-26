@@ -20,6 +20,9 @@ func TestSecretResolverPrefersInfisicalValue(t *testing.T) {
 			if r.Header.Get("Authorization") != "Bearer access-token" {
 				t.Fatalf("expected bearer token, got %q", r.Header.Get("Authorization"))
 			}
+			if got := r.URL.Query().Get("workspaceSlug"); got != "roroadmap-d-xz-y" {
+				t.Fatalf("expected Infisical project slug, got %q", got)
+			}
 			w.Header().Set("Content-Type", "application/json")
 			_, _ = w.Write([]byte(`{"secrets":[{"secretKey":"APIFY_TOKEN","secretValue":"infisical-token"}]}`))
 		default:
@@ -32,6 +35,7 @@ func TestSecretResolverPrefersInfisicalValue(t *testing.T) {
 		Enable:        true,
 		SiteURL:       server.URL,
 		ProjectID:     "project",
+		ProjectSlug:   "roroadmap-d-xz-y",
 		Environment:   "dev",
 		SecretPath:    "/roroadmap",
 		ClientID:      "client",

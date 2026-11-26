@@ -148,6 +148,7 @@ maxbytes=26214400
 enable=false
 siteurl="https://app.infisical.com"
 projectid=""
+projectslug=""
 environment="dev"
 secretpath="/roroadmap"
 clientid=""
