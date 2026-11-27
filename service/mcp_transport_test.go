@@ -55,6 +55,17 @@ func TestMCPRequiresIdentityAndRejectsMethods(t *testing.T) {
 		t.Fatalf("version status %d", w.Code)
 	}
 }
+
+func TestMCPSupportsNovember2025ProtocolVersion(t *testing.T) {
+	r := mcpTestRequest(`{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25"}}`)
+	r.Header.Set("MCP-Protocol-Version", "2025-11-25")
+	w := httptest.NewRecorder()
+	MCPHandler(w, r)
+	if w.Code != http.StatusOK || !strings.Contains(w.Body.String(), `"protocolVersion":"2025-11-25"`) {
+		t.Fatalf("November 2025 protocol version rejected: status=%d body=%s", w.Code, w.Body.String())
+	}
+}
+
 func TestMCPNotificationsNeverExecuteTools(t *testing.T) {
 	old := mcpInvoke
 	defer func() { mcpInvoke = old }()
