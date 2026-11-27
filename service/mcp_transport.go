@@ -36,7 +36,7 @@ func MCPHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	version := r.Header.Get("MCP-Protocol-Version")
-	if version != "" && version != "2024-11-05" && version != "2025-03-26" && version != "2025-06-18" {
+	if version != "" && version != "2024-11-05" && version != "2025-03-26" && version != "2025-06-18" && version != "2025-11-25" {
 		http.Error(w, "unsupported MCP protocol version", http.StatusBadRequest)
 		return
 	}
@@ -71,7 +71,7 @@ func MCPHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		selected := mcpProtocolVersion
-		if p.ProtocolVersion == "2025-06-18" || p.ProtocolVersion == "2024-11-05" {
+		if p.ProtocolVersion == "2025-11-25" || p.ProtocolVersion == "2025-06-18" || p.ProtocolVersion == "2024-11-05" {
 			selected = p.ProtocolVersion
 		}
 		mcpRPCResult(w, req.ID, map[string]interface{}{"protocolVersion": selected, "capabilities": map[string]interface{}{"tools": map[string]interface{}{}}, "serverInfo": map[string]string{"name": "roroad-mcp-server", "version": "1.0.0"}})
