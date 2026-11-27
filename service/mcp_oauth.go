@@ -32,6 +32,7 @@ import (
 
 const mcpBrowserCookie = "__Host-rm-mcp-consent"
 const mcpBrowserSessionCookie = "rm-browser-session"
+const mcpMaxOAuthStateLength = 4096
 
 var mcpScopes = []string{"markers:read", "schedules:read", "stations:read", "settings:read", "travel-plans:read", "schedules:write", "travel-plans:write", "static-preview:generate"}
 
@@ -219,6 +220,23 @@ func mcpOrigin() (string, error) {
 	}
 	return raw, nil
 }
+
+func mcpAuthorizeValidationReason(q url.Values, origin string) string {
+	_, resourceOK := mcpRequestedResource(origin, q.Get("client_id"), q.Get("resource"))
+	if q.Get("response_type") != "code" || !resourceOK || len(q.Get("state")) > mcpMaxOAuthStateLength || q.Get("code_challenge_method") != "S256" {
+		if len(q.Get("state")) > mcpMaxOAuthStateLength {
+			return "state_too_long"
+		}
+		return "invalid_request_fields"
+	}
+	challenge := q.Get("code_challenge")
+	decoded, err := base64.RawURLEncoding.DecodeString(challenge)
+	if err != nil || len(decoded) != 32 {
+		return "invalid_code_challenge"
+	}
+	return ""
+}
+
 func mcpRandom() string {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
@@ -400,17 +418,18 @@ func MCPAuthorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	q := r.URL.Query()
-	resource, resourceOK := mcpRequestedResource(o, q.Get("client_id"), q.Get("resource"))
-	if len(r.URL.RawQuery) > 8192 || q.Get("response_type") != "code" || !resourceOK || len(q.Get("state")) > 1024 || q.Get("code_challenge_method") != "S256" {
+	resource, _ := mcpRequestedResource(o, q.Get("client_id"), q.Get("resource"))
+	if len(r.URL.RawQuery) > 8192 {
+		log.Printf("mcp authorize rejected reason=query_too_long query_length=%d", len(r.URL.RawQuery))
+		mcpError(w, 400, "invalid_request")
+		return
+	}
+	if reason := mcpAuthorizeValidationReason(q, o); reason != "" {
+		log.Printf("mcp authorize rejected reason=%s state_length=%d client_id_hash_prefix=%s redirect_uri_hash_prefix=%s resource_hash_prefix=%s code_challenge_length=%d code_challenge_method=%s", reason, len(q.Get("state")), mcpDiagnosticHashPrefix(q.Get("client_id")), mcpDiagnosticHashPrefix(q.Get("redirect_uri")), mcpDiagnosticHashPrefix(q.Get("resource")), len(q.Get("code_challenge")), q.Get("code_challenge_method"))
 		mcpError(w, 400, "invalid_request")
 		return
 	}
 	challenge := q.Get("code_challenge")
-	decoded, e := base64.RawURLEncoding.DecodeString(challenge)
-	if e != nil || len(decoded) != 32 {
-		mcpError(w, 400, "invalid_request")
-		return
-	}
 	c, clientErr := mcpFindClient(q.Get("client_id"))
 	if clientErr != nil {
 		mcpError(w, 400, "invalid_client")
