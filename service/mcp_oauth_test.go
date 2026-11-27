@@ -53,6 +53,36 @@ func TestMCPPKCE(t *testing.T) {
 		}
 	}
 }
+
+func TestMCPAuthorizeAcceptsGeminiLongState(t *testing.T) {
+	challenge := base64.RawURLEncoding.EncodeToString(make([]byte, 32))
+	query := url.Values{
+		"response_type":         {"code"},
+		"resource":              {"https://rm.example/mcp"},
+		"state":                 {strings.Repeat("s", 1400)},
+		"code_challenge":        {challenge},
+		"code_challenge_method": {"S256"},
+	}
+
+	if reason := mcpAuthorizeValidationReason(query, "https://rm.example"); reason != "" {
+		t.Fatalf("Gemini-sized state rejected: %s", reason)
+	}
+}
+
+func TestMCPAuthorizeRejectsExcessiveState(t *testing.T) {
+	query := url.Values{
+		"response_type":         {"code"},
+		"resource":              {"https://rm.example/mcp"},
+		"state":                 {strings.Repeat("s", 4097)},
+		"code_challenge":        {base64.RawURLEncoding.EncodeToString(make([]byte, 32))},
+		"code_challenge_method": {"S256"},
+	}
+
+	if reason := mcpAuthorizeValidationReason(query, "https://rm.example"); reason != "state_too_long" {
+		t.Fatalf("expected excessive state rejection, got %q", reason)
+	}
+}
+
 func TestMCPScopeAndOriginPolicy(t *testing.T) {
 	scope, e := normalizeMCPScope("")
 	if e != nil || strings.Contains(scope, ":write") {
